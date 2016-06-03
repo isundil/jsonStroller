@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 
-add_executable(jsonstroll src/main.cpp)
+add_executable(jsonstroll src/main.cpp src/params.cpp)
 
 set_property(TARGET jsonstroll PROPERTY RUNTIME_OUTPUT_DIRECTORY bin)
 
