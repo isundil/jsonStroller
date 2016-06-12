@@ -8,6 +8,8 @@
 class StreamConsumer
 {
     public:
+        virtual ~StreamConsumer();
+
         static StreamConsumer *read(std::istream &stream);
         JSonElement * const getRoot() const;
 

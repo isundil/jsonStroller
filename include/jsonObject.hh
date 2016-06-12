@@ -5,15 +5,14 @@
 
 template<typename T> class JSonPrimitive;
 
-class JSonObject: public JSonElement
+class JSonObject: public JSonElement, public std::map<std::string, JSonElement*>
 {
     public:
-        JSonObject();
-        void push(const JSonPrimitive<std::string> &key, JSonElement *child);
+        virtual ~JSonObject();
 
-        bool contains(const JSonPrimitive<std::string> &) const;
+        void push(const std::string &key, JSonElement *child);
+        bool contains(const std::string &) const;
 
-    protected:
-        std::map<JSonPrimitive<std::string>, JSonElement *> *children;
+        const JSonElement* get(const std::string &) const;
 };
 

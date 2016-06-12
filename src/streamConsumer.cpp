@@ -6,6 +6,12 @@
 StreamConsumer::StreamConsumer(std::istream &s): stream(s)
 { }
 
+StreamConsumer::~StreamConsumer()
+{
+    if (root)
+        delete root;
+}
+
 StreamConsumer *StreamConsumer::read(std::istream &stream)
 {
     StreamConsumer *inst = new StreamConsumer(stream);
@@ -58,9 +64,9 @@ JSonObject *StreamConsumer::readObject()
         JSonElement *child = readNext();
         if (result == nullptr)
             result = new JSonObject();
-        else if (result->contains(*key))
+        else if (result->contains(key->getValue()))
             throw new JsonException(stream.tellg()); //Double key
-        result->push(*key, child);
+        result->push(key->getValue(), child);
         delete keyObj;
         keyObj = consumeToken(buf);
     } while (!keyObj && buf != "}");
@@ -69,8 +75,29 @@ JSonObject *StreamConsumer::readObject()
 
 JSonArray *StreamConsumer::readArray()
 {
-    //TODO
-    return nullptr;
+    JSonArray *result = nullptr;
+    JSonElement *child = readNext();
+    std::string buf;
+
+    if (child == nullptr && buf == "]")
+        return new JSonArray(); //Empty object
+    do
+    {
+        if (child == nullptr)
+            throw new JsonException(stream.tellg());
+        if (result == nullptr)
+            result = new JSonArray();
+        result->push_back(child);
+        child = consumeToken(buf);
+        if (child != nullptr)
+            throw new JsonException(stream.tellg());
+        else if (buf == "]")
+            break;
+        else if (buf != ",")
+            throw new JsonException(stream.tellg());
+        child = consumeToken(buf);
+    } while (true);
+    return result;
 }
 
 JSonElement *StreamConsumer::consumeToken(std::string &buf)
@@ -137,7 +164,14 @@ JSonElement *StreamConsumer::consumeToken(std::string &buf)
                 stream.unget();
                 if (numberIsFloat)
                     return new JSonPrimitive<float>(std::stof(buf));
-                return new JSonPrimitive<long long int>(std::stol(buf));
+                try
+                {
+                    return new JSonPrimitive<int>(std::stoi(buf));
+                }
+                catch(std::out_of_range e)
+                {
+                    return new JSonPrimitive<long long>(std::stol(buf));
+                }
             }
         }
         else

@@ -1,18 +1,27 @@
 #include "jsonObject.hh"
 #include "jsonPrimitive.hh"
 
-JSonObject::JSonObject()
+JSonObject::~JSonObject()
 {
-    children = new std::map<JSonPrimitive<std::string>, JSonElement *>();
+    for (iterator i = begin(); i != end(); ++i)
+    {
+        delete (*i).second;
+    }
 }
 
-void JSonObject::push(const JSonPrimitive<std::string> &key, JSonElement *child)
+void JSonObject::push(const std::string &key, JSonElement *child)
 {
-    (*children)[key] = child;
+    (*this)[key] = child;
 }
 
-bool JSonObject::contains(const JSonPrimitive<std::string> &key) const
+bool JSonObject::contains(const std::string &key) const
 {
-    return children->find(key) != children->end();
+    return find(key) != end();
+}
+
+const JSonElement *JSonObject::get(const std::string &key) const
+{
+    const_iterator item = find(key);
+    return item == cend() ? nullptr : (*item).second;
 }
 

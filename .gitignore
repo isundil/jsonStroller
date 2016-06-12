@@ -27,11 +27,17 @@
 *.exe
 *.out
 *.app
+*.swp
 
 # CMakeLists
 /CMakeCache.txt
 /CMakeFiles
+/CTestTestfile.cmake
+/Testing
 /bin
+/test/json_test
 /cmake_install.cmake
 /Makefile
+.fuse_hidden*
+/vgcore.10462
 
