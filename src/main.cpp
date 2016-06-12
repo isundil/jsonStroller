@@ -1,16 +1,15 @@
 
 #include <iostream>
-#include "params.hpp"
+#include "streamConsumer.hh"
+#include "params.hh"
 
 int main(int ac, char **av)
 {
     Params *params = new Params(ac, av);
+    JSonElement *rootNode;
 
-    std::basic_istream<char> &ss = params->getInput();
-    while (ss.good())
-    {
-        std::cout << "[" << (char) ss.get() << "]";
-    }
-    std::cout << std::endl;
+    if (!params->isValid())
+        return 0;
+    rootNode = StreamConsumer::read(params->getInput())->getRoot();
 }
 

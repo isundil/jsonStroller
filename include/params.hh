@@ -11,6 +11,7 @@ class Params
         Params(int ac, char **av);
 
         std::basic_istream<char> &getInput() const;
+        bool isValid() const;
 
     private:
         std::basic_istream<char> *input;

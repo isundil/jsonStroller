@@ -1,7 +1,7 @@
 
 #include <iostream>
 #include <sstream>
-#include "params.hpp"
+#include "params.hh"
 
 Params::Params(int ac, char **av) :progName(*av), params(std::list<std::string>(ac -1))
 {
@@ -34,5 +34,10 @@ Params::Params(int ac, char **av) :progName(*av), params(std::list<std::string>(
 std::basic_istream<char> &Params::getInput() const
 {
     return input == nullptr ? std::cin : *input;
+}
+
+bool Params::isValid() const
+{
+    return true;
 }
 
