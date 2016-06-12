@@ -41,21 +41,24 @@ JSonElement * const StreamConsumer::getRoot() const
 
 JSonObject *StreamConsumer::readObject()
 {
-    JSonObject *result = new JSonObject();
-    std::string buf;
     JSonElement *keyObj;
+    JSonObject *result = nullptr;
+    std::string buf;
 
     do
     {
         keyObj = consumeToken(buf);
-        //TODO empty object case
+        if (result == nullptr && keyObj == nullptr && buf == "}")
+            return new JSonObject();
         JSonPrimitive<std::string> *key = dynamic_cast<JSonPrimitive<std::string> *>(keyObj);
         if (key == nullptr)
             throw new JsonException(stream.tellg());
         if (consumeToken(buf) != nullptr || buf != ":")
             throw new JsonException(stream.tellg());
         JSonElement *child = readNext();
-        if (result->contains(*key))
+        if (result == nullptr)
+            result = new JSonObject();
+        else if (result->contains(*key))
             throw new JsonException(stream.tellg()); //Double key
         result->push(*key, child);
         delete keyObj;
@@ -133,8 +136,8 @@ JSonElement *StreamConsumer::consumeToken(std::string &buf)
             {
                 stream.unget();
                 if (numberIsFloat)
-                    return new JSonPrimitive<float>(buf);
-                return new JSonPrimitive<long long int>(buf);
+                    return new JSonPrimitive<float>(std::stof(buf));
+                return new JSonPrimitive<long long int>(std::stol(buf));
             }
         }
         else
