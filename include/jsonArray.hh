@@ -1,11 +1,12 @@
 #pragma once
 
 #include <list>
-#include "jsonElement.hh"
+#include "jsonContainer.hh"
 
-class JSonArray: public JSonElement, public std::list<JSonElement *>
+class JSonArray: public JSonContainer, public std::list<JSonElement *>
 {
     public:
         virtual ~JSonArray();
+        virtual unsigned int size() const;
 };
 

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <string>
 #include "jsonElement.hh"
 
 template <typename T>
@@ -11,6 +10,7 @@ class JSonPrimitive: public JSonElement
         virtual ~JSonPrimitive();
 
         T getValue() const;
+        virtual std::string stringify() const;
 
         bool operator<(const JSonPrimitive<T> &other) const;
         bool operator==(const JSonPrimitive<T> &other) const;

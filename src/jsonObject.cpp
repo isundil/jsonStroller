@@ -25,3 +25,8 @@ const JSonElement *JSonObject::get(const std::string &key) const
     return item == cend() ? nullptr : (*item).second;
 }
 
+unsigned int JSonObject::size() const
+{
+    return std::map<std::string, JSonElement *>::size();
+}
+

@@ -6,43 +6,18 @@
 #include "jsonElement.hh"
 #include "streamConsumer.hh"
 
+const char testJson[] = "{\"widget\": {\"debug\": \"on\",\"window\": {\"title\": \"Sample Konfabulator Widget\",\"name\": \"main_window\",\"width\": 500,\"height\": 500},\"image\": { \"src\": \"Images/Sun.png\",\"name\": \"sun1\",\"hOffset\": 250,\"vOffset\": 250,\"alignment\": \"center\"},\"text\": {\"data\": \"Click Here\",\"size\": 36,\"style\": \"bold\",\"name\": \"text1\",\"hOffset\": 250,\"vOffset\": 100,\"alignment\": \"center\",\"onMouseUp\": \"sun1.opacity = (sun1.opacity / 100) * 90;\"}}}";
+
 StreamConsumer *toJson(std::string str)
 {
     std::stringstream input(str);
     return StreamConsumer::read(input);
 }
 
-void checkTypes()
+void checkArray()
 {
-    StreamConsumer *root = toJson("{\"test\":\"value\"}");
-    assert(dynamic_cast<JSonObject*>(root->getRoot()) != nullptr);
-    delete root;
-
-    root = toJson("[\"test\",\"value\"]");
-    assert(dynamic_cast<JSonArray*>(root->getRoot()) != nullptr);
-    delete root;
-
-    root = toJson("\"test\"");
-    assert(dynamic_cast<JSonPrimitive<std::string> *>(root->getRoot()) != nullptr);
-    delete root;
-
-    root = toJson("42");
-    assert(dynamic_cast<JSonPrimitive<int> *>(root->getRoot()) != nullptr);
-    delete root;
-
-    root = toJson("42.2");
-    assert(dynamic_cast<JSonPrimitive<float> *>(root->getRoot()) != nullptr);
-    delete root;
-
-    root = toJson(std::to_string((long long)LLONG_MAX));
-    assert(dynamic_cast<JSonPrimitive<long long> *>(root->getRoot()) != nullptr);
-    delete root;
-
-    root = toJson("true");
-    assert(dynamic_cast<JSonPrimitive<bool> *>(root->getRoot()) != nullptr);
-    delete root;
-
-    root = toJson("[true, 42, \"coucou\", 12.34, false]");
+    //Check array
+    StreamConsumer *root = toJson("[true, 42, \"coucou\", 12.34, false]");
     JSonArray *arr = dynamic_cast<JSonArray *>(root->getRoot());
     assert(arr != nullptr);
     JSonArray::const_iterator it = arr->cbegin();
@@ -61,8 +36,38 @@ void checkTypes()
     assert((dynamic_cast<JSonPrimitive<bool> *> (*it)) != nullptr);
     assert(((JSonPrimitive<bool> *)(*it))->getValue() == false);
     delete root;
+}
 
-    root = toJson("{\"bool\":true, \"int\":42, \"str\":\"coucou\", \"float\":12.34, \"arrayOfInt\":[1, 2, 3, 4.5]}");
+void checkTypes()
+{
+    //Check basic types
+    StreamConsumer *root = toJson("{\"test\":\"value\"}");
+    assert(dynamic_cast<JSonObject*>(root->getRoot()) != nullptr);
+    delete root;
+    root = toJson("[\"test\",\"value\"]");
+    assert(dynamic_cast<JSonArray*>(root->getRoot()) != nullptr);
+    delete root;
+    root = toJson("\"test\"");
+    assert(dynamic_cast<JSonPrimitive<std::string> *>(root->getRoot()) != nullptr);
+    delete root;
+    root = toJson("42");
+    assert(dynamic_cast<JSonPrimitive<int> *>(root->getRoot()) != nullptr);
+    delete root;
+    root = toJson("42.2");
+    assert(dynamic_cast<JSonPrimitive<float> *>(root->getRoot()) != nullptr);
+    delete root;
+    root = toJson(std::to_string((long long)LLONG_MAX));
+    assert(dynamic_cast<JSonPrimitive<long long> *>(root->getRoot()) != nullptr);
+    delete root;
+    root = toJson("true");
+    assert(dynamic_cast<JSonPrimitive<bool> *>(root->getRoot()) != nullptr);
+    delete root;
+}
+
+void checkObject()
+{
+    //Check Obj
+    StreamConsumer *root = toJson("{\"bool\":true, \"int\":42, \"str\":\"coucou\", \"float\":12.34, \"arrayOfInt\":[1, 2, 3, 4.5]}");
     assert(dynamic_cast<JSonObject *>(root->getRoot()) != nullptr);
     assert(((JSonObject *)(root->getRoot()))->size() == 5);
     const JSonElement *tmp = ((JSonObject *)(root->getRoot()))->get("bool");
@@ -81,7 +86,7 @@ void checkTypes()
     const JSonArray *arr2 = dynamic_cast<const JSonArray *> (tmp);
     assert(arr2 != nullptr);
     assert(arr2->size() == 4);
-    it = arr2->cbegin();
+    JSonArray::const_iterator it = arr2->cbegin();
     assert((dynamic_cast<JSonPrimitive<int> *> (*it)) != nullptr);
     assert(((JSonPrimitive<int> *)(*it))->getValue() == 1);
     it++;
@@ -96,9 +101,18 @@ void checkTypes()
     delete root;
 }
 
+void checkSample()
+{
+    StreamConsumer *root = toJson(testJson);
+    root->getRoot();
+}
+
 int main(int ac, char **av)
 {
     checkTypes();
+    checkArray();
+    checkObject();
+    checkSample();
     exit(EXIT_SUCCESS);
 }
 

@@ -8,3 +8,8 @@ JSonArray::~JSonArray()
     }
 }
 
+unsigned int JSonArray::size() const
+{
+    return std::list<JSonElement *>::size();
+}
+
