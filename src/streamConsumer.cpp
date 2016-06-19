@@ -15,24 +15,24 @@ StreamConsumer::~StreamConsumer()
 StreamConsumer *StreamConsumer::read(std::istream &stream)
 {
     StreamConsumer *inst = new StreamConsumer(stream);
-    inst->root = inst->readNext();
+    inst->root = inst->readNext(nullptr);
     return inst;
 }
 
-JSonElement *StreamConsumer::readNext()
+JSonElement *StreamConsumer::readNext(JSonContainer *parent)
 {
     std::string buf;
-    JSonElement *root = consumeToken(buf);
+    JSonElement *root = consumeToken(parent, buf);
 
     if (root == nullptr)
     {
         if (buf == "{")
         {
-            return readObject();
+            return readObject(parent);
         }
         else if (buf == "[")
         {
-            return readArray();
+            return readArray(parent);
         }
         else
             return nullptr;
@@ -45,7 +45,7 @@ JSonElement * const StreamConsumer::getRoot() const
     return root;
 }
 
-JSonObject *StreamConsumer::readObject()
+JSonObject *StreamConsumer::readObject(JSonContainer *parent)
 {
     JSonElement *keyObj;
     JSonObject *result = nullptr;
@@ -53,54 +53,54 @@ JSonObject *StreamConsumer::readObject()
 
     do
     {
-        keyObj = consumeToken(buf);
+        keyObj = consumeToken(parent, buf);
         if (result == nullptr && keyObj == nullptr && buf == "}")
-            return new JSonObject();
+            return new JSonObject(parent);
         JSonPrimitive<std::string> *key = dynamic_cast<JSonPrimitive<std::string> *>(keyObj);
         if (key == nullptr)
-            throw new JsonException(stream.tellg());
-        if (consumeToken(buf) != nullptr || buf != ":")
-            throw new JsonException(stream.tellg());
-        JSonElement *child = readNext();
+            throw JsonException(stream.tellg());
+        if (consumeToken(parent, buf) != nullptr || buf != ":")
+            throw JsonException(stream.tellg());
+        JSonElement *child = readNext(parent);
         if (result == nullptr)
-            result = new JSonObject();
+            result = new JSonObject(parent);
         else if (result->contains(key->getValue()))
-            throw new JsonException(stream.tellg()); //Double key
+            throw JsonException(stream.tellg()); //Double key
         result->push(key->getValue(), child);
         delete keyObj;
-        keyObj = consumeToken(buf);
+        keyObj = consumeToken(parent, buf);
     } while (!keyObj && buf != "}");
     return result;
 }
 
-JSonArray *StreamConsumer::readArray()
+JSonArray *StreamConsumer::readArray(JSonContainer *parent)
 {
     JSonArray *result = nullptr;
-    JSonElement *child = readNext();
+    JSonElement *child = readNext(parent);
     std::string buf;
 
     if (child == nullptr && buf == "]")
-        return new JSonArray(); //Empty object
+        return new JSonArray(parent); //Empty object
     do
     {
         if (child == nullptr)
-            throw new JsonException(stream.tellg());
+            throw JsonException(stream.tellg());
         if (result == nullptr)
-            result = new JSonArray();
+            result = new JSonArray(parent);
         result->push_back(child);
-        child = consumeToken(buf);
+        child = consumeToken(parent, buf);
         if (child != nullptr)
-            throw new JsonException(stream.tellg());
+            throw JsonException(stream.tellg());
         else if (buf == "]")
             break;
         else if (buf != ",")
-            throw new JsonException(stream.tellg());
-        child = consumeToken(buf);
+            throw JsonException(stream.tellg());
+        child = consumeToken(parent, buf);
     } while (true);
     return result;
 }
 
-JSonElement *StreamConsumer::consumeToken(std::string &buf)
+JSonElement *StreamConsumer::consumeToken(JSonContainer *parent, std::string &buf)
 {
     bool escaped = false;
     bool inString = false;
@@ -117,7 +117,7 @@ JSonElement *StreamConsumer::consumeToken(std::string &buf)
             if (!escaped)
             {
                 if (c == '"')
-                    return new JSonPrimitive<std::string>(buf);
+                    return new JSonPrimitive<std::string>(parent, buf);
                 else if (c == '\\')
                     escaped = true;
                 else
@@ -128,7 +128,7 @@ JSonElement *StreamConsumer::consumeToken(std::string &buf)
                 if (c == '\\' || c == '"')
                     buf += c;
                 else
-                    throw new JsonEscapedException(c, stream.tellg());
+                    throw JsonEscapedException(c, stream.tellg());
             }
         }
         else if (inBool)
@@ -138,17 +138,17 @@ JSonElement *StreamConsumer::consumeToken(std::string &buf)
             else if (buf == "true")
             {
                 stream.unget();
-                return new JSonPrimitive<bool>(true);
+                return new JSonPrimitive<bool>(parent, true);
             }
             else if (buf == "false")
             {
                 stream.unget();
-                return new JSonPrimitive<bool>(false);
+                return new JSonPrimitive<bool>(parent, false);
             }
             else if (ignoreChar(c))
                 ;
             else
-                throw new JsonFormatException(c, stream.tellg());
+                throw JsonFormatException(c, stream.tellg());
         }
         else if (inNumber)
         {
@@ -163,14 +163,14 @@ JSonElement *StreamConsumer::consumeToken(std::string &buf)
             {
                 stream.unget();
                 if (numberIsFloat)
-                    return new JSonPrimitive<float>(std::stof(buf));
+                    return new JSonPrimitive<float>(parent, std::stof(buf));
                 try
                 {
-                    return new JSonPrimitive<int>(std::stoi(buf));
+                    return new JSonPrimitive<int>(parent, std::stoi(buf));
                 }
                 catch(std::out_of_range e)
                 {
-                    return new JSonPrimitive<long long>(std::stol(buf));
+                    return new JSonPrimitive<long long>(parent, std::stol(buf));
                 }
             }
         }
@@ -198,7 +198,7 @@ JSonElement *StreamConsumer::consumeToken(std::string &buf)
                 inNumber = true;
             }
             else if (!ignoreChar(c))
-                throw new JsonFormatException(c, stream.tellg());
+                throw JsonFormatException(c, stream.tellg());
         }
     }
     buf = "";

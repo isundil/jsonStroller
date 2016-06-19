@@ -6,6 +6,7 @@
 class JSonArray: public JSonContainer, public std::list<JSonElement *>
 {
     public:
+        JSonArray(JSonContainer *parent);
         virtual ~JSonArray();
         virtual unsigned int size() const;
 };

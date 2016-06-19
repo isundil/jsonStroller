@@ -18,11 +18,11 @@ class StreamConsumer
         /**
          * @return true on success
         **/
-        JSonElement *consumeToken(std::string &buf);
-        JSonElement *readNext();
+        JSonElement *consumeToken(JSonContainer *parent, std::string &buf);
+        JSonElement *readNext(JSonContainer *parent);
 
-        JSonObject *readObject();
-        JSonArray *readArray();
+        JSonObject *readObject(JSonContainer *parent);
+        JSonArray *readArray(JSonContainer *parent);
         bool ignoreChar(char c) const noexcept;
 
         std::istream &stream;

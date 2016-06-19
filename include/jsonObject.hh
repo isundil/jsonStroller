@@ -8,6 +8,7 @@ template<typename T> class JSonPrimitive;
 class JSonObject: public JSonContainer, public std::map<std::string, JSonElement*>
 {
     public:
+        JSonObject(JSonContainer *parent);
         virtual ~JSonObject();
 
         void push(const std::string &key, JSonElement *child);

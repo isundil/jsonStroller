@@ -6,7 +6,7 @@ template <typename T>
 class JSonPrimitive: public JSonElement
 {
     public:
-        JSonPrimitive(T const &v);
+        JSonPrimitive(JSonContainer *parent, T const &v);
         virtual ~JSonPrimitive();
 
         T getValue() const;
@@ -20,7 +20,7 @@ class JSonPrimitive: public JSonElement
 };
 
 template<typename T>
-JSonPrimitive<T>::JSonPrimitive(T const &v): value(v)
+JSonPrimitive<T>::JSonPrimitive(JSonContainer *parent, T const &v): JSonElement(parent), value(v)
 { }
 
 template<typename T>
