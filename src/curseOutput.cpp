@@ -9,7 +9,7 @@
 #include "jsonPrimitive.hh"
 #include "optional.hpp"
 
-CurseOutput::CurseOutput(JSonElement *root): data(root), indentLevel(4)
+CurseOutput::CurseOutput(JSonElement *root): data(root), selection(root), indentLevel(4)
 { }
 
 CurseOutput::~CurseOutput()
@@ -22,7 +22,6 @@ void CurseOutput::run()
     {
         redraw();
         refresh();
-        sleep(9);
     } while(readInput());
     shutdown();
 }
@@ -81,40 +80,59 @@ void CurseOutput::redraw(std::pair<int, int> &cursor, const std::pair<int, int> 
 {
     do
     {
+        selected = false;
         if (dynamic_cast<const JSonObject*>(item) != nullptr)
         {
             cursor.first += indentLevel /2;
+            if (selection == item)
+                selected = true;
             write(cursor.first, cursor.second, "{");
+            selected = false;
             cursor.first += indentLevel /2;
             cursor.second++;
             for (JSonObject::const_iterator i = ((JSonObject *)item)->cbegin(); i != ((JSonObject *)item)->cend(); ++i)
             {
                 const std::pair<std::string, JSonElement *> ipair = *i;
+                if (selection == ipair.second)
+                    selected = true;
                 writeKey(ipair.first, cursor);
                 redraw(cursor, maxSize, ipair.second);
+                selected = false;
                 cursor.first -= indentLevel;
             }
             cursor.first -= indentLevel /2;
+            if (selection == item)
+                selected = true;
             write(cursor.first, cursor.second, "}");
+            selected = false;
             cursor.first -= indentLevel /2;
             cursor.second++;
         }
         else if (dynamic_cast<const JSonArray*>(item) != nullptr)
         {
             cursor.first += indentLevel /2;
+            if (selection == item)
+                selected = true;
             write(cursor.first, cursor.second, "[");
+            selected = false;
             cursor.first += indentLevel /2;
             cursor.second++;
             for (JSonArray::const_iterator i = ((JSonArray *)item)->cbegin(); i != ((JSonArray *)item)->cend(); ++i)
                 redraw(cursor, maxSize, *i);
             cursor.first -= indentLevel /2;
+            if (selection == item)
+                selected = true;
             write(cursor.first, cursor.second, "]");
+            selected = false;
             cursor.first -= indentLevel /2;
             cursor.second++;
         }
         else
         {
+            if (item == selection)
+                selected = true;
             write(cursor.first, cursor.second, item->stringify());
+            selected = false;
             cursor.second++;
         }
         t_nextKey next = findNext(item);
@@ -141,7 +159,14 @@ void CurseOutput::write(const int &x, const int &y, JSonElement *item)
 
 void CurseOutput::write(const int &x, const int &y, const std::string &str)
 {
-    mvprintw(y, x, str.c_str());
+    if (selected)
+    {
+        attron(A_REVERSE | A_BOLD);
+        mvprintw(y, x, str.c_str());
+        attroff(A_REVERSE | A_BOLD);
+    }
+    else
+        mvprintw(y, x, str.c_str());
 }
 
 /**
@@ -154,7 +179,15 @@ void CurseOutput::write(const int &x, const int &y, const std::string &str)
 **/
 bool CurseOutput::readInput()
 {
-    //TODO
+    while (1)
+    {
+        char c = getch();
+        std::string debug = std::to_string((int) c);
+        mvprintw(0, 0, debug.c_str());
+        mvprintw(1, 1, std::to_string(time(NULL)).c_str());
+        refresh();
+    }
+    sleep(9);
     return false;
 }
 
@@ -163,6 +196,7 @@ void CurseOutput::init()
     initscr();
     noecho();
     curs_set(false);
+    cbreak();
     topleft.first = std::pair<unsigned int, unsigned int>(0, 0);
     topleft.second = data;
 }

@@ -1,5 +1,8 @@
 #pragma once
 
+#include <fstream>
+#include <ios>
+
 class JSonElement;
 template<class T> class Optional;
 
@@ -26,10 +29,8 @@ class CurseOutput
         void write(const int &x, const int &y, const std::string &item);
         void writeKey(const std::string &key, std::pair<int, int> &cursor);
 
-        unsigned int offset_x;
-        unsigned int offset_y;
-
-        const JSonElement *data;
+        const JSonElement *data, *selection;
+        bool selected;
         std::pair<std::pair<unsigned int, unsigned int>, const JSonElement *> topleft;
         const unsigned int indentLevel;
 };
