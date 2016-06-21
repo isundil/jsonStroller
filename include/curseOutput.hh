@@ -30,6 +30,8 @@ class CurseOutput
         void writeKey(const std::string &key, std::pair<int, int> &cursor);
 
         const JSonElement *data, *selection;
+        const JSonElement *select_up, *select_down;
+        bool selectFound;
         bool selected;
         std::pair<std::pair<unsigned int, unsigned int>, const JSonElement *> topleft;
         const unsigned int indentLevel;

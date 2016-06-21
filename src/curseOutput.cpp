@@ -31,7 +31,13 @@ void CurseOutput::redraw()
     std::pair<int, int> screenSize;
     std::pair<int, int> cursor(topleft.second->getLevel() * indentLevel, 0);
 
+    select_up = select_down = nullptr;
+    selectFound = false;
     redraw(cursor, screenSize, topleft.second);
+    if (!select_down)
+        select_down = selection;
+    if (!select_up)
+        select_up = selection;
 }
 
 CurseOutput::t_nextKey CurseOutput::findNext(const JSonElement *item)
@@ -85,22 +91,26 @@ void CurseOutput::redraw(std::pair<int, int> &cursor, const std::pair<int, int> 
         {
             cursor.first += indentLevel /2;
             if (selection == item)
-                selected = true;
+                selected = selectFound = true;
+            else if (!selectFound)
+                select_up = item;
+            else if (!select_down)
+                select_down = item;
             write(cursor.first, cursor.second, "{");
             selected = false;
-            cursor.first += indentLevel /2;
             cursor.second++;
             for (JSonObject::const_iterator i = ((JSonObject *)item)->cbegin(); i != ((JSonObject *)item)->cend(); ++i)
             {
                 const std::pair<std::string, JSonElement *> ipair = *i;
                 if (selection == ipair.second)
                     selected = true;
+                cursor.first += indentLevel /2;
                 writeKey(ipair.first, cursor);
+                cursor.first -= indentLevel /2;
                 redraw(cursor, maxSize, ipair.second);
                 selected = false;
                 cursor.first -= indentLevel;
             }
-            cursor.first -= indentLevel /2;
             if (selection == item)
                 selected = true;
             write(cursor.first, cursor.second, "}");
@@ -112,7 +122,11 @@ void CurseOutput::redraw(std::pair<int, int> &cursor, const std::pair<int, int> 
         {
             cursor.first += indentLevel /2;
             if (selection == item)
-                selected = true;
+                selected = selectFound = true;
+            else if (!selectFound)
+                select_up = item;
+            else if (!select_down)
+                select_down = item;
             write(cursor.first, cursor.second, "[");
             selected = false;
             cursor.first += indentLevel /2;
@@ -130,7 +144,11 @@ void CurseOutput::redraw(std::pair<int, int> &cursor, const std::pair<int, int> 
         else
         {
             if (item == selection)
-                selected = true;
+                selectFound = selected = true;
+            else if (!selectFound)
+                select_up = item;
+            else if (!select_down)
+                select_down = item;
             write(cursor.first, cursor.second, item->stringify());
             selected = false;
             cursor.second++;
@@ -181,13 +199,31 @@ bool CurseOutput::readInput()
 {
     while (1)
     {
-        char c = getch();
-        std::string debug = std::to_string((int) c);
-        mvprintw(0, 0, debug.c_str());
-        mvprintw(1, 1, std::to_string(time(NULL)).c_str());
-        refresh();
+        int c;
+        while ((c = wgetch(stdscr)) == ERR);
+
+        switch (c)
+        {
+            case 'q':
+            case 'Q':
+                return false;
+
+            case KEY_UP:
+            case 'K':
+            case 'k':
+                selection = select_up;
+                return true;
+
+            case KEY_DOWN:
+            case 'j':
+            case 'J':
+                selection = select_down;
+                return true;
+
+            default:
+                return true;
+        }
     }
-    sleep(9);
     return false;
 }
 
@@ -195,8 +231,11 @@ void CurseOutput::init()
 {
     initscr();
     noecho();
-    curs_set(false);
     cbreak();
+    clear();
+    keypad(stdscr, true);
+    curs_set(false);
+    nodelay(stdscr, true);
     topleft.first = std::pair<unsigned int, unsigned int>(0, 0);
     topleft.second = data;
 }
