@@ -1,7 +1,6 @@
 #include<iostream>
 
 #include <unistd.h>
-#include <ncurses.h>
 #include <utility>
 #include "curseOutput.hh"
 #include "jsonObject.hh"
@@ -33,11 +32,18 @@ void CurseOutput::redraw()
 
     select_up = select_down = nullptr;
     selectFound = false;
+    getScreenSize(screenSize);
     redraw(cursor, screenSize, topleft.second);
+    move(screenSize.second, screenSize.first);
     if (!select_down)
         select_down = selection;
     if (!select_up)
         select_up = selection;
+}
+
+void CurseOutput::getScreenSize(std::pair<int, int> &ss)
+{
+    getmaxyx(stdscr, ss.second, ss.first);
 }
 
 CurseOutput::t_nextKey CurseOutput::findNext(const JSonElement *item)
@@ -233,15 +239,29 @@ void CurseOutput::init()
     noecho();
     cbreak();
     clear();
-    keypad(stdscr, true);
     curs_set(false);
     nodelay(stdscr, true);
+    if (!isatty(fileno(stdin)) || !isatty(fileno(stdout)))
+    {
+        screen_fd = fopen("/dev/tty", "r+");
+        setbuf(screen_fd, nullptr);
+        screen = newterm(nullptr, screen_fd, screen_fd);
+    }
+    else
+        screen = newterm(nullptr, stdout, stdin);
+    keypad(stdscr, true);
     topleft.first = std::pair<unsigned int, unsigned int>(0, 0);
     topleft.second = data;
 }
 
 void CurseOutput::shutdown()
 {
+    delscreen(screen);
     endwin();
+    if (screen_fd)
+    {
+        fclose(screen_fd);
+        screen_fd = nullptr;
+    }
 }
 

@@ -2,6 +2,7 @@
 
 #include <fstream>
 #include <ios>
+#include <ncurses.h>
 
 class JSonElement;
 template<class T> class Optional;
@@ -31,6 +32,8 @@ class CurseOutput
 
         const JSonElement *data, *selection;
         const JSonElement *select_up, *select_down;
+        SCREEN *screen;
+        FILE *screen_fd;
         bool selectFound;
         bool selected;
         std::pair<std::pair<unsigned int, unsigned int>, const JSonElement *> topleft;
