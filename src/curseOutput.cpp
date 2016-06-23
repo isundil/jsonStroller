@@ -33,7 +33,6 @@ void CurseOutput::loop()
     do
     {
         redraw();
-        refresh();
     } while(readInput());
 }
 
@@ -44,7 +43,6 @@ bool CurseOutput::onsig(int signo)
     case SIGWINCH:
         clear();
         redraw();
-        refresh();
         break;
 
     case SIGKILL:
@@ -69,22 +67,25 @@ static void _resizeFnc(int signo)
 void CurseOutput::redraw()
 {
     std::pair<int, int> screenSize;
-    std::pair<int, int> cursor(topleft.second->getLevel() * indentLevel, 0);
+    std::pair<int, int> cursor;
 
     select_up = select_down = nullptr;
     selectFound = false;
-    getScreenSize(screenSize);
+    getScreenSize(screenSize, cursor);
+    cursor.first += topleft.second->getLevel() * indentLevel;
     redraw(cursor, screenSize, topleft.second);
     move(screenSize.second, screenSize.first);
     if (!select_down)
         select_down = selection;
     if (!select_up)
         select_up = selection;
+    refresh();
 }
 
-void CurseOutput::getScreenSize(std::pair<int, int> &ss)
+void CurseOutput::getScreenSize(std::pair<int, int> &ss, std::pair<int, int> &bs)
 {
     getmaxyx(stdscr, ss.second, ss.first);
+    getbegyx(stdscr, bs.second, bs.first);
 }
 
 CurseOutput::t_nextKey CurseOutput::findNext(const JSonElement *item)
@@ -129,7 +130,7 @@ CurseOutput::t_nextKey CurseOutput::findNext(const JSonElement *item)
     return t_nextKey::empty(); // Primitive, can't have child (impossible)
 }
 
-void CurseOutput::redraw(std::pair<int, int> &cursor, const std::pair<int, int> &maxSize, const JSonElement *item)
+bool CurseOutput::redraw(std::pair<int, int> &cursor, const std::pair<int, int> &maxSize, const JSonElement *item)
 {
     do
     {
@@ -143,19 +144,24 @@ void CurseOutput::redraw(std::pair<int, int> &cursor, const std::pair<int, int> 
             else if (!select_down)
                 select_down = item;
             write(cursor.first, cursor.second, "{", selection == item);
-            cursor.second++;
+            if (++cursor.second > maxSize.second)
+                return false;
             for (JSonObject::const_iterator i = ((JSonObject *)item)->cbegin(); i != ((JSonObject *)item)->cend(); ++i)
             {
                 const std::pair<std::string, JSonElement *> ipair = *i;
                 cursor.first += indentLevel /2;
                 writeKey(ipair.first, cursor, selection == ipair.second);
+                // TODO write primitive<> values inline
                 cursor.first -= indentLevel /2;
-                redraw(cursor, maxSize, ipair.second);
+                if (!redraw(cursor, maxSize, ipair.second))
+                    return false;
                 cursor.first -= indentLevel;
             }
             write(cursor.first, cursor.second, "}", selection == item);
             cursor.first -= indentLevel /2;
             cursor.second++;
+            if (++cursor.second > maxSize.second)
+                return false;
         }
         else if (dynamic_cast<const JSonArray*>(item) != nullptr)
         {
@@ -168,13 +174,16 @@ void CurseOutput::redraw(std::pair<int, int> &cursor, const std::pair<int, int> 
                 select_down = item;
             write(cursor.first, cursor.second, "[", selection == item);
             cursor.first += indentLevel /2;
-            cursor.second++;
+            if (++cursor.second > maxSize.second)
+                return false;
             for (JSonArray::const_iterator i = ((JSonArray *)item)->cbegin(); i != ((JSonArray *)item)->cend(); ++i)
-                redraw(cursor, maxSize, *i);
+                if (!redraw(cursor, maxSize, *i))
+                    return false;
             cursor.first -= indentLevel /2;
             write(cursor.first, cursor.second, "]", selection == item);
             cursor.first -= indentLevel /2;
-            cursor.second++;
+            if (++cursor.second > maxSize.second)
+                return false;
         }
         else
         {
@@ -185,7 +194,8 @@ void CurseOutput::redraw(std::pair<int, int> &cursor, const std::pair<int, int> 
             else if (!select_down)
                 select_down = item;
             write(cursor.first, cursor.second, item, selection == item);
-            cursor.second++;
+            if (++cursor.second > maxSize.second)
+                return false;
         }
         t_nextKey next = findNext(item);
         if (next.isAbsent())
@@ -194,6 +204,7 @@ void CurseOutput::redraw(std::pair<int, int> &cursor, const std::pair<int, int> 
         if (next.value().first.isPresent())
             writeKey(next.value().first.value(), cursor, selection == item);
     } while (true);
+    return true;
 }
 
 void CurseOutput::writeKey(const std::string &key, std::pair<int, int> &cursor, bool selected)
@@ -233,7 +244,7 @@ bool CurseOutput::readInput()
     while (!breakLoop)
     {
         int c;
-        c = wgetch(stdscr);
+        c = getch();
 
         switch (c)
         {
@@ -259,7 +270,6 @@ bool CurseOutput::readInput()
 
 void CurseOutput::init()
 {
-    initscr();
     if (!isatty(fileno(stdin)) || !isatty(fileno(stdout)))
     {
         screen_fd = fopen("/dev/tty", "r+");
@@ -284,16 +294,13 @@ void CurseOutput::init()
 
 void CurseOutput::shutdown()
 {
-    if (screen)
+    endwin();
+    delscreen(screen);
+    if (screen_fd)
     {
-        delscreen(screen);
-        endwin();
-        if (screen_fd)
-        {
-            fclose(screen_fd);
-            screen_fd = nullptr;
-        }
-        screen = nullptr;
+        fclose(screen_fd);
+        screen_fd = nullptr;
     }
+    screen = nullptr;
 }
 
