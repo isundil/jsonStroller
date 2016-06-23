@@ -1,12 +1,16 @@
 #include<iostream>
 
 #include <unistd.h>
+#include <signal.h>
+#include <string.h>
 #include <utility>
 #include "curseOutput.hh"
 #include "jsonObject.hh"
 #include "jsonArray.hh"
 #include "jsonPrimitive.hh"
 #include "optional.hpp"
+
+static CurseOutput *runningInst = nullptr;
 
 CurseOutput::CurseOutput(JSonElement *root): data(root), selection(root), indentLevel(4)
 { }
@@ -16,13 +20,50 @@ CurseOutput::~CurseOutput()
 
 void CurseOutput::run()
 {
+    runningInst = this;
     init();
+    loop();
+    shutdown();
+    runningInst = nullptr;
+}
+
+void CurseOutput::loop()
+{
+    breakLoop = false;
     do
     {
         redraw();
         refresh();
     } while(readInput());
-    shutdown();
+}
+
+bool CurseOutput::onsig(int signo)
+{
+    switch (signo)
+    {
+    case SIGWINCH:
+        clear();
+        redraw();
+        refresh();
+        break;
+
+    case SIGKILL:
+    case SIGINT:
+    case SIGTERM:
+        breakLoop = true;
+        break;
+
+    default:
+        return false;
+    }
+    return true;
+}
+
+static void _resizeFnc(int signo)
+{
+    if (!runningInst)
+        return;
+    runningInst->onsig(signo);
 }
 
 void CurseOutput::redraw()
@@ -92,35 +133,27 @@ void CurseOutput::redraw(std::pair<int, int> &cursor, const std::pair<int, int> 
 {
     do
     {
-        selected = false;
         if (dynamic_cast<const JSonObject*>(item) != nullptr)
         {
             cursor.first += indentLevel /2;
             if (selection == item)
-                selected = selectFound = true;
+                selectFound = true;
             else if (!selectFound)
                 select_up = item;
             else if (!select_down)
                 select_down = item;
-            write(cursor.first, cursor.second, "{");
-            selected = false;
+            write(cursor.first, cursor.second, "{", selection == item);
             cursor.second++;
             for (JSonObject::const_iterator i = ((JSonObject *)item)->cbegin(); i != ((JSonObject *)item)->cend(); ++i)
             {
                 const std::pair<std::string, JSonElement *> ipair = *i;
-                if (selection == ipair.second)
-                    selected = true;
                 cursor.first += indentLevel /2;
-                writeKey(ipair.first, cursor);
+                writeKey(ipair.first, cursor, selection == ipair.second);
                 cursor.first -= indentLevel /2;
                 redraw(cursor, maxSize, ipair.second);
-                selected = false;
                 cursor.first -= indentLevel;
             }
-            if (selection == item)
-                selected = true;
-            write(cursor.first, cursor.second, "}");
-            selected = false;
+            write(cursor.first, cursor.second, "}", selection == item);
             cursor.first -= indentLevel /2;
             cursor.second++;
         }
@@ -128,60 +161,54 @@ void CurseOutput::redraw(std::pair<int, int> &cursor, const std::pair<int, int> 
         {
             cursor.first += indentLevel /2;
             if (selection == item)
-                selected = selectFound = true;
+                selectFound = true;
             else if (!selectFound)
                 select_up = item;
             else if (!select_down)
                 select_down = item;
-            write(cursor.first, cursor.second, "[");
-            selected = false;
+            write(cursor.first, cursor.second, "[", selection == item);
             cursor.first += indentLevel /2;
             cursor.second++;
             for (JSonArray::const_iterator i = ((JSonArray *)item)->cbegin(); i != ((JSonArray *)item)->cend(); ++i)
                 redraw(cursor, maxSize, *i);
             cursor.first -= indentLevel /2;
-            if (selection == item)
-                selected = true;
-            write(cursor.first, cursor.second, "]");
-            selected = false;
+            write(cursor.first, cursor.second, "]", selection == item);
             cursor.first -= indentLevel /2;
             cursor.second++;
         }
         else
         {
             if (item == selection)
-                selectFound = selected = true;
+                selectFound = true;
             else if (!selectFound)
                 select_up = item;
             else if (!select_down)
                 select_down = item;
-            write(cursor.first, cursor.second, item->stringify());
-            selected = false;
+            write(cursor.first, cursor.second, item, selection == item);
             cursor.second++;
         }
         t_nextKey next = findNext(item);
         if (next.isAbsent())
             break;
-        if (next.value().first.isPresent())
-            writeKey(next.value().first.value(), cursor);
         item = next.value().second;
+        if (next.value().first.isPresent())
+            writeKey(next.value().first.value(), cursor, selection == item);
     } while (true);
 }
 
-void CurseOutput::writeKey(const std::string &key, std::pair<int, int> &cursor)
+void CurseOutput::writeKey(const std::string &key, std::pair<int, int> &cursor, bool selected)
 {
-    write(cursor.first, cursor.second, key +": ");
+    write(cursor.first, cursor.second, key +": ", selected);
     cursor.first += indentLevel;
     cursor.second++;
 }
 
-void CurseOutput::write(const int &x, const int &y, JSonElement *item)
+void CurseOutput::write(const int &x, const int &y, const JSonElement *item, bool selected)
 {
-    std::string str = item->stringify();
-    write(x, y, str);
+    write(x, y, item->stringify(), selected);
 }
 
-void CurseOutput::write(const int &x, const int &y, const std::string &str)
+void CurseOutput::write(const int &x, const int &y, const std::string &str, bool selected)
 {
     if (selected)
     {
@@ -203,10 +230,10 @@ void CurseOutput::write(const int &x, const int &y, const std::string &str)
 **/
 bool CurseOutput::readInput()
 {
-    while (1)
+    while (!breakLoop)
     {
         int c;
-        while ((c = wgetch(stdscr)) == ERR);
+        c = wgetch(stdscr);
 
         switch (c)
         {
@@ -225,9 +252,6 @@ bool CurseOutput::readInput()
             case 'J':
                 selection = select_down;
                 return true;
-
-            default:
-                return true;
         }
     }
     return false;
@@ -236,11 +260,6 @@ bool CurseOutput::readInput()
 void CurseOutput::init()
 {
     initscr();
-    noecho();
-    cbreak();
-    clear();
-    curs_set(false);
-    nodelay(stdscr, true);
     if (!isatty(fileno(stdin)) || !isatty(fileno(stdout)))
     {
         screen_fd = fopen("/dev/tty", "r+");
@@ -249,19 +268,32 @@ void CurseOutput::init()
     }
     else
         screen = newterm(nullptr, stdout, stdin);
+    wtimeout(stdscr, 150);
+    cbreak();
+    clear();
+    curs_set(false);
     keypad(stdscr, true);
+
+    signal(SIGWINCH, _resizeFnc);
+    signal(SIGINT, _resizeFnc);
+    signal(SIGTERM, _resizeFnc);
+    signal(SIGKILL, _resizeFnc);
     topleft.first = std::pair<unsigned int, unsigned int>(0, 0);
     topleft.second = data;
 }
 
 void CurseOutput::shutdown()
 {
-    delscreen(screen);
-    endwin();
-    if (screen_fd)
+    if (screen)
     {
-        fclose(screen_fd);
-        screen_fd = nullptr;
+        delscreen(screen);
+        endwin();
+        if (screen_fd)
+        {
+            fclose(screen_fd);
+            screen_fd = nullptr;
+        }
+        screen = nullptr;
     }
 }
 

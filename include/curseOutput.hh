@@ -14,9 +14,11 @@ class CurseOutput
         virtual ~CurseOutput();
 
         void run();
+        bool onsig(int signo);
 
     private:
         typedef Optional<std::pair<Optional<const std::string>, const JSonElement *> > t_nextKey;
+        virtual void loop();
 
     protected:
         void init();
@@ -26,17 +28,19 @@ class CurseOutput
         bool readInput();
         void getScreenSize(std::pair<int, int> &);
         static CurseOutput::t_nextKey findNext(const JSonElement *);
-        void write(const int &x, const int &y, JSonElement *item);
-        void write(const int &x, const int &y, const std::string &item);
-        void writeKey(const std::string &key, std::pair<int, int> &cursor);
+        void write(const int &x, const int &y, const JSonElement *item, bool selected);
+        void write(const int &x, const int &y, const std::string &item, bool selected);
+        void writeKey(const std::string &key, std::pair<int, int> &cursor, bool selected);
 
         const JSonElement *data, *selection;
-        const JSonElement *select_up, *select_down;
         SCREEN *screen;
+        bool breakLoop;
         FILE *screen_fd;
-        bool selectFound;
-        bool selected;
         std::pair<std::pair<unsigned int, unsigned int>, const JSonElement *> topleft;
         const unsigned int indentLevel;
+
+        //FIXME optimize
+        const JSonElement *select_up, *select_down;
+        bool selectFound;
 };
 
