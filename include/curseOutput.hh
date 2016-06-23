@@ -31,8 +31,8 @@ class CurseOutput
         bool readInput();
         void getScreenSize(std::pair<int, int> &, std::pair<int, int> &);
         static CurseOutput::t_nextKey findNext(const JSonElement *);
-        void write(const int &x, const int &y, const JSonElement *item, bool selected);
-        void write(const int &x, const int &y, const std::string &item, bool selected);
+        void write(const int &x, const int &y, const JSonElement *item, bool selected =false);
+        void write(const int &x, const int &y, const std::string &item, bool selected =false);
         void writeKey(const std::string &key, std::pair<int, int> &cursor, bool selected);
 
         const JSonElement *data, *selection;

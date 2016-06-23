@@ -1,9 +1,11 @@
 #include<iostream>
 
+#include <sys/ioctl.h>
 #include <unistd.h>
 #include <signal.h>
 #include <string.h>
 #include <utility>
+
 #include "curseOutput.hh"
 #include "jsonObject.hh"
 #include "jsonArray.hh"
@@ -38,9 +40,13 @@ void CurseOutput::loop()
 
 bool CurseOutput::onsig(int signo)
 {
+    struct winsize size;
+
     switch (signo)
     {
     case SIGWINCH:
+        if (ioctl(fileno(screen_fd ? screen_fd : stdout), TIOCGWINSZ, &size) == 0)
+            resize_term(size.ws_row, size.ws_col);
         clear();
         redraw();
         break;
