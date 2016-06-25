@@ -15,6 +15,9 @@ class JSonObject: public JSonContainer, public std::map<std::string, JSonElement
         virtual unsigned int size() const;
         bool contains(const std::string &) const;
 
+        virtual JSonElement *firstChild();
+        virtual const JSonElement *firstChild() const;
+
         const JSonElement* get(const std::string &) const;
 };
 

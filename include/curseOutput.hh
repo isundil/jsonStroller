@@ -2,9 +2,11 @@
 
 #include <fstream>
 #include <ios>
+#include <set>
 #include <ncurses.h>
 
 class JSonElement;
+class JSonContainer;
 template<class T> class Optional;
 
 class CurseOutput
@@ -27,13 +29,15 @@ class CurseOutput
         /**
          * return false if bottom of screen is touched
         **/
-        bool redraw(std::pair<int, int> &, const std::pair<int, int>&, const JSonElement *);
+        bool redraw(std::pair<int, int> &, const std::pair<int, int>&, const JSonElement *, const JSonContainer *);
         bool readInput();
         void getScreenSize(std::pair<int, int> &, std::pair<int, int> &);
         static CurseOutput::t_nextKey findNext(const JSonElement *);
         void write(const int &x, const int &y, const JSonElement *item, bool selected =false);
         void write(const int &x, const int &y, const std::string &item, bool selected =false);
         void writeKey(const std::string &key, std::pair<int, int> &cursor, bool selected);
+
+        std::set<const JSonContainer *> collapsed;
 
         const JSonElement *data, *selection;
         SCREEN *screen;
@@ -43,7 +47,7 @@ class CurseOutput
         const unsigned int indentLevel;
 
         //FIXME optimize
-        const JSonElement *select_up, *select_down;
+        const JSonElement *select_up, *select_down, *select_parent;
         bool selectFound;
 };
 

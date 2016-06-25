@@ -16,3 +16,17 @@ unsigned int JSonArray::size() const
     return std::list<JSonElement *>::size();
 }
 
+JSonElement *JSonArray::firstChild()
+{
+    if (begin() == end())
+        return nullptr;
+    return *begin();
+}
+
+const JSonElement *JSonArray::firstChild() const
+{
+    if (cbegin() == cend())
+        return nullptr;
+    return *cbegin();
+}
+

@@ -33,3 +33,17 @@ unsigned int JSonObject::size() const
     return std::map<std::string, JSonElement *>::size();
 }
 
+JSonElement *JSonObject::firstChild()
+{
+    if (begin() == end())
+        return nullptr;
+    return (*begin()).second;
+}
+
+const JSonElement *JSonObject::firstChild() const
+{
+    if (cbegin() == cend())
+        return nullptr;
+    return (*cbegin()).second;
+}
+
