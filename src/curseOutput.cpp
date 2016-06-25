@@ -253,8 +253,14 @@ void CurseOutput::write(const int &x, const int &y, const JSonElement *item, boo
 
 void CurseOutput::write(const int &x, const int &y, const char item, bool selected)
 {
-    char bf[2] = { item, '\0' };
-    write(x, y, bf, selected);
+    if (selected)
+    {
+        attron(A_REVERSE | A_BOLD);
+        mvprintw(y, x, "%c", item);
+        attroff(A_REVERSE | A_BOLD);
+    }
+    else
+        mvprintw(y, x, "%c", item);
 }
 
 void CurseOutput::write(const int &x, const int &y, const char *str, bool selected)
@@ -262,11 +268,11 @@ void CurseOutput::write(const int &x, const int &y, const char *str, bool select
     if (selected)
     {
         attron(A_REVERSE | A_BOLD);
-        mvprintw(y, x, str);
+        mvprintw(y, x, "%s", str);
         attroff(A_REVERSE | A_BOLD);
     }
     else
-        mvprintw(y, x, str);
+        mvprintw(y, x, "%s", str);
 }
 
 void CurseOutput::write(const int &x, const int &y, const std::string &str, bool selected)
