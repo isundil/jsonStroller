@@ -7,6 +7,8 @@
 
 class JSonElement;
 class JSonContainer;
+class JSonArray;
+class JSonObject;
 template<class T> class Optional;
 
 class CurseOutput
@@ -35,7 +37,12 @@ class CurseOutput
         static CurseOutput::t_nextKey findNext(const JSonElement *);
         void write(const int &x, const int &y, const JSonElement *item, bool selected =false);
         void write(const int &x, const int &y, const std::string &item, bool selected =false);
+        void write(const int &x, const int &y, const char item, bool selected =false);
+        void write(const int &x, const int &y, const char *item, bool selected =false);
         void writeKey(const std::string &key, std::pair<int, int> &cursor, bool selected);
+        bool writeContainer(std::pair<int, int> &, const std::pair<int, int>&, const JSonContainer *, const JSonContainer *);
+        bool writeContent(std::pair<int, int> &cursor, const std::pair<int, int> &maxSize, const JSonArray * obj);
+        bool writeContent(std::pair<int, int> &cursor, const std::pair<int, int> &maxSize, const JSonObject * obj);
 
         std::set<const JSonContainer *> collapsed;
 

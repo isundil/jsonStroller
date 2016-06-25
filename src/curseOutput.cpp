@@ -143,74 +143,9 @@ bool CurseOutput::redraw(std::pair<int, int> &cursor, const std::pair<int, int> 
 {
     do
     {
-        if (dynamic_cast<const JSonObject*>(item) != nullptr)
+        if (dynamic_cast<const JSonContainer*>(item))
         {
-            if (selection == item)
-            {
-                select_parent = parent;
-                selectFound = true;
-            }
-            else if (!selectFound)
-                select_up = item;
-            else if (!select_down)
-                select_down = item;
-            
-            cursor.first += indentLevel /2;
-            if (collapsed.find((const JSonContainer *)item) != collapsed.end())
-                write(cursor.first, cursor.second, "{ ... }", selection == item);
-            else
-            {
-                write(cursor.first, cursor.second, "{", selection == item);
-                if (++cursor.second > maxSize.second)
-                    return false;
-                for (JSonObject::const_iterator i = ((JSonObject *)item)->cbegin(); i != ((JSonObject *)item)->cend(); ++i)
-                {
-                    const std::pair<std::string, JSonElement *> ipair = *i;
-                    cursor.first += indentLevel /2;
-                    writeKey(ipair.first, cursor, selection == ipair.second);
-                    // TODO write primitive<> values / collapsed inline
-                    cursor.first -= indentLevel /2;
-                    if (!redraw(cursor, maxSize, ipair.second, (JSonContainer *) item))
-                        return false;
-                    cursor.first -= indentLevel;
-                }
-                write(cursor.first, cursor.second, "}", selection == item);
-            }
-            cursor.first -= indentLevel /2;
-            if (++cursor.second > maxSize.second)
-                return false;
-        }
-        else if (dynamic_cast<const JSonArray*>(item) != nullptr)
-        {
-            if (selection == item)
-            {
-                select_parent = parent;
-                selectFound = true;
-            }
-            else if (!selectFound)
-                select_up = item;
-            else if (!select_down)
-                select_down = item;
-
-            cursor.first += indentLevel /2;
-            if (collapsed.find((const JSonContainer *)item) != collapsed.end())
-                write(cursor.first, cursor.second, "[ ... ]", selection == item);
-            else
-            {
-                write(cursor.first, cursor.second, "[", selection == item);
-                cursor.first += indentLevel /2;
-                if (++cursor.second > maxSize.second)
-                    return false;
-                for (JSonArray::const_iterator i = ((JSonArray *)item)->cbegin(); i != ((JSonArray *)item)->cend(); ++i)
-                {
-                    if (!redraw(cursor, maxSize, *i, (JSonContainer *)item))
-                        return false;
-                }
-                cursor.first -= indentLevel /2;
-                write(cursor.first, cursor.second, "]", selection == item);
-            }
-            cursor.first -= indentLevel /2;
-            if (++cursor.second > maxSize.second)
+            if (!writeContainer(cursor, maxSize, (const JSonContainer *) item, parent))
                 return false;
         }
         else
@@ -238,6 +173,72 @@ bool CurseOutput::redraw(std::pair<int, int> &cursor, const std::pair<int, int> 
     return true;
 }
 
+bool CurseOutput::writeContainer(std::pair<int, int> &cursor, const std::pair<int, int> &maxSize, const JSonContainer *item, const JSonContainer *parent)
+{
+    char childDelimiter[2];
+    bool isObject = dynamic_cast<const JSonObject *>(item);
+
+    if (isObject)
+        memcpy(childDelimiter, "{}", sizeof(*childDelimiter) * 2);
+    else
+        memcpy(childDelimiter, "[]", sizeof(*childDelimiter) * 2);
+
+    if (selection == item)
+    {
+        select_parent = parent;
+        selectFound = true;
+    }
+    else if (!selectFound)
+        select_up = item;
+    else if (!select_down)
+        select_down = item;
+
+    cursor.first += indentLevel /2;
+    if (collapsed.find((const JSonContainer *)item) != collapsed.end())
+    {
+        std::string ss;
+        ss.append(&childDelimiter[0], 1).append(" ... ").append(&childDelimiter[1], 1);
+        write(cursor.first, cursor.second, ss, selection == item);
+        return !(++cursor.second > maxSize.second);
+    }
+
+    write(cursor.first, cursor.second, childDelimiter[0], selection == item);
+    if (++cursor.second > maxSize.second)
+        return false;
+
+    if (isObject)
+        writeContent(cursor, maxSize, (const JSonObject *)item);
+    else
+        writeContent(cursor, maxSize, (const JSonArray *)item);
+    write(cursor.first, cursor.second, childDelimiter[1], selection == item);
+    cursor.first -= indentLevel /2;
+    return !(++cursor.second > maxSize.second);
+}
+
+bool CurseOutput::writeContent(std::pair<int, int> &cursor, const std::pair<int, int> &maxSize, const JSonArray *item)
+{
+    for (JSonArray::const_iterator i = ((JSonArray *)item)->cbegin(); i != ((JSonArray *)item)->cend(); ++i)
+        if (!redraw(cursor, maxSize, *i, (JSonContainer *)item))
+            return false;
+    return true;
+}
+
+bool CurseOutput::writeContent(std::pair<int, int> &cursor, const std::pair<int, int> &maxSize, const JSonObject *item)
+{
+    for (JSonObject::const_iterator i = ((JSonObject *)item)->cbegin(); i != ((JSonObject *)item)->cend(); ++i)
+    {
+        const std::pair<std::string, JSonElement *> ipair = *i;
+        cursor.first += indentLevel /2;
+        writeKey(ipair.first, cursor, selection == ipair.second);
+        // TODO write primitive<> values / collapsed inline
+        cursor.first -= indentLevel /2;
+        if (!redraw(cursor, maxSize, ipair.second, (JSonContainer *) item))
+            return false;
+        cursor.first -= indentLevel;
+    }
+    return true;
+}
+
 void CurseOutput::writeKey(const std::string &key, std::pair<int, int> &cursor, bool selected)
 {
     write(cursor.first, cursor.second, key +": ", selected);
@@ -250,16 +251,27 @@ void CurseOutput::write(const int &x, const int &y, const JSonElement *item, boo
     write(x, y, item->stringify(), selected);
 }
 
-void CurseOutput::write(const int &x, const int &y, const std::string &str, bool selected)
+void CurseOutput::write(const int &x, const int &y, const char item, bool selected)
+{
+    char bf[2] = { item, '\0' };
+    write(x, y, bf, selected);
+}
+
+void CurseOutput::write(const int &x, const int &y, const char *str, bool selected)
 {
     if (selected)
     {
         attron(A_REVERSE | A_BOLD);
-        mvprintw(y, x, str.c_str());
+        mvprintw(y, x, str);
         attroff(A_REVERSE | A_BOLD);
     }
     else
-        mvprintw(y, x, str.c_str());
+        mvprintw(y, x, str);
+}
+
+void CurseOutput::write(const int &x, const int &y, const std::string &str, bool selected)
+{
+    write(x, y, str.c_str(), selected);
 }
 
 /**
