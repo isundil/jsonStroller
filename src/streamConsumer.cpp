@@ -76,8 +76,8 @@ JSonObject *StreamConsumer::readObject(JSonContainer *parent)
 JSonArray *StreamConsumer::readArray(JSonContainer *parent)
 {
     JSonArray *result = nullptr;
-    JSonElement *child = readNext(parent);
     std::string buf;
+    JSonElement *child = consumeToken(parent, buf);
 
     if (child == nullptr && buf == "]")
         return new JSonArray(parent); //Empty object
