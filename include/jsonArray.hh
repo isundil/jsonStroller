@@ -12,5 +12,7 @@ class JSonArray: public JSonContainer, public std::list<JSonElement *>
 
         virtual JSonElement *firstChild();
         virtual const JSonElement *firstChild() const;
+
+        virtual std::string stringify() const;
 };
 

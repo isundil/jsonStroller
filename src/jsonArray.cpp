@@ -30,3 +30,8 @@ const JSonElement *JSonArray::firstChild() const
     return *cbegin();
 }
 
+std::string JSonArray::stringify() const
+{
+    return "[ ]";
+}
+

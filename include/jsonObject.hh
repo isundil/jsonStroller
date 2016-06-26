@@ -19,5 +19,7 @@ class JSonObject: public JSonContainer, public std::map<std::string, JSonElement
         virtual const JSonElement *firstChild() const;
 
         const JSonElement* get(const std::string &) const;
+
+        virtual std::string stringify() const;
 };
 

@@ -228,7 +228,8 @@ bool CurseOutput::writeContent(std::pair<int, int> &cursor, const std::pair<int,
     {
         const std::pair<std::string, JSonElement *> ipair = *i;
         cursor.first += indentLevel /2;
-        if (dynamic_cast<const JSonContainer *>(ipair.second) == nullptr)
+        if (dynamic_cast<const JSonContainer *>(ipair.second) == nullptr
+                || ((const JSonContainer *) ipair.second)->size() == 0)
         {
             checkSelection(ipair.second, item);
             write(cursor.first, cursor.second, ipair.first +": " +ipair.second->stringify(), selection == ipair.second);
@@ -236,11 +237,17 @@ bool CurseOutput::writeContent(std::pair<int, int> &cursor, const std::pair<int,
             if (++cursor.second > maxSize.second)
                 return false;
         }
-        else if (collapsed.find((const JSonContainer *)item) != collapsed.end())
+        else if (collapsed.find((const JSonContainer *)ipair.second) != collapsed.end())
         {
-            //TODO test this
+            char childDelimiter[2];
+            if (dynamic_cast<const JSonObject *>(ipair.second))
+                memcpy(childDelimiter, "{}", sizeof(*childDelimiter) * 2);
+            else
+                memcpy(childDelimiter, "[]", sizeof(*childDelimiter) * 2);
+            std::string ss = ipair.first;
+            ss.append(": ").append(&childDelimiter[0], 1).append(" ... ").append(&childDelimiter[1], 1);
             checkSelection(ipair.second, item);
-            write(cursor.first, cursor.second, ipair.first +"_: ...", selection == ipair.second);
+            write(cursor.first, cursor.second, ss, selection == ipair.second);
             cursor.first -= indentLevel /2;
             if (++cursor.second > maxSize.second)
                 return false;

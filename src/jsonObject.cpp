@@ -47,3 +47,8 @@ const JSonElement *JSonObject::firstChild() const
     return (*cbegin()).second;
 }
 
+std::string JSonObject::stringify() const
+{
+    return "{ }";
+}
+

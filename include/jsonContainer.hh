@@ -10,7 +10,5 @@ class JSonContainer: public JSonElement
         virtual unsigned int size() const =0;
         virtual JSonElement *firstChild() =0;
         virtual const JSonElement *firstChild() const =0;
-
-        virtual std::string stringify() const;
 };
 
