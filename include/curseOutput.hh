@@ -27,15 +27,15 @@ class CurseOutput
     protected:
         void init();
         void shutdown();
-        void redraw();
         /**
          * return false if bottom of screen is touched
         **/
+        bool redraw();
         bool redraw(std::pair<int, int> &, const std::pair<int, int>&, const JSonElement *, const JSonContainer *);
         bool readInput();
         void getScreenSize(std::pair<int, int> &, std::pair<int, int> &);
         static CurseOutput::t_nextKey findNext(const JSonElement *);
-        void checkSelection(const JSonElement *item, const JSonElement *parent);
+        void checkSelection(const JSonElement *item, const JSonElement *parent, const std::pair<int, int>&);
         void write(const int &x, const int &y, const JSonElement *item, bool selected =false);
         void write(const int &x, const int &y, const std::string &item, bool selected =false);
         void write(const int &x, const int &y, const char item, bool selected =false);
@@ -51,11 +51,11 @@ class CurseOutput
         SCREEN *screen;
         FILE *screen_fd;
         bool breakLoop;
-        std::pair<std::pair<unsigned int, unsigned int>, const JSonElement *> topleft;
+        int topleft;
         const unsigned int indentLevel;
 
         //FIXME optimize
         const JSonElement *select_up, *select_down, *select_parent;
-        bool selectFound;
+        bool selectFound, selectIsLast, selectIsFirst;
 };
 
