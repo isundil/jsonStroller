@@ -15,6 +15,8 @@ class JSonElement
         JSonContainer *getParent();
         const JSonContainer *getParent() const;
 
+        void setParent(JSonContainer *parent);
+
     private:
         JSonElement();
         JSonContainer *parent;

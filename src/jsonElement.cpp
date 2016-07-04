@@ -7,6 +7,11 @@ JSonElement::JSonElement(JSonContainer *p): parent(p)
 JSonElement::~JSonElement()
 { }
 
+void JSonElement::setParent(JSonContainer *p)
+{
+    parent = p;
+}
+
 unsigned int JSonElement::getLevel() const
 {
     unsigned int level = 0;

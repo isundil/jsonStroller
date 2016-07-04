@@ -53,7 +53,7 @@ JSonObject *StreamConsumer::readObject(JSonContainer *parent)
 
     do
     {
-        keyObj = consumeToken(parent, buf);
+        keyObj = consumeToken(result, buf);
         if (result == nullptr && keyObj == nullptr && buf == "}")
             return new JSonObject(parent);
         JSonPrimitive<std::string> *key = dynamic_cast<JSonPrimitive<std::string> *>(keyObj);
@@ -61,14 +61,15 @@ JSonObject *StreamConsumer::readObject(JSonContainer *parent)
             throw JsonException(stream.tellg());
         if (consumeToken(parent, buf) != nullptr || buf != ":")
             throw JsonException(stream.tellg());
-        JSonElement *child = readNext(parent);
         if (result == nullptr)
             result = new JSonObject(parent);
         else if (result->contains(key->getValue()))
             throw JsonException(stream.tellg()); //Double key
+        key->setParent(result);
+        JSonElement *child = readNext(result);
         result->push(key->getValue(), child);
         delete keyObj;
-        keyObj = consumeToken(parent, buf);
+        keyObj = consumeToken(result, buf);
     } while (!keyObj && buf != "}");
     return result;
 }
@@ -87,15 +88,16 @@ JSonArray *StreamConsumer::readArray(JSonContainer *parent)
             throw JsonException(stream.tellg());
         if (result == nullptr)
             result = new JSonArray(parent);
+        child->setParent(result);
         result->push_back(child);
-        child = consumeToken(parent, buf);
+        child = consumeToken(result, buf);
         if (child != nullptr)
             throw JsonException(stream.tellg());
         else if (buf == "]")
             break;
         else if (buf != ",")
             throw JsonException(stream.tellg());
-        child = consumeToken(parent, buf);
+        child = consumeToken(result, buf);
     } while (true);
     return result;
 }

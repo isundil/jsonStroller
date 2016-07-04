@@ -77,7 +77,7 @@ bool CurseOutput::redraw()
     std::pair<int, int> cursor;
     bool result;
 
-    select_up = select_down = select_parent = nullptr;
+    select_up = select_down = nullptr;
     selectFound = selectIsLast = selectIsFirst = false;
     getScreenSize(screenSize, cursor);
     cursor.first = 0;
@@ -90,36 +90,24 @@ bool CurseOutput::redraw()
         select_down = selection;
     if (!select_up)
         select_up = selection;
-    if (!select_parent)
-        select_parent = selection;
     refresh();
     return result;
 }
 
 bool CurseOutput::redraw(std::pair<int, int> &cursor, const std::pair<int, int> &maxSize, const JSonElement *item, const JSonContainer *parent)
 {
-    do
+    checkSelection(item, parent, cursor);
+    if (dynamic_cast<const JSonContainer*>(item))
     {
-        checkSelection(item, parent, cursor);
-        if (dynamic_cast<const JSonContainer*>(item))
-        {
-            if (!writeContainer(cursor, maxSize, (const JSonContainer *) item))
-                return false;
-        }
-        else
-        {
-            write(cursor.first, cursor.second, item, selection == item);
-            if (++cursor.second - topleft> maxSize.second -1)
-                return false;
-        }
-        t_nextKey next = findNext(item);
-        if (next.isAbsent())
-            break;
-        item = next.value().second;
-        if (next.value().first.isPresent())
-            if (!writeKey(next.value().first.value(), cursor, maxSize.second, selection == item))
-                return false;
-    } while (true);
+        if (!writeContainer(cursor, maxSize, (const JSonContainer *) item))
+            return false;
+    }
+    else
+    {
+        write(cursor.first, cursor.second, item, selection == item);
+        if (++cursor.second - topleft> maxSize.second -1)
+            return false;
+    }
     return true;
 }
 
@@ -267,6 +255,46 @@ void CurseOutput::getScreenSize(std::pair<int, int> &ss, std::pair<int, int> &bs
     getbegyx(stdscr, bs.second, bs.first);
 }
 
+CurseOutput::t_nextKey CurseOutput::findPrev(const JSonElement *item)
+{
+    const JSonContainer *parent = item->getParent();
+    if (parent == nullptr)
+        return t_nextKey::empty(); // Root node, can't have brothers
+    if (dynamic_cast<const JSonObject *>(parent) != nullptr)
+    {
+        const JSonObject *oParent = (const JSonObject *) parent;
+        JSonObject::const_iterator it = oParent->cbegin();
+        if ((*it).second == item)
+            return t_nextKey::empty();
+        std::string prevKey = (*it).first;
+        const JSonElement *prevElem = (*it).second;
+        while ((++it) != oParent->cend())
+        {
+            if ((*it).second == item)
+                return t_nextKey(std::pair<Optional<const std::string>, const JSonElement *>(prevKey, prevElem));
+            prevKey = (*it).first;
+            prevElem = (*it).second;
+        }
+        return t_nextKey::empty();
+    }
+    if (dynamic_cast<const JSonArray *>(parent) != nullptr)
+    {
+        const JSonArray *aParent = (const JSonArray *) parent;
+        JSonArray::const_iterator it = aParent->cbegin();
+        const JSonElement *prevElem = (*it);
+        if (prevElem == item)
+            return t_nextKey::empty();
+        while ((++it) != aParent->cend())
+        {
+            if (*it == item)
+                return t_nextKey(std::pair<Optional<const std::string>, const JSonElement *>(Optional<const std::string>::empty(), prevElem));
+            prevElem = (*it);
+        }
+        return t_nextKey::empty();
+    }
+    return t_nextKey::empty(); // Primitive, can't have child (impossible)
+}
+
 CurseOutput::t_nextKey CurseOutput::findNext(const JSonElement *item)
 {
     const JSonContainer *parent = item->getParent();
@@ -282,12 +310,12 @@ CurseOutput::t_nextKey CurseOutput::findNext(const JSonElement *item)
             {
                 it++;
                 if (it == oParent->cend())
-                    return t_nextKey::empty(); // Last item
+                    return findNext(oParent); // Last item
                 return t_nextKey(std::pair<Optional<const std::string>, const JSonElement *>((*it).first, (*it).second));
             }
             it++;
         }
-        return t_nextKey::empty();
+        return findNext(oParent);
     }
     if (dynamic_cast<const JSonArray *>(parent) != nullptr)
     {
@@ -299,12 +327,12 @@ CurseOutput::t_nextKey CurseOutput::findNext(const JSonElement *item)
             {
                 it++;
                 if (it == aParent->cend())
-                    return t_nextKey::empty(); // Last item
+                    return findNext(aParent); // Last item
                 return t_nextKey(std::pair<Optional<const std::string>, const JSonElement *>(Optional<const std::string>::empty(), *it));
             }
             it++;
         }
-        return t_nextKey::empty();
+        return findNext(aParent);
     }
     return t_nextKey::empty(); // Primitive, can't have child (impossible)
 }
@@ -315,7 +343,6 @@ void CurseOutput::checkSelection(const JSonElement *item, const JSonElement *par
     {
         if (cursor.second <= topleft)
             selectIsFirst = true;
-        select_parent = parent;
         selectFound = true;
     }
     else if (!selectFound)
@@ -363,6 +390,34 @@ bool CurseOutput::readInput()
                     selection = select_down;
                 return true;
 
+            case KEY_PPAGE:
+            {
+                const t_nextKey brother = findPrev(selection);
+                if (brother.isAbsent())
+                {
+                    const JSonContainer *parent = selection->getParent();
+                    if (parent)
+                        selection = parent;
+                    else
+                        break;
+                }
+                else
+                    selection = brother.value().second;
+                return true;
+                break;
+            }
+
+            case KEY_NPAGE:
+            {
+                const t_nextKey brother = findNext(selection);
+                if (brother.isPresent())
+                {
+                    selection = brother.value().second;
+                    return true;
+                }
+                break;
+            }
+
             case 'l':
             case 'L':
             case KEY_RIGHT:
@@ -387,7 +442,10 @@ bool CurseOutput::readInput()
                 if (!_selection
                         || collapsed.find((const JSonContainer *) selection) != collapsed.end()
                         || (_selection && _selection->size() == 0))
-                    selection = select_parent;
+                {
+                    const JSonContainer *parent = selection->getParent();
+                    selection = parent ? parent : selection;
+                }
                 else if (_selection)
                     collapsed.insert((const JSonContainer *)selection);
                 else

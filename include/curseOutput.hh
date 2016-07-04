@@ -34,6 +34,7 @@ class CurseOutput
         bool redraw(std::pair<int, int> &, const std::pair<int, int>&, const JSonElement *, const JSonContainer *);
         bool readInput();
         void getScreenSize(std::pair<int, int> &, std::pair<int, int> &);
+        static CurseOutput::t_nextKey findPrev(const JSonElement *);
         static CurseOutput::t_nextKey findNext(const JSonElement *);
         void checkSelection(const JSonElement *item, const JSonElement *parent, const std::pair<int, int>&);
         void write(const int &x, const int &y, const JSonElement *item, bool selected =false);
@@ -55,7 +56,7 @@ class CurseOutput
         const unsigned int indentLevel;
 
         //FIXME optimize
-        const JSonElement *select_up, *select_down, *select_parent;
+        const JSonElement *select_up, *select_down;
         bool selectFound, selectIsLast, selectIsFirst;
 };
 
