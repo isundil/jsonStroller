@@ -31,20 +31,21 @@ class CurseOutput
          * return false if bottom of screen is touched
         **/
         bool redraw();
-        bool redraw(std::pair<int, int> &, const std::pair<int, int>&, const JSonElement *, const JSonContainer *);
+        bool redraw(std::pair<int, int> &, const std::pair<unsigned int, unsigned int> &maxWidth, const JSonElement *, const JSonContainer *);
         bool readInput();
-        void getScreenSize(std::pair<int, int> &, std::pair<int, int> &);
+        void getScreenSize(std::pair<unsigned int, unsigned int> &, std::pair<int, int> &) const;
         static CurseOutput::t_nextKey findPrev(const JSonElement *);
         static CurseOutput::t_nextKey findNext(const JSonElement *);
         void checkSelection(const JSonElement *item, const JSonElement *parent, const std::pair<int, int>&);
-        void write(const int &x, const int &y, const JSonElement *item, bool selected =false);
-        void write(const int &x, const int &y, const std::string &item, bool selected =false);
-        void write(const int &x, const int &y, const char item, bool selected =false);
-        void write(const int &x, const int &y, const char *item, bool selected =false);
-        bool writeKey(const std::string &key, std::pair<int, int> &cursor, const int maxHeight, bool selected);
-        bool writeContainer(std::pair<int, int> &, const std::pair<int, int>&, const JSonContainer *);
-        bool writeContent(std::pair<int, int> &cursor, const std::pair<int, int> &maxSize, const JSonArray * obj);
-        bool writeContent(std::pair<int, int> &cursor, const std::pair<int, int> &maxSize, const JSonObject * obj);
+        static unsigned int getNbLines(float nbChar, unsigned int maxWidth);
+        unsigned int write(const int &x, const int &y, const JSonElement *item, unsigned int maxWidth, bool selected =false);
+        unsigned int write(const int &x, const int &y, const std::string &item, unsigned int maxWidth, bool selected =false);
+        unsigned int write(const int &x, const int &y, const char item, unsigned int maxWidth, bool selected =false);
+        unsigned int write(const int &x, const int &y, const char *item, unsigned int maxWidth, bool selected =false);
+        bool writeKey(const std::string &key, std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxWidth, bool selected);
+        bool writeContainer(std::pair<int, int> &, const std::pair<unsigned int, unsigned int> &maxSize, const JSonContainer *);
+        bool writeContent(std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, const JSonArray * obj);
+        bool writeContent(std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, const JSonObject * obj);
 
         std::set<const JSonContainer *> collapsed;
 

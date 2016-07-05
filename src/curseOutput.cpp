@@ -73,7 +73,7 @@ static void _resizeFnc(int signo)
 
 bool CurseOutput::redraw()
 {
-    std::pair<int, int> screenSize;
+    std::pair<unsigned int, unsigned int> screenSize;
     std::pair<int, int> cursor;
     bool result;
 
@@ -94,7 +94,7 @@ bool CurseOutput::redraw()
     return result;
 }
 
-bool CurseOutput::redraw(std::pair<int, int> &cursor, const std::pair<int, int> &maxSize, const JSonElement *item, const JSonContainer *parent)
+bool CurseOutput::redraw(std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, const JSonElement *item, const JSonContainer *parent)
 {
     checkSelection(item, parent, cursor);
     if (dynamic_cast<const JSonContainer*>(item))
@@ -104,14 +104,14 @@ bool CurseOutput::redraw(std::pair<int, int> &cursor, const std::pair<int, int> 
     }
     else
     {
-        write(cursor.first, cursor.second, item, selection == item);
-        if (++cursor.second - topleft> maxSize.second -1)
+        cursor.second += write(cursor.first, cursor.second, item, maxSize.first, selection == item);
+        if (cursor.second - topleft> maxSize.second -1)
             return false;
     }
     return true;
 }
 
-bool CurseOutput::writeContainer(std::pair<int, int> &cursor, const std::pair<int, int> &maxSize, const JSonContainer *item)
+bool CurseOutput::writeContainer(std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, const JSonContainer *item)
 {
     char childDelimiter[2];
     bool isObject = dynamic_cast<const JSonObject *>(item);
@@ -126,12 +126,12 @@ bool CurseOutput::writeContainer(std::pair<int, int> &cursor, const std::pair<in
     {
         std::string ss;
         ss.append(&childDelimiter[0], 1).append(" ... ").append(&childDelimiter[1], 1);
-        write(cursor.first, cursor.second, ss, selection == item);
+        cursor.second += write(cursor.first, cursor.second, ss, maxSize.first, selection == item);
     }
     else
     {
-        write(cursor.first, cursor.second, childDelimiter[0], selection == item);
-        if (++cursor.second - topleft > maxSize.second -1)
+        cursor.second += write(cursor.first, cursor.second, childDelimiter[0], maxSize.first, selection == item);
+        if (cursor.second - topleft > maxSize.second -1)
                 return false;
         if (isObject)
         {
@@ -143,13 +143,13 @@ bool CurseOutput::writeContainer(std::pair<int, int> &cursor, const std::pair<in
             if (!writeContent(cursor, maxSize, (const JSonArray *)item))
                 return false;
         }
-        write(cursor.first, cursor.second, childDelimiter[1], selection == item);
+        cursor.second += write(cursor.first, cursor.second, childDelimiter[1], maxSize.first, selection == item);
     }
     cursor.first -= indentLevel /2;
-    return (++cursor.second - topleft <= maxSize.second -1);
+    return (cursor.second - topleft <= maxSize.second -1);
 }
 
-bool CurseOutput::writeContent(std::pair<int, int> &cursor, const std::pair<int, int> &maxSize, const JSonArray *item)
+bool CurseOutput::writeContent(std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, const JSonArray *item)
 {
     cursor.first += indentLevel /2;
     for (JSonArray::const_iterator i = ((JSonArray *)item)->cbegin(); i != ((JSonArray *)item)->cend(); ++i)
@@ -159,7 +159,7 @@ bool CurseOutput::writeContent(std::pair<int, int> &cursor, const std::pair<int,
     return true;
 }
 
-bool CurseOutput::writeContent(std::pair<int, int> &cursor, const std::pair<int, int> &maxSize, const JSonObject *item)
+bool CurseOutput::writeContent(std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, const JSonObject *item)
 {
     for (JSonObject::const_iterator i = ((JSonObject *)item)->cbegin(); i != ((JSonObject *)item)->cend(); ++i)
     {
@@ -169,9 +169,9 @@ bool CurseOutput::writeContent(std::pair<int, int> &cursor, const std::pair<int,
                 || ((const JSonContainer *) ipair.second)->size() == 0)
         {
             checkSelection(ipair.second, item, cursor);
-            write(cursor.first, cursor.second, ipair.first +": " +ipair.second->stringify(), selection == ipair.second);
+            cursor.second += write(cursor.first, cursor.second, ipair.first +": " +ipair.second->stringify(), maxSize.first, selection == ipair.second);
             cursor.first -= indentLevel /2;
-            if (++cursor.second - topleft > maxSize.second -1)
+            if (cursor.second - topleft > maxSize.second -1)
                 return false;
         }
         else if (collapsed.find((const JSonContainer *)ipair.second) != collapsed.end())
@@ -184,14 +184,14 @@ bool CurseOutput::writeContent(std::pair<int, int> &cursor, const std::pair<int,
             std::string ss = ipair.first;
             ss.append(": ").append(&childDelimiter[0], 1).append(" ... ").append(&childDelimiter[1], 1);
             checkSelection(ipair.second, item, cursor);
-            write(cursor.first, cursor.second, ss, selection == ipair.second);
+            cursor.second += write(cursor.first, cursor.second, ss, maxSize.first, selection == ipair.second);
             cursor.first -= indentLevel /2;
-            if (++cursor.second - topleft > maxSize.second -1)
+            if (cursor.second - topleft > maxSize.second -1)
                 return false;
         }
         else
         {
-            if (!writeKey(ipair.first, cursor, maxSize.second, selection == ipair.second))
+            if (!writeKey(ipair.first, cursor, maxSize, selection == ipair.second))
                 return false;
             cursor.first -= indentLevel /2;
             if (!redraw(cursor, maxSize, ipair.second, (JSonContainer *) item))
@@ -202,23 +202,23 @@ bool CurseOutput::writeContent(std::pair<int, int> &cursor, const std::pair<int,
     return true;
 }
 
-bool CurseOutput::writeKey(const std::string &key, std::pair<int, int> &cursor, const int maxSize, bool selected)
+bool CurseOutput::writeKey(const std::string &key, std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, bool selected)
 {
-    write(cursor.first, cursor.second, key +": ", selected);
+    cursor.second += write(cursor.first, cursor.second, key +": ", maxSize.first, selected);
     cursor.first += indentLevel;
-    return (++cursor.second - topleft <= maxSize -1);
+    return (cursor.second - topleft <= maxSize.second -1);
 }
 
-void CurseOutput::write(const int &x, const int &y, const JSonElement *item, bool selected)
+unsigned int CurseOutput::write(const int &x, const int &y, const JSonElement *item, unsigned int maxWidth, bool selected)
 {
-    write(x, y, item->stringify(), selected);
+    return write(x, y, item->stringify(), maxWidth, selected);
 }
 
-void CurseOutput::write(const int &x, const int &y, const char item, bool selected)
+unsigned int CurseOutput::write(const int &x, const int &y, const char item, unsigned int maxWidth, bool selected)
 {
     int offsetY = y - topleft;
     if (offsetY < 0)
-        return;
+        return 1;
     if (selected)
     {
         attron(A_REVERSE | A_BOLD);
@@ -227,13 +227,22 @@ void CurseOutput::write(const int &x, const int &y, const char item, bool select
     }
     else
         mvprintw(offsetY, x, "%c", item);
+    return getNbLines(x +1, maxWidth);
 }
 
-void CurseOutput::write(const int &x, const int &y, const char *str, bool selected)
+unsigned int CurseOutput::getNbLines(float nbChar, unsigned int maxWidth)
+{
+    float nLine = nbChar / maxWidth;
+    if (nLine == (unsigned int) nLine)
+        return nLine;
+    return nLine +1;
+}
+
+unsigned int CurseOutput::write(const int &x, const int &y, const char *str, unsigned int maxWidth, bool selected)
 {
     int offsetY = y - topleft;
     if (offsetY < 0)
-        return;
+        return 1;
     if (selected)
     {
         attron(A_REVERSE | A_BOLD);
@@ -242,16 +251,17 @@ void CurseOutput::write(const int &x, const int &y, const char *str, bool select
     }
     else
         mvprintw(offsetY, x, "%s", str);
+    return getNbLines(strlen(str) +x, maxWidth);
 }
 
-void CurseOutput::write(const int &x, const int &y, const std::string &str, bool selected)
+unsigned int CurseOutput::write(const int &x, const int &y, const std::string &str, unsigned int maxWidth, bool selected)
 {
-    write(x, y, str.c_str(), selected);
+    return write(x, y, str.c_str(), maxWidth, selected);
 }
 
-void CurseOutput::getScreenSize(std::pair<int, int> &ss, std::pair<int, int> &bs)
+void CurseOutput::getScreenSize(std::pair<unsigned int, unsigned int> &screenSize, std::pair<int, int> &bs) const
 {
-    getmaxyx(stdscr, ss.second, ss.first);
+    getmaxyx(stdscr, screenSize.second, screenSize.first);
     getbegyx(stdscr, bs.second, bs.first);
 }
 
