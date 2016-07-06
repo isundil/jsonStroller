@@ -1,4 +1,4 @@
-
+#include <fstream>
 #include <iostream>
 #include <sstream>
 #include "params.hh"
@@ -13,8 +13,14 @@ Params::Params(int ac, char **av) :progName(*av), params(std::list<std::string>(
         std::string tmp(*av);
         if (!input)
         {
-            params.push_back(tmp);
-            if (tmp == "--")
+            if (tmp == "-f")
+            {
+                tmp = *(++av);
+                if (!*av)
+                    throw std::runtime_error("Invalid use of -f without argument");
+                this->input = new std::ifstream(tmp);
+            }
+            else if (tmp == "--")
             {
                 input = new std::stringstream();
             }
@@ -28,12 +34,15 @@ Params::Params(int ac, char **av) :progName(*av), params(std::list<std::string>(
             input->write(tmp.c_str(), sizeof(char) * tmp.size());
         }
     }
-    this->input = input;
+    if (!this->input)
+        this->input = input;
 }
 
 std::basic_istream<char> &Params::getInput() const
 {
-    return input == nullptr ? std::cin : *input;
+    if (input != nullptr)
+        return *input;
+    return std::cin;
 }
 
 bool Params::isValid() const
