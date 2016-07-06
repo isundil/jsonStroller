@@ -33,8 +33,6 @@ class CurseOutput
         bool redraw(std::pair<int, int> &, const std::pair<unsigned int, unsigned int> &maxWidth, const JSonElement *, const JSonContainer *);
         bool readInput();
         void getScreenSize(std::pair<unsigned int, unsigned int> &, std::pair<int, int> &) const;
-        static const JSonElement* findPrev(const JSonElement *);
-        static const JSonElement* findNext(const JSonElement *);
         void checkSelection(const JSonElement *item, const JSonElement *parent, const std::pair<int, int>&);
         static unsigned int getNbLines(float nbChar, unsigned int maxWidth);
         unsigned int write(const int &x, const int &y, const JSonElement *item, unsigned int maxWidth, bool selected =false);
@@ -54,7 +52,6 @@ class CurseOutput
         int topleft;
         const unsigned int indentLevel;
 
-        //FIXME optimize
         const JSonElement *select_up, *select_down;
         bool selectFound, selectIsLast, selectIsFirst;
 };

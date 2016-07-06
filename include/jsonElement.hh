@@ -17,6 +17,9 @@ class JSonElement
 
         void setParent(JSonContainer *parent);
 
+        const JSonElement *findPrev() const;
+        const JSonElement *findNext() const;
+
     private:
         JSonElement();
         JSonContainer *parent;

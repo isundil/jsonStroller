@@ -247,50 +247,6 @@ void CurseOutput::getScreenSize(std::pair<unsigned int, unsigned int> &screenSiz
     getbegyx(stdscr, bs.second, bs.first);
 }
 
-const JSonElement *CurseOutput::findPrev(const JSonElement *item)
-{
-    const JSonContainer *parent = item->getParent();
-    if (parent == nullptr)
-        return nullptr; // Root node, can't have brothers
-    std::list<JSonElement *>::const_iterator it = parent->cbegin();
-    const JSonObjectEntry *ent = dynamic_cast<const JSonObjectEntry *>(*it);
-    const JSonElement *prevElem = ent ? **ent : (*it);
-    if (prevElem == item || (ent && **ent == item))
-        return nullptr; // First item
-    while ((++it) != parent->cend())
-    {
-        ent = dynamic_cast<const JSonObjectEntry *>(*it);
-        if (*it == item || (ent && **ent == item))
-            return prevElem;
-        prevElem = ent ? **ent : (*it);
-    }
-    return nullptr;
-}
-
-const JSonElement* CurseOutput::findNext(const JSonElement *item)
-{
-    const JSonContainer *parent = item->getParent();
-    if (parent == nullptr)
-        return nullptr; // Root node, can't have brothers
-    JSonContainer::const_iterator it = parent->cbegin();
-    while (it != parent->cend())
-    {
-        const JSonObjectEntry *ent = dynamic_cast<const JSonObjectEntry *>(*it);
-        if (*it == item || (ent && **ent == item))
-        {
-            it++;
-            if (it == parent->cend())
-                return findNext((const JSonElement*) parent); // Last item
-            ent = dynamic_cast<const JSonObjectEntry *>(*it);
-            if (ent)
-                return **ent;
-            return *it;
-        }
-        it++;
-    }
-    return findNext((const JSonElement*) parent);
-}
-
 void CurseOutput::checkSelection(const JSonElement *item, const JSonElement *parent, const std::pair<int, int> &cursor)
 {
     if (selection == item)
@@ -340,13 +296,16 @@ bool CurseOutput::readInput()
             case 'J':
                 if (selectIsLast)
                     topleft += 2;
-                else
+                else if (selection != select_down)
+                {
                     selection = select_down;
-                return true;
+                    return true;
+                }
+                break;
 
             case KEY_PPAGE:
             {
-                const JSonElement *brother = findPrev(selection);
+                const JSonElement *brother = selection->findPrev();
                 if (brother == nullptr)
                 {
                     const JSonContainer *parent = selection->getParent();
@@ -363,7 +322,7 @@ bool CurseOutput::readInput()
 
             case KEY_NPAGE:
             {
-                const JSonElement *brother = findNext(selection);
+                const JSonElement *brother = selection->findNext();
                 if (brother)
                 {
                     selection = brother;
