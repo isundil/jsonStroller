@@ -114,9 +114,8 @@ bool CurseOutput::redraw(std::pair<int, int> &cursor, const std::pair<unsigned i
 bool CurseOutput::writeContainer(std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, const JSonContainer *item)
 {
     char childDelimiter[2];
-    bool isObject = dynamic_cast<const JSonObject *>(item);
 
-    if (isObject)
+    if (dynamic_cast<const JSonObject *>(item))
         memcpy(childDelimiter, "{}", sizeof(*childDelimiter) * 2);
     else
         memcpy(childDelimiter, "[]", sizeof(*childDelimiter) * 2);
@@ -133,72 +132,60 @@ bool CurseOutput::writeContainer(std::pair<int, int> &cursor, const std::pair<un
         cursor.second += write(cursor.first, cursor.second, childDelimiter[0], maxSize.first, selection == item);
         if (cursor.second - topleft > maxSize.second -1)
                 return false;
-        if (isObject)
-        {
-            if (!writeContent(cursor, maxSize, (const JSonObject *)item))
-                return false;
-        }
-        else
-        {
-            if (!writeContent(cursor, maxSize, (const JSonArray *)item))
-                return false;
-        }
+        if (!writeContent(cursor, maxSize, (const std::list<JSonElement *> *)item))
+            return false;
         cursor.second += write(cursor.first, cursor.second, childDelimiter[1], maxSize.first, selection == item);
     }
     cursor.first -= indentLevel /2;
     return (cursor.second - topleft <= maxSize.second -1);
 }
 
-bool CurseOutput::writeContent(std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, const JSonArray *item)
+bool CurseOutput::writeContent(std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, const std::list<JSonElement*> *_item)
 {
+    const JSonContainer *item = (const JSonContainer *)_item;
+    bool containerIsObject = (dynamic_cast<const JSonObject *>(item) != nullptr);
     cursor.first += indentLevel /2;
-    for (JSonArray::const_iterator i = ((JSonArray *)item)->cbegin(); i != ((JSonArray *)item)->cend(); ++i)
-        if (!redraw(cursor, maxSize, *i, (JSonContainer *)item))
-            return false;
-    cursor.first -= indentLevel /2;
-    return true;
-}
-
-bool CurseOutput::writeContent(std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, const JSonObject *item)
-{
-    for (JSonObject::const_iterator i = ((JSonObject *)item)->cbegin(); i != ((JSonObject *)item)->cend(); ++i)
+    for (std::list<JSonElement *>::const_iterator i = item->cbegin(); i != item->cend(); ++i)
     {
-        const std::pair<std::string, JSonElement *> ipair = *i;
-        cursor.first += indentLevel /2;
-        if (dynamic_cast<const JSonContainer *>(ipair.second) == nullptr
-                || ((const JSonContainer *) ipair.second)->size() == 0)
+        bool isObject = (dynamic_cast<const JSonObject *>(*i) != nullptr);
+        if (containerIsObject)
         {
-            checkSelection(ipair.second, item, cursor);
-            cursor.second += write(cursor.first, cursor.second, ipair.first +": " +ipair.second->stringify(), maxSize.first, selection == ipair.second);
-            cursor.first -= indentLevel /2;
-            if (cursor.second - topleft > maxSize.second -1)
-                return false;
-        }
-        else if (collapsed.find((const JSonContainer *)ipair.second) != collapsed.end())
-        {
-            char childDelimiter[2];
-            if (dynamic_cast<const JSonObject *>(ipair.second))
-                memcpy(childDelimiter, "{}", sizeof(*childDelimiter) * 2);
+            JSonObjectEntry *ent = (JSonObjectEntry*) *i;
+            std::string key = ent->stringify();
+            checkSelection(**ent, (JSonContainer*) item, cursor);
+            if (collapsed.find((const JSonContainer*)(**ent)) != collapsed.cend())
+            {
+                if (isObject)
+                    cursor.second += write(cursor.first, cursor.second, key + ": { ... }", maxSize.first, selection == **ent);
+                else
+                    cursor.second += write(cursor.first, cursor.second, key + ": [ ... ]", maxSize.first, selection == **ent);
+            }
+            else if (dynamic_cast<const JSonContainer*> (**ent) == nullptr)
+                cursor.second += write(cursor.first, cursor.second, key + ": " +((**ent)->stringify()), maxSize.first, selection == **ent);
+            else if (((JSonContainer*)(**ent))->size() == 0)
+            {
+                if (isObject)
+                    cursor.second += write(cursor.first, cursor.second, key + ": { }", maxSize.first, selection == **ent);
+                else
+                    cursor.second += write(cursor.first, cursor.second, key + ": [ ]", maxSize.first, selection == **ent);
+            }
             else
-                memcpy(childDelimiter, "[]", sizeof(*childDelimiter) * 2);
-            std::string ss = ipair.first;
-            ss.append(": ").append(&childDelimiter[0], 1).append(" ... ").append(&childDelimiter[1], 1);
-            checkSelection(ipair.second, item, cursor);
-            cursor.second += write(cursor.first, cursor.second, ss, maxSize.first, selection == ipair.second);
-            cursor.first -= indentLevel /2;
-            if (cursor.second - topleft > maxSize.second -1)
-                return false;
+            {
+                if (!writeKey(key, cursor, maxSize, selection == ent || selection == **ent))
+                    return false;
+                cursor.first -= indentLevel /2;
+                if (!redraw(cursor, maxSize, **ent, (const JSonContainer *)item))
+                    return false;
+                cursor.first -= indentLevel /2;
+            }
         }
         else
         {
-            if (!writeKey(ipair.first, cursor, maxSize, selection == ipair.second))
+            if (!redraw(cursor, maxSize, *i, (const JSonContainer *)item))
                 return false;
-            cursor.first -= indentLevel /2;
-            if (!redraw(cursor, maxSize, ipair.second, (JSonContainer *) item))
-                return false;
-            cursor.first -= indentLevel;
         }
     }
+    cursor.first -= indentLevel /2;
     return true;
 }
 
@@ -265,86 +252,48 @@ void CurseOutput::getScreenSize(std::pair<unsigned int, unsigned int> &screenSiz
     getbegyx(stdscr, bs.second, bs.first);
 }
 
-CurseOutput::t_nextKey CurseOutput::findPrev(const JSonElement *item)
+const JSonElement *CurseOutput::findPrev(const JSonElement *item)
 {
     const JSonContainer *parent = item->getParent();
     if (parent == nullptr)
-        return t_nextKey::empty(); // Root node, can't have brothers
-    if (dynamic_cast<const JSonObject *>(parent) != nullptr)
+        return nullptr; // Root node, can't have brothers
+    std::list<JSonElement *>::const_iterator it = parent->cbegin();
+    const JSonObjectEntry *ent = dynamic_cast<const JSonObjectEntry *>(*it);
+    const JSonElement *prevElem = ent ? **ent : (*it);
+    if (prevElem == item || (ent && **ent == item))
+        return nullptr; // First item
+    while ((++it) != parent->cend())
     {
-        const JSonObject *oParent = (const JSonObject *) parent;
-        JSonObject::const_iterator it = oParent->cbegin();
-        if ((*it).second == item)
-            return t_nextKey::empty();
-        std::string prevKey = (*it).first;
-        const JSonElement *prevElem = (*it).second;
-        while ((++it) != oParent->cend())
-        {
-            if ((*it).second == item)
-                return t_nextKey(std::pair<Optional<const std::string>, const JSonElement *>(prevKey, prevElem));
-            prevKey = (*it).first;
-            prevElem = (*it).second;
-        }
-        return t_nextKey::empty();
+        ent = dynamic_cast<const JSonObjectEntry *>(*it);
+        if (*it == item || (ent && **ent == item))
+            return prevElem;
+        prevElem = ent ? **ent : (*it);
     }
-    if (dynamic_cast<const JSonArray *>(parent) != nullptr)
-    {
-        const JSonArray *aParent = (const JSonArray *) parent;
-        JSonArray::const_iterator it = aParent->cbegin();
-        const JSonElement *prevElem = (*it);
-        if (prevElem == item)
-            return t_nextKey::empty();
-        while ((++it) != aParent->cend())
-        {
-            if (*it == item)
-                return t_nextKey(std::pair<Optional<const std::string>, const JSonElement *>(Optional<const std::string>::empty(), prevElem));
-            prevElem = (*it);
-        }
-        return t_nextKey::empty();
-    }
-    return t_nextKey::empty(); // Primitive, can't have child (impossible)
+    return nullptr;
 }
 
-CurseOutput::t_nextKey CurseOutput::findNext(const JSonElement *item)
+const JSonElement* CurseOutput::findNext(const JSonElement *item)
 {
     const JSonContainer *parent = item->getParent();
     if (parent == nullptr)
-        return t_nextKey::empty(); // Root node, can't have brothers
-    if (dynamic_cast<const JSonObject *>(parent) != nullptr)
+        return nullptr; // Root node, can't have brothers
+    JSonContainer::const_iterator it = parent->cbegin();
+    while (it != parent->cend())
     {
-        const JSonObject *oParent = (const JSonObject *) parent;
-        JSonObject::const_iterator it = oParent->cbegin();
-        while (it != oParent->cend())
+        const JSonObjectEntry *ent = dynamic_cast<const JSonObjectEntry *>(*it);
+        if (*it == item || (ent && **ent == item))
         {
-            if ((*it).second == item)
-            {
-                it++;
-                if (it == oParent->cend())
-                    return findNext(oParent); // Last item
-                return t_nextKey(std::pair<Optional<const std::string>, const JSonElement *>((*it).first, (*it).second));
-            }
             it++;
+            if (it == parent->cend())
+                return findNext((const JSonElement*) parent); // Last item
+            ent = dynamic_cast<const JSonObjectEntry *>(*it);
+            if (ent)
+                return **ent;
+            return *it;
         }
-        return findNext(oParent);
+        it++;
     }
-    if (dynamic_cast<const JSonArray *>(parent) != nullptr)
-    {
-        const JSonArray *aParent = (const JSonArray *) parent;
-        JSonArray::const_iterator it = aParent->cbegin();
-        while (it != aParent->cend())
-        {
-            if (*it == item)
-            {
-                it++;
-                if (it == aParent->cend())
-                    return findNext(aParent); // Last item
-                return t_nextKey(std::pair<Optional<const std::string>, const JSonElement *>(Optional<const std::string>::empty(), *it));
-            }
-            it++;
-        }
-        return findNext(aParent);
-    }
-    return t_nextKey::empty(); // Primitive, can't have child (impossible)
+    return findNext((const JSonElement*) parent);
 }
 
 void CurseOutput::checkSelection(const JSonElement *item, const JSonElement *parent, const std::pair<int, int> &cursor)
@@ -402,8 +351,8 @@ bool CurseOutput::readInput()
 
             case KEY_PPAGE:
             {
-                const t_nextKey brother = findPrev(selection);
-                if (brother.isAbsent())
+                const JSonElement *brother = findPrev(selection);
+                if (brother == nullptr)
                 {
                     const JSonContainer *parent = selection->getParent();
                     if (parent)
@@ -412,17 +361,17 @@ bool CurseOutput::readInput()
                         break;
                 }
                 else
-                    selection = brother.value().second;
+                    selection = brother;
                 return true;
                 break;
             }
 
             case KEY_NPAGE:
             {
-                const t_nextKey brother = findNext(selection);
-                if (brother.isPresent())
+                const JSonElement *brother = findNext(selection);
+                if (brother)
                 {
-                    selection = brother.value().second;
+                    selection = brother;
                     return true;
                 }
                 break;
@@ -476,7 +425,10 @@ void CurseOutput::init()
         screen = newterm(nullptr, screen_fd, screen_fd);
     }
     else
+    {
         screen = newterm(nullptr, stdout, stdin);
+        screen_fd = nullptr;
+    }
     wtimeout(stdscr, 150);
     cbreak();
     clear();

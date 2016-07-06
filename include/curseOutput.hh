@@ -3,6 +3,7 @@
 #include <fstream>
 #include <ios>
 #include <set>
+#include <list>
 #include <ncurses.h>
 
 class JSonElement;
@@ -21,7 +22,6 @@ class CurseOutput
         bool onsig(int signo);
 
     private:
-        typedef Optional<std::pair<Optional<const std::string>, const JSonElement *> > t_nextKey;
         virtual void loop();
 
     protected:
@@ -34,8 +34,8 @@ class CurseOutput
         bool redraw(std::pair<int, int> &, const std::pair<unsigned int, unsigned int> &maxWidth, const JSonElement *, const JSonContainer *);
         bool readInput();
         void getScreenSize(std::pair<unsigned int, unsigned int> &, std::pair<int, int> &) const;
-        static CurseOutput::t_nextKey findPrev(const JSonElement *);
-        static CurseOutput::t_nextKey findNext(const JSonElement *);
+        static const JSonElement* findPrev(const JSonElement *);
+        static const JSonElement* findNext(const JSonElement *);
         void checkSelection(const JSonElement *item, const JSonElement *parent, const std::pair<int, int>&);
         static unsigned int getNbLines(float nbChar, unsigned int maxWidth);
         unsigned int write(const int &x, const int &y, const JSonElement *item, unsigned int maxWidth, bool selected =false);
@@ -44,8 +44,7 @@ class CurseOutput
         unsigned int write(const int &x, const int &y, const char *item, unsigned int maxWidth, bool selected =false);
         bool writeKey(const std::string &key, std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxWidth, bool selected);
         bool writeContainer(std::pair<int, int> &, const std::pair<unsigned int, unsigned int> &maxSize, const JSonContainer *);
-        bool writeContent(std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, const JSonArray * obj);
-        bool writeContent(std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, const JSonObject * obj);
+        bool writeContent(std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, const std::list<JSonElement *> * obj);
 
         std::set<const JSonContainer *> collapsed;
 

@@ -65,7 +65,6 @@ JSonObject *StreamConsumer::readObject(JSonContainer *parent)
             result = new JSonObject(parent);
         else if (result->contains(key->getValue()))
             throw JsonException(stream.tellg()); //Double key
-        key->setParent(result);
         JSonElement *child = readNext(result);
         result->push(key->getValue(), child);
         delete keyObj;

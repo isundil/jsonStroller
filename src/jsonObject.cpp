@@ -8,43 +8,52 @@ JSonObject::~JSonObject()
 {
     for (iterator i = begin(); i != end(); ++i)
     {
-        delete (*i).second;
+        delete (*i);
     }
 }
 
 void JSonObject::push(const std::string &key, JSonElement *child)
 {
-    (*this)[key] = child;
+    this->push_back(new JSonObjectEntry(this, key, child));
+}
+
+JSonObject::const_iterator JSonObject::find(const std::string &key) const
+{
+    JSonObject::const_iterator it = cbegin();
+    while (it != cend())
+    {
+        if ((const JSonObjectEntry &)(**it) == key)
+            return it;
+        ++it;
+    }
+    return it;
 }
 
 bool JSonObject::contains(const std::string &key) const
 {
-    return find(key) != end();
+    return find(key) != this->cend();
 }
 
 const JSonElement *JSonObject::get(const std::string &key) const
 {
     const_iterator item = find(key);
-    return item == cend() ? nullptr : (*item).second;
-}
-
-unsigned int JSonObject::size() const
-{
-    return std::map<std::string, JSonElement *>::size();
+    if (item == cend())
+        return nullptr;
+    return *(const JSonObjectEntry &)(**item);
 }
 
 JSonElement *JSonObject::firstChild()
 {
     if (begin() == end())
         return nullptr;
-    return (*begin()).second;
+    return *begin();
 }
 
 const JSonElement *JSonObject::firstChild() const
 {
     if (cbegin() == cend())
         return nullptr;
-    return (*cbegin()).second;
+    return *cbegin();
 }
 
 std::string JSonObject::stringify() const

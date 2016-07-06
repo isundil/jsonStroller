@@ -1,18 +1,16 @@
 #pragma once
 
-#include <map>
 #include "jsonContainer.hh"
+#include "jsonObjectEntry.hh"
 
-template<typename T> class JSonPrimitive;
-
-class JSonObject: public JSonContainer, public std::map<std::string, JSonElement*>
+class JSonObject: public JSonContainer
 {
     public:
         JSonObject(JSonContainer *parent);
         virtual ~JSonObject();
 
         void push(const std::string &key, JSonElement *child);
-        virtual unsigned int size() const;
+        JSonObject::const_iterator find(const std::string &key) const;
         bool contains(const std::string &) const;
 
         virtual JSonElement *firstChild();

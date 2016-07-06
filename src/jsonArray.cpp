@@ -11,11 +11,6 @@ JSonArray::~JSonArray()
     }
 }
 
-unsigned int JSonArray::size() const
-{
-    return std::list<JSonElement *>::size();
-}
-
 JSonElement *JSonArray::firstChild()
 {
     if (begin() == end())
