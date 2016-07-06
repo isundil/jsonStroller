@@ -9,6 +9,7 @@ class Params
 {
     public:
         Params(int ac, char **av);
+        virtual ~Params();
 
         std::basic_istream<char> &getInput() const;
         bool isValid() const;

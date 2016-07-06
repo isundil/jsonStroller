@@ -8,7 +8,7 @@ class JSonObjectEntry: public JSonElement
 {
     public:
         JSonObjectEntry(JSonObject*, const std::string &key, JSonElement *item);
-        ~JSonObjectEntry();
+        virtual ~JSonObjectEntry();
 
         std::string stringify() const;
 

@@ -208,6 +208,6 @@ JSonElement *StreamConsumer::consumeToken(JSonContainer *parent, std::string &bu
 
 bool StreamConsumer::ignoreChar(char c) const noexcept
 {
-    return (c <= 32 || c >= 127);
+    return (c <= 32 || c >= 127 || c == '\n');
 }
 

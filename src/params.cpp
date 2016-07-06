@@ -18,7 +18,13 @@ Params::Params(int ac, char **av) :progName(*av), params(std::list<std::string>(
                 tmp = *(++av);
                 if (!*av)
                     throw std::runtime_error("Invalid use of -f without argument");
-                this->input = new std::ifstream(tmp);
+                std::ifstream *in = new std::ifstream(tmp);
+                if (!in->is_open())
+                {
+                    delete in;
+                    throw std::runtime_error("Cannot open " +tmp +" for reading");
+                }
+                this->input = in;
             }
             else if (tmp == "--")
             {
@@ -36,6 +42,12 @@ Params::Params(int ac, char **av) :progName(*av), params(std::list<std::string>(
     }
     if (!this->input)
         this->input = input;
+}
+
+Params::~Params()
+{
+    if (input)
+        delete input;
 }
 
 std::basic_istream<char> &Params::getInput() const

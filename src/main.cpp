@@ -6,11 +6,16 @@ void run(Params *params)
 {
     StreamConsumer *stream;
     CurseOutput *out;
+    JSonElement *root;
 
     stream = StreamConsumer::read(params->getInput());
-    out = new CurseOutput(stream->getRoot());
-    out->run();
-    delete out;
+    root = stream->getRoot();
+    if (root)
+    {
+        out = new CurseOutput(root);
+        out->run();
+        delete out;
+    }
     delete stream;
 }
 
