@@ -1,10 +1,9 @@
 #pragma once
 
+#include <ncurses.h>
 #include <fstream>
-#include <ios>
 #include <set>
 #include <list>
-#include <ncurses.h>
 
 class JSonElement;
 class JSonContainer;

@@ -1,4 +1,3 @@
-
 #include "jsonObjectEntry.hh"
 #include "jsonObject.hh"
 

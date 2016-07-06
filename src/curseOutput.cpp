@@ -1,6 +1,4 @@
-#include <algorithm>
 #include <iostream>
-#include <utility>
 
 #include <sys/ioctl.h>
 #include <unistd.h>
@@ -9,8 +7,6 @@
 
 #include "curseOutput.hh"
 #include "jsonObject.hh"
-#include "jsonArray.hh"
-#include "jsonPrimitive.hh"
 
 static CurseOutput *runningInst = nullptr;
 
