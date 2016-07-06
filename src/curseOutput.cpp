@@ -11,7 +11,6 @@
 #include "jsonObject.hh"
 #include "jsonArray.hh"
 #include "jsonPrimitive.hh"
-#include "optional.hpp"
 
 static CurseOutput *runningInst = nullptr;
 
