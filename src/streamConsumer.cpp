@@ -83,6 +83,10 @@ JSonArray *StreamConsumer::readArray(JSonContainer *parent)
         return new JSonArray(parent); //Empty object
     do
     {
+        if (child == nullptr && buf == "[")
+            child = readArray(nullptr);
+        if (child == nullptr && buf == "{")
+            child = readObject(nullptr);
         if (child == nullptr)
             throw JsonException(stream.tellg());
         if (result == nullptr)
