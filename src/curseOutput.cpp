@@ -82,7 +82,16 @@ bool CurseOutput::redraw()
     if (!result && !select_down)
         selectIsLast = true;
     if (!select_down)
-        select_down = selection;
+    {
+        const JSonContainer *pselect = dynamic_cast<const JSonContainer*>(selection);
+        if (pselect && !pselect->empty())
+            select_down = *(pselect->cbegin());
+        else
+        {
+            const JSonElement *next = selection->findNext();
+            select_down = next ? next : selection;
+        }
+    }
     if (!select_up)
         select_up = selection;
     refresh();
@@ -100,7 +109,7 @@ bool CurseOutput::redraw(std::pair<int, int> &cursor, const std::pair<unsigned i
     else
     {
         cursor.second += write(cursor.first, cursor.second, item, maxSize.first, selection == item);
-        if (cursor.second - topleft> maxSize.second -1)
+        if (cursor.second - topleft > 0 && (unsigned)(cursor.second - topleft) > maxSize.second -1)
             return false;
     }
     return true;
@@ -125,14 +134,14 @@ bool CurseOutput::writeContainer(std::pair<int, int> &cursor, const std::pair<un
     else
     {
         cursor.second += write(cursor.first, cursor.second, childDelimiter[0], maxSize.first, selection == item);
-        if (cursor.second - topleft > maxSize.second -1)
+        if (cursor.second - topleft > 0 && (unsigned)(cursor.second - topleft) > maxSize.second -1)
                 return false;
         if (!writeContent(cursor, maxSize, (const std::list<JSonElement *> *)item))
             return false;
         cursor.second += write(cursor.first, cursor.second, childDelimiter[1], maxSize.first, selection == item);
     }
     cursor.first -= indentLevel /2;
-    return (cursor.second - topleft <= maxSize.second -1);
+    return (cursor.second - topleft < 0 || (unsigned)(cursor.second - topleft) <= maxSize.second -1);
 }
 
 bool CurseOutput::writeContent(std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, const std::list<JSonElement*> *_item)
@@ -188,7 +197,7 @@ bool CurseOutput::writeKey(const std::string &key, std::pair<int, int> &cursor, 
 {
     cursor.second += write(cursor.first, cursor.second, key +": ", maxSize.first, selected);
     cursor.first += indentLevel;
-    return (cursor.second - topleft <= maxSize.second -1);
+    return (cursor.second - topleft < 0 || (unsigned)(cursor.second - topleft) <= maxSize.second -1);
 }
 
 unsigned int CurseOutput::write(const int &x, const int &y, const JSonElement *item, unsigned int maxWidth, bool selected)
@@ -297,11 +306,10 @@ bool CurseOutput::readInput()
                 if (selectIsLast)
                     topleft += 2;
                 else if (selection != select_down)
-                {
                     selection = select_down;
-                    return true;
-                }
-                break;
+                else
+                    break;
+                return true;
 
             case KEY_PPAGE:
             {
