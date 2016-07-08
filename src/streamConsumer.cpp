@@ -131,7 +131,10 @@ JSonElement *StreamConsumer::consumeToken(JSonContainer *parent, std::string &bu
             else
             {
                 if (c == '\\' || c == '"')
+                {
                     buf += c;
+                    escaped = false;
+                }
                 else
                     throw JsonEscapedException(c, stream.tellg());
             }
