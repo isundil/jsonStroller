@@ -2,13 +2,13 @@
 #include "jsonContainer.hh"
 #include "jsonObjectEntry.hh"
 
-JSonElement::JSonElement(JSonContainer *p): parent(p)
+JSonElement::JSonElement(JSonElement *p): parent(p)
 { }
 
 JSonElement::~JSonElement()
 { }
 
-void JSonElement::setParent(JSonContainer *p)
+void JSonElement::setParent(JSonElement *p)
 {
     parent = p;
 }
@@ -21,12 +21,12 @@ unsigned int JSonElement::getLevel() const
     return level;
 }
 
-JSonContainer *JSonElement::getParent()
+JSonElement *JSonElement::getParent()
 {
     return parent;
 }
 
-const JSonContainer *JSonElement::getParent() const
+const JSonElement *JSonElement::getParent() const
 {
     return parent;
 }
@@ -34,20 +34,18 @@ const JSonContainer *JSonElement::getParent() const
 const JSonElement *JSonElement::findPrev() const
 {
     const JSonElement *item = this;
-    const JSonContainer *parent = item->getParent();
-    if (parent == nullptr)
+    const JSonElement *parent = item->getParent();
+    if (parent == nullptr || !dynamic_cast<const JSonContainer*>(parent))
         return nullptr; // Root node, can't have brothers
-    std::list<JSonElement *>::const_iterator it = parent->cbegin();
-    const JSonObjectEntry *ent = dynamic_cast<const JSonObjectEntry *>(*it);
-    const JSonElement *prevElem = ent ? **ent : (*it);
-    if (prevElem == item || (ent && **ent == item))
+    std::list<JSonElement *>::const_iterator it = ((const JSonContainer*)parent)->cbegin();
+    const JSonElement *prevElem = *it;
+    if (prevElem == item)
         return nullptr; // First item
-    while ((++it) != parent->cend())
+    while ((++it) != ((const JSonContainer*)parent)->cend())
     {
-        ent = dynamic_cast<const JSonObjectEntry *>(*it);
-        if (*it == item || (ent && **ent == item))
+        if (*it == item)
             return prevElem;
-        prevElem = ent ? **ent : (*it);
+        prevElem = *it;
     }
     return nullptr;
 }
@@ -55,21 +53,17 @@ const JSonElement *JSonElement::findPrev() const
 const JSonElement* JSonElement::findNext() const
 {
     const JSonElement *item = this;
-    const JSonContainer *parent = item->getParent();
-    if (parent == nullptr)
+    const JSonElement *parent = item->getParent();
+    if (parent == nullptr || !dynamic_cast<const JSonContainer*>(parent))
         return nullptr; // Root node, can't have brothers
-    JSonContainer::const_iterator it = parent->cbegin();
-    while (it != parent->cend())
+    JSonContainer::const_iterator it = ((const JSonContainer*)parent)->cbegin();
+    while (it != ((const JSonContainer*)parent)->cend())
     {
-        const JSonObjectEntry *ent = dynamic_cast<const JSonObjectEntry *>(*it);
-        if (*it == item || (ent && **ent == item))
+        if (*it == item)
         {
             it++;
-            if (it == parent->cend())
+            if (it == ((const JSonContainer*)parent)->cend())
                 return parent->findNext(); // Last item
-            ent = dynamic_cast<const JSonObjectEntry *>(*it);
-            if (ent)
-                return **ent;
             return *it;
         }
         it++;

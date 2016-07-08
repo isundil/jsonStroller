@@ -7,21 +7,21 @@ class JSonContainer;
 class JSonElement
 {
     public:
-        JSonElement(JSonContainer *parent);
+        JSonElement(JSonElement *parent);
         virtual ~JSonElement();
 
         virtual std::string stringify() const =0;
         unsigned int getLevel() const;
-        JSonContainer *getParent();
-        const JSonContainer *getParent() const;
+        JSonElement *getParent();
+        const JSonElement *getParent() const;
 
-        void setParent(JSonContainer *parent);
+        void setParent(JSonElement *parent);
 
         const JSonElement *findPrev() const;
         const JSonElement *findNext() const;
 
     private:
         JSonElement();
-        JSonContainer *parent;
+        JSonElement *parent;
 };
 

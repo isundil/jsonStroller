@@ -75,8 +75,7 @@ bool CurseOutput::redraw()
     select_up = select_down = nullptr;
     selectFound = selectIsLast = selectIsFirst = false;
     getScreenSize(screenSize, cursor);
-    cursor.first = 0;
-    cursor.second = 0;
+    cursor.first = cursor.second = 0;
     clear();
     result = redraw(cursor, screenSize, data, dynamic_cast<const JSonContainer *> (data));
     if (!result && !select_down)
@@ -151,35 +150,50 @@ bool CurseOutput::writeContent(std::pair<int, int> &cursor, const std::pair<unsi
     cursor.first += indentLevel /2;
     for (std::list<JSonElement *>::const_iterator i = item->cbegin(); i != item->cend(); ++i)
     {
-        bool isObject = (dynamic_cast<const JSonObject *>(*i) != nullptr);
         if (containerIsObject)
         {
             JSonObjectEntry *ent = (JSonObjectEntry*) *i;
+            bool isContainer = (dynamic_cast<const JSonContainer *>(**ent) != nullptr);
             std::string key = ent->stringify();
-            checkSelection(**ent, (JSonContainer*) item, cursor);
-            if (collapsed.find((const JSonContainer*)(**ent)) != collapsed.cend())
+            checkSelection(ent, (JSonContainer*) item, cursor);
+            if (isContainer && collapsed.find((const JSonContainer*)(**ent)) != collapsed.cend())
             {
-                if (isObject)
-                    cursor.second += write(cursor.first, cursor.second, key + ": { ... }", maxSize.first, selection == **ent);
+                if (dynamic_cast<const JSonObject *>(**ent))
+                    cursor.second += write(cursor.first, cursor.second, key + ": { ... }", maxSize.first, selection == ent);
                 else
-                    cursor.second += write(cursor.first, cursor.second, key + ": [ ... ]", maxSize.first, selection == **ent);
+                    cursor.second += write(cursor.first, cursor.second, key + ": [ ... ]", maxSize.first, selection == ent);
+                if (cursor.second - topleft > 0 && (unsigned)(cursor.second - topleft) > maxSize.second -1)
+                        return false;
             }
-            else if (dynamic_cast<const JSonContainer*> (**ent) == nullptr)
-                cursor.second += write(cursor.first, cursor.second, key + ": " +((**ent)->stringify()), maxSize.first, selection == **ent);
+            else if (!isContainer)
+            {
+                cursor.second += write(cursor.first, cursor.second, key + ": " +((**ent)->stringify()), maxSize.first, selection == ent);
+                if (cursor.second - topleft > 0 && (unsigned)(cursor.second - topleft) > maxSize.second -1)
+                        return false;
+            }
             else if (((JSonContainer*)(**ent))->size() == 0)
             {
-                if (isObject)
-                    cursor.second += write(cursor.first, cursor.second, key + ": { }", maxSize.first, selection == **ent);
+                if (dynamic_cast<const JSonObject *>(**ent) )
+                    cursor.second += write(cursor.first, cursor.second, key + ": { }", maxSize.first, selection == ent);
                 else
-                    cursor.second += write(cursor.first, cursor.second, key + ": [ ]", maxSize.first, selection == **ent);
+                    cursor.second += write(cursor.first, cursor.second, key + ": [ ]", maxSize.first, selection == ent);
+                if (cursor.second - topleft > 0 && (unsigned)(cursor.second - topleft) > maxSize.second -1)
+                        return false;
             }
             else
             {
-                if (!writeKey(key, cursor, maxSize, selection == ent || selection == **ent))
+                if (!writeKey(key, cursor, maxSize, selection == ent))
                     return false;
                 cursor.first -= indentLevel /2;
+                const JSonElement *saveSelection = selection;
+                if (selection == ent)
+                    selection = **ent;
                 if (!redraw(cursor, maxSize, **ent, (const JSonContainer *)item))
+                {
+                    selection = saveSelection;
                     return false;
+                }
+                selection = saveSelection;
                 cursor.first -= indentLevel /2;
             }
         }
@@ -258,16 +272,25 @@ void CurseOutput::getScreenSize(std::pair<unsigned int, unsigned int> &screenSiz
 
 void CurseOutput::checkSelection(const JSonElement *item, const JSonElement *parent, const std::pair<int, int> &cursor)
 {
-    if (selection == item)
+    if (!selectFound)
     {
-        if (cursor.second <= topleft)
-            selectIsFirst = true;
-        selectFound = true;
+        if (selection == item)
+        {
+            if (cursor.second <= topleft)
+                selectIsFirst = true;
+            selectFound = true;
+        }
+        else if (!item->getParent() || !dynamic_cast<const JSonObjectEntry*>(item->getParent()))
+            select_up = item;
     }
-    else if (!selectFound)
-        select_up = item;
     else if (!select_down)
-        select_down = item;
+    {
+        const JSonElement *parent = item->getParent();
+        if (!dynamic_cast<const JSonContainer*>(item) && parent && selection != parent && dynamic_cast<const JSonObjectEntry*>(parent))
+            item = parent;
+        if (!parent || !dynamic_cast<const JSonObjectEntry*>(parent))
+            select_down = item;
+    }
 }
 
 /**
@@ -316,8 +339,8 @@ bool CurseOutput::readInput()
                 const JSonElement *brother = selection->findPrev();
                 if (brother == nullptr)
                 {
-                    const JSonContainer *parent = selection->getParent();
-                    if (parent)
+                    const JSonElement *parent = selection->getParent();
+                    if (parent && dynamic_cast<const JSonContainer*>(parent))
                         selection = parent;
                     else
                         break;
@@ -343,15 +366,17 @@ bool CurseOutput::readInput()
             case 'L':
             case KEY_RIGHT:
             {
-                const JSonContainer *_selection = dynamic_cast<const JSonContainer *>(selection);
-                if (!_selection)
+                const JSonElement *_selection = selection;
+                if (dynamic_cast<const JSonObjectEntry*>(selection))
+                    _selection = **((const JSonObjectEntry*)_selection);
+                if (!dynamic_cast<const JSonContainer*>(_selection))
                     break;
 
-                if (collapsed.erase((const JSonContainer *) selection))
+                if (collapsed.erase((const JSonContainer *)_selection))
                     return true;
-                if (!_selection->size())
+                if (!((const JSonContainer*)_selection)->size())
                     break;
-                selection = _selection->firstChild();
+                selection = select_down;
                 return true;
             }
 
@@ -359,16 +384,23 @@ bool CurseOutput::readInput()
             case 'H':
             case KEY_LEFT:
             {
-                const JSonContainer *_selection = dynamic_cast<const JSonContainer *>(selection);
-                if (!_selection
-                        || collapsed.find((const JSonContainer *) selection) != collapsed.end()
-                        || (_selection && _selection->size() == 0))
+                const JSonElement *_selection = selection;
+                if (dynamic_cast<const JSonObjectEntry*>(_selection))
+                    _selection = **((const JSonObjectEntry*)_selection);
+                if (selection->getParent() && (!dynamic_cast<const JSonContainer*>(_selection)
+                        || collapsed.find((const JSonContainer *)_selection) != collapsed.end()
+                        || (dynamic_cast<const JSonContainer*>(_selection) && ((const JSonContainer*)_selection)->size() == 0)))
                 {
-                    const JSonContainer *parent = selection->getParent();
-                    selection = parent ? parent : selection;
+                    selection = selection->getParent();
+                    if (selection->getParent() && dynamic_cast<const JSonObjectEntry*>(selection->getParent()))
+                        selection = selection->getParent();
                 }
                 else if (_selection)
-                    collapsed.insert((const JSonContainer *)selection);
+                {
+                    collapsed.insert((const JSonContainer *)_selection);
+                    if (dynamic_cast<const JSonContainer*>(selection) && selection->getParent())
+                        selection = selection->getParent();
+                }
                 else
                     break;
                 return true;

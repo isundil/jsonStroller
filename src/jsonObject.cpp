@@ -45,14 +45,16 @@ JSonElement *JSonObject::firstChild()
 {
     if (begin() == end())
         return nullptr;
-    return *begin();
+    JSonObjectEntry *elem = (JSonObjectEntry *) *begin();
+    return **elem;
 }
 
 const JSonElement *JSonObject::firstChild() const
 {
     if (cbegin() == cend())
         return nullptr;
-    return *cbegin();
+    const JSonObjectEntry *elem = (const JSonObjectEntry *) *cbegin();
+    return **elem;
 }
 
 std::string JSonObject::stringify() const
