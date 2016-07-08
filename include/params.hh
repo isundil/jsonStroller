@@ -14,6 +14,8 @@ class Params
         std::basic_istream<char> &getInput() const;
         bool isValid() const;
 
+        static void usage(const std::string &) noexcept;
+
     private:
         std::basic_istream<char> *input;
         const std::string progName;

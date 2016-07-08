@@ -30,6 +30,8 @@ Params::Params(int ac, char **av) :progName(*av), params(std::list<std::string>(
             {
                 input = new std::stringstream();
             }
+            else
+                throw std::runtime_error("Invalid argument: " +tmp);
         }
         else
         {
@@ -60,5 +62,11 @@ std::basic_istream<char> &Params::getInput() const
 bool Params::isValid() const
 {
     return true;
+}
+
+void Params::usage(const std::string &progName) noexcept
+{
+    std::cout << "Usage: " << progName << " [-f filename] read input from file instead of stdin" << std::endl;
+    std::cout << "Usage: " << progName << " -- [INPUT] (read input from argument line)" << std::endl;
 }
 
