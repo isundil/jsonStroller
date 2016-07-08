@@ -341,7 +341,11 @@ bool CurseOutput::readInput()
                 {
                     const JSonElement *parent = selection->getParent();
                     if (parent && dynamic_cast<const JSonContainer*>(parent))
+                    {
                         selection = parent;
+                        if (selection->getParent() && dynamic_cast<const JSonObjectEntry*> (selection->getParent()))
+                            selection = selection->getParent();
+                    }
                     else
                         break;
                 }
