@@ -1,7 +1,9 @@
 #include <iostream>
+#include <typeinfo>
 #include "streamConsumer.hh"
 #include "curseOutput.hh"
 #include "params.hh"
+#include "jsonException.hh"
 
 void run(Params *params)
 {
@@ -9,14 +11,28 @@ void run(Params *params)
     CurseOutput *out;
     JSonElement *root;
 
-    stream = StreamConsumer::read(params->getInput());
-    root = stream->getRoot();
-    if (root)
+    try
     {
-        out = new CurseOutput(root);
-        out->run();
-        delete out;
+        stream = StreamConsumer::read(params->getInput());
+        root = stream->getRoot();
+        if (!root)
+            throw EofException();
     }
+    catch (EofException &e)
+    {
+        std::cerr << params->getProgName() << ": " << typeid(e).name() << " ("  << e.what() << ") error while reading" << std::endl;
+        return;
+    }
+    catch (JsonException &e)
+    {
+        std::cerr << params->getProgName() << ": [" << typeid(e).name() << "] ("  << e.what() << ") error while reading" << std::endl;
+        std::string buffer = e.getHistory();
+        std::cerr << buffer << std::endl << std::string(buffer.size() -1, '~') << '^' << std::endl;
+        return;
+    }
+    out = new CurseOutput(root);
+    out->run();
+    delete out;
     delete stream;
 }
 

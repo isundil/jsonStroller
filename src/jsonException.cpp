@@ -1,19 +1,31 @@
 #include <string>
 #include "jsonException.hh"
 
-JsonException::JsonException(unsigned long long pos): offset(pos)
+JsonException::JsonException(const std::string &wh, unsigned long long pos, WrappedBuffer<char> &h): offset(pos), history(h), _what(wh)
 { }
 
-JsonFormatException::JsonFormatException(char character, unsigned long long pos): JsonException(pos), c(character)
+JsonFormatException::JsonFormatException(unsigned long long pos, WrappedBuffer<char> &h):
+    JsonException("invalid value", pos, h)
 { }
 
-JsonEscapedException::JsonEscapedException(char character, unsigned long long pos): JsonFormatException(character, pos)
+JsonNotJsonException::JsonNotJsonException(unsigned long long pos, WrappedBuffer<char> &h):
+    JsonException("expected json entry, got token", pos, h)
 { }
 
-const char *JsonFormatException::what() const noexcept
+JsonEscapedException::JsonEscapedException(char ch, unsigned long long pos, WrappedBuffer<char> &h):
+    JsonException("unexpected escaped char " +c, pos, h), c(ch)
+{ }
+
+JsonUnexpectedException::JsonUnexpectedException(const char expected, unsigned long long offset, WrappedBuffer<char> &h): JsonException("expected " +expected, offset, h)
+{ }
+
+std::string JsonException::getHistory() const
 {
-    std::string res = "Error: unexpected escaped char '";
-    res += c +"' at offset " +offset;
-    return res.c_str();
+    return history.toString();
+}
+
+const char *JsonException::what() const noexcept
+{
+    return _what.c_str();
 }
 

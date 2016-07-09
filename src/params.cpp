@@ -70,3 +70,6 @@ void Params::usage(const std::string &progName) noexcept
     std::cout << "Usage: " << progName << " -- [INPUT] (read input from argument line)" << std::endl;
 }
 
+const std::string &Params::getProgName() const
+{ return progName; }
+

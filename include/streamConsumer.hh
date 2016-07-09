@@ -4,6 +4,7 @@
 #include "jsonObject.hh"
 #include "jsonArray.hh"
 #include "jsonPrimitive.hh"
+#include "wrappedBuffer.hpp"
 
 class StreamConsumer
 {
@@ -27,5 +28,7 @@ class StreamConsumer
 
         std::istream &stream;
         JSonElement *root;
+
+        WrappedBuffer<char> history;
 };
 

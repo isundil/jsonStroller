@@ -1,32 +1,49 @@
 #pragma once
 
 #include <exception>
+#include "wrappedBuffer.hpp"
 
-class EofException: std::exception
+class EofException: public std::exception
 { };
 
-class JsonException: std::exception
+class JsonException: public std::exception
 {
     public:
-        JsonException(unsigned long long offset);
+        JsonException(const std::string &what, unsigned long long offset, WrappedBuffer<char> &buf);
 
-    protected:
-        const unsigned long long offset;
-};
-
-class JsonFormatException: JsonException
-{
-    public:
-        JsonFormatException(char character, unsigned long long offset);
+        std::string getHistory() const;
         const char *what() const noexcept;
 
     protected:
-        const char c;
+        const unsigned long long offset;
+        const WrappedBuffer<char> history;
+        const std::string _what;
 };
 
-class JsonEscapedException: JsonFormatException
+class JsonNotJsonException: public JsonException
 {
     public:
-        JsonEscapedException(char character, unsigned long long offset);
+        JsonNotJsonException(unsigned long long offet, WrappedBuffer<char> &h);
+};
+
+class JsonUnexpectedException: public JsonException
+{
+    public:
+        JsonUnexpectedException(const char expected, unsigned long long offset, WrappedBuffer<char> &h);
+};
+
+class JsonFormatException: public JsonException
+{
+    public:
+        JsonFormatException(unsigned long long offset, WrappedBuffer<char> &h);
+};
+
+class JsonEscapedException: public JsonException
+{
+    public:
+        JsonEscapedException(char c, unsigned long long offset, WrappedBuffer<char> &h);
+
+    protected:
+        const char c;
 };
 

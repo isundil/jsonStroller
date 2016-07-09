@@ -2,6 +2,7 @@
 
 #include "jsonContainer.hh"
 #include "jsonObjectEntry.hh"
+#include "jsonException.hh"
 
 class JSonObject: public JSonContainer
 {
@@ -19,5 +20,17 @@ class JSonObject: public JSonContainer
         const JSonElement* get(const std::string &) const;
 
         virtual std::string stringify() const;
+
+    class DoubleKeyException: public JsonException
+    {
+        public:
+            DoubleKeyException(unsigned long long offset, const std::string &key, WrappedBuffer<char> &buf);
+    };
+
+    class NotAKeyException: public JsonException
+    {
+        public:
+            NotAKeyException(unsigned long long offset, WrappedBuffer<char> &buf);
+    };
 };
 
