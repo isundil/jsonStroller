@@ -21,3 +21,5 @@ add_test(json_test test/json_test)
 set_property(TARGET wrapped_test PROPERTY RUNTIME_OUTPUT_DIRECTORY test)
 add_test(wrapped_test test/wrapped_test)
 
+install(TARGETS jsonstroll DESTINATION bin)
+
