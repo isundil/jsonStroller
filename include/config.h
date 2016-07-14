@@ -1,0 +1,5 @@
+
+#ifndef  ERROR_HISTORY_LEN
+# define ERROR_HISTORY_LEN 45
+#endif //ERROR_HISTORY_LEN
+

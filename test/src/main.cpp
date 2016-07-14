@@ -17,7 +17,7 @@ StreamConsumer *toJson(std::string str)
 void checkArray()
 {
     //Check array
-    StreamConsumer *root = toJson("[true, 42, \"coucou\", 12.34, false]");
+    StreamConsumer *root = toJson("[true, 42, \"coucou\", 12.34, false, -12, -12.42]");
     JSonArray *arr = dynamic_cast<JSonArray *>(root->getRoot());
     assert(arr != nullptr);
     JSonArray::const_iterator it = arr->cbegin();
@@ -30,11 +30,18 @@ void checkArray()
     assert((dynamic_cast<JSonPrimitive<std::string> *> (*it)) != nullptr);
     assert(((JSonPrimitive<std::string> *)(*it))->getValue() == "coucou");
     it++;
-    assert((dynamic_cast<JSonPrimitive<float> *> (*it)) != nullptr);
-    assert(((JSonPrimitive<float> *)(*it))->getValue() == 12.34f);
+    assert((dynamic_cast<JSonPrimitive<double> *> (*it)) != nullptr);
+    assert(((JSonPrimitive<double> *)(*it))->getValue() == 12.34);
     it++;
     assert((dynamic_cast<JSonPrimitive<bool> *> (*it)) != nullptr);
     assert(((JSonPrimitive<bool> *)(*it))->getValue() == false);
+    it++;
+    assert((dynamic_cast<JSonPrimitive<int> *> (*it)) != nullptr);
+    assert(((JSonPrimitive<int> *)(*it))->getValue() == -12);
+    it++;
+    assert((dynamic_cast<JSonPrimitive<double> *> (*it)) != nullptr);
+    double value = ((JSonPrimitive<double> *)(*it))->getValue();
+    assert(value == -12.42);
     delete root;
 }
 
@@ -54,7 +61,8 @@ void checkTypes()
     assert(dynamic_cast<JSonPrimitive<int> *>(root->getRoot()) != nullptr);
     delete root;
     root = toJson("42.2");
-    assert(dynamic_cast<JSonPrimitive<float> *>(root->getRoot()) != nullptr);
+    assert(dynamic_cast<JSonPrimitive<double> *>(root->getRoot()) != nullptr);
+    assert((((JSonPrimitive<double> *)(root->getRoot()))->getValue()) == 42.2);
     delete root;
     root = toJson(std::to_string((long long)LLONG_MAX));
     assert(dynamic_cast<JSonPrimitive<long long> *>(root->getRoot()) != nullptr);
@@ -67,7 +75,7 @@ void checkTypes()
 void checkObject()
 {
     //Check Obj
-    StreamConsumer *root = toJson("{\"bool\":true, \"int\":42, \"str\":\"coucou\", \"float\":12.34, \"arrayOfInt\":[1, 2, 3, 4.5]}");
+    StreamConsumer *root = toJson("{\"bool\":true, \"int\":42, \"str\":\"coucou\", \"double\":12.34, \"arrayOfInt\":[1, 2, 3, 4.5]}");
     assert(dynamic_cast<JSonObject *>(root->getRoot()) != nullptr);
     assert(((JSonObject *)(root->getRoot()))->size() == 5);
     const JSonElement *tmp = ((JSonObject *)(root->getRoot()))->get("bool");
@@ -79,9 +87,9 @@ void checkObject()
     tmp = ((JSonObject *)(root->getRoot()))->get("str");
     assert((dynamic_cast<const JSonPrimitive<std::string> *> (tmp)) != nullptr);
     assert((dynamic_cast<const JSonPrimitive<std::string> *> (tmp))->getValue() == "coucou");
-    tmp = ((JSonObject *)(root->getRoot()))->get("float");
-    assert((dynamic_cast<const JSonPrimitive<float> *> (tmp)) != nullptr);
-    assert((dynamic_cast<const JSonPrimitive<float> *> (tmp))->getValue() == 12.34f);
+    tmp = ((JSonObject *)(root->getRoot()))->get("double");
+    assert((dynamic_cast<const JSonPrimitive<double> *> (tmp)) != nullptr);
+    assert((dynamic_cast<const JSonPrimitive<double> *> (tmp))->getValue() == 12.34);
     tmp = ((JSonObject *)(root->getRoot()))->get("arrayOfInt");
     const JSonArray *arr2 = dynamic_cast<const JSonArray *> (tmp);
     assert(arr2 != nullptr);
@@ -96,8 +104,8 @@ void checkObject()
     assert((dynamic_cast<JSonPrimitive<int> *> (*it)) != nullptr);
     assert(((JSonPrimitive<int> *)(*it))->getValue() == 3);
     it++;
-    assert((dynamic_cast<JSonPrimitive<float> *> (*it)) != nullptr);
-    assert(((JSonPrimitive<float> *)(*it))->getValue() == 4.5f);
+    assert((dynamic_cast<JSonPrimitive<double> *> (*it)) != nullptr);
+    assert(((JSonPrimitive<double> *)(*it))->getValue() == 4.5);
     delete root;
 }
 

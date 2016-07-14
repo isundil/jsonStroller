@@ -1,5 +1,6 @@
 #pragma once
 
+#include "config.h"
 #include "jsonContainer.hh"
 #include "jsonObjectEntry.hh"
 #include "jsonException.hh"
@@ -24,13 +25,13 @@ class JSonObject: public JSonContainer
     class DoubleKeyException: public JsonException
     {
         public:
-            DoubleKeyException(unsigned long long offset, const std::string &key, WrappedBuffer<char> &buf);
+            DoubleKeyException(unsigned long long offset, const std::string &key, WrappedBuffer<char, ERROR_HISTORY_LEN> &buf);
     };
 
     class NotAKeyException: public JsonException
     {
         public:
-            NotAKeyException(unsigned long long offset, WrappedBuffer<char> &buf);
+            NotAKeyException(unsigned long long offset, WrappedBuffer<char, ERROR_HISTORY_LEN> &buf);
     };
 };
 

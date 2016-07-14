@@ -1,4 +1,5 @@
 #include <iostream>
+#include <sstream>
 #include "jsonException.hh"
 #include "jsonElement.hh"
 #include "streamConsumer.hh"
@@ -111,7 +112,7 @@ JSonElement *StreamConsumer::consumeToken(JSonContainer *parent, std::string &bu
     bool inString = false;
     bool inBool = false;
     bool inNumber = false;
-    bool numberIsFloat = false;
+    bool numberIsDouble = false;
 
     while (stream.good())
     {
@@ -165,17 +166,24 @@ JSonElement *StreamConsumer::consumeToken(JSonContainer *parent, std::string &bu
         {
             if (c >= '0' && c <= '9')
                 buf += c;
-            else if (c == '.' && !numberIsFloat)
+            else if (c == '.' && !numberIsDouble)
             {
-                numberIsFloat = true;
+                numberIsDouble = true;
                 buf += c;
             }
             else
             {
                 history.pop_back();
                 stream.unget();
-                if (numberIsFloat)
-                    return new JSonPrimitive<float>(parent, std::stof(buf));
+                if (numberIsDouble)
+                {
+                    try {
+                        return new JSonPrimitive<double>(parent, atof(buf.c_str()));
+                    } catch (std::runtime_error &e)
+                    {
+                        throw JsonFormatException(stream.tellg(), history);
+                    }
+                }
                 try
                 {
                     return new JSonPrimitive<int>(parent, std::stoi(buf));
@@ -204,7 +212,7 @@ JSonElement *StreamConsumer::consumeToken(JSonContainer *parent, std::string &bu
                 buf = c;
                 return nullptr;
             }
-            else if ((c >= '0' && c <= '9') || c == '.')
+            else if ((c >= '0' && c <= '9') || c == '.' || c == '-')
             {
                 buf = c;
                 inNumber = true;

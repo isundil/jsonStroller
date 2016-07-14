@@ -1,6 +1,6 @@
 #include "jsonPrimitive.hh"
 
-template<> JSonPrimitive<float>::~JSonPrimitive() {}
+template<> JSonPrimitive<double>::~JSonPrimitive() {}
 template<> JSonPrimitive<bool>::~JSonPrimitive() {}
 template<> JSonPrimitive<int>::~JSonPrimitive() {}
 template<> JSonPrimitive<long long>::~JSonPrimitive() {}
@@ -11,7 +11,7 @@ template<> std::string JSonPrimitive<std::string>::stringify() const
     return value;
 }
 
-template<> std::string JSonPrimitive<float>::stringify() const
+template<> std::string JSonPrimitive<double>::stringify() const
 {
     return std::to_string(value);
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <istream>
+#include "config.h"
 #include "jsonObject.hh"
 #include "jsonArray.hh"
 #include "jsonPrimitive.hh"
@@ -29,6 +30,10 @@ class StreamConsumer
         std::istream &stream;
         JSonElement *root;
 
-        WrappedBuffer<char> history;
+        WrappedBuffer<char, ERROR_HISTORY_LEN> history;
+
+    private:
+        static float _stof(const std::string &);
+        static float _stof(const char *);
 };
 
