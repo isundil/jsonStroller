@@ -400,11 +400,7 @@ bool CurseOutput::readInput()
                         selection = selection->getParent();
                 }
                 else if (_selection)
-                {
                     collapsed.insert((const JSonContainer *)_selection);
-                    if (dynamic_cast<const JSonContainer*>(selection) && selection->getParent())
-                        selection = selection->getParent();
-                }
                 else
                     break;
                 return true;
