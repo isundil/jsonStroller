@@ -17,10 +17,12 @@ class Params
         static void usage(const std::string &) noexcept;
 
         const std::string &getProgName() const;
+        bool isIgnoringUnicode() const;
 
     private:
         std::basic_istream<char> *input;
         const std::string progName;
         std::list<std::string> params;
+        bool ignoreUnicode;
 };
 

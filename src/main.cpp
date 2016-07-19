@@ -13,7 +13,7 @@ void run(Params *params)
 
     try
     {
-        stream = StreamConsumer::read(params->getInput());
+        stream = StreamConsumer::read(params->getInput(), params);
         root = stream->getRoot();
         if (!root)
             throw EofException();

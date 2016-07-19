@@ -2,6 +2,7 @@
 
 #include <istream>
 #include "config.h"
+#include "params.hh"
 #include "jsonObject.hh"
 #include "jsonArray.hh"
 #include "jsonPrimitive.hh"
@@ -12,8 +13,10 @@ class StreamConsumer
     public:
         virtual ~StreamConsumer();
 
-        static StreamConsumer *read(std::istream &stream);
+        static StreamConsumer *read(std::istream &stream, const Params *params=nullptr);
         JSonElement * const getRoot() const;
+
+        StreamConsumer *withConfig(const Params *);
 
     private:
         StreamConsumer(std::istream &stream);
@@ -26,9 +29,11 @@ class StreamConsumer
         JSonObject *readObject(JSonContainer *parent);
         JSonArray *readArray(JSonContainer *parent);
         bool ignoreChar(char c) const noexcept;
+        void appendUnicode(const char [4], std::string &);
 
         std::istream &stream;
         JSonElement *root;
+        const Params *params;
 
         WrappedBuffer<char, ERROR_HISTORY_LEN> history;
 

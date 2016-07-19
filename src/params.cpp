@@ -7,6 +7,7 @@ Params::Params(int ac, char **av) :progName(*av), params(std::list<std::string>(
 {
     bool written = false;
     std::stringstream *input = nullptr;
+    ignoreUnicode = false;
 
     while (*(++av))
     {
@@ -30,6 +31,8 @@ Params::Params(int ac, char **av) :progName(*av), params(std::list<std::string>(
             {
                 input = new std::stringstream();
             }
+            else if (tmp == "--ascii")
+                ignoreUnicode = true;
             else
                 throw std::runtime_error("Invalid argument: " +tmp);
         }
@@ -59,16 +62,18 @@ std::basic_istream<char> &Params::getInput() const
     return std::cin;
 }
 
-bool Params::isValid() const
-{
-    return true;
-}
-
 void Params::usage(const std::string &progName) noexcept
 {
-    std::cout << "Usage: " << progName << " [-f filename] read input from file instead of stdin" << std::endl;
-    std::cout << "Usage: " << progName << " -- [INPUT] (read input from argument line)" << std::endl;
+    std::cout << "Usage: " << progName << " [OPTIONS] [--] INPUT" << std::endl;
+    std::cout << "\t\t-f filename\tread input from (filename) instead of stdin" << std::endl;
+    std::cout << "\t\t--ascii\tignore unicode values" << std::endl;
 }
+
+bool Params::isValid() const
+{ return true; }
+
+bool Params::isIgnoringUnicode() const
+{ return ignoreUnicode; }
 
 const std::string &Params::getProgName() const
 { return progName; }

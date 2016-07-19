@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string.h>
 #include <string>
 
 template <typename T, int SIZE =10>
@@ -10,6 +11,7 @@ class WrappedBuffer
         virtual ~WrappedBuffer();
 
         void put(T item);
+        void put(T item[], unsigned int count);
         void pop_back();
 
         unsigned int size() const;
@@ -53,6 +55,39 @@ void WrappedBuffer<T, SIZE>::put(T item)
                 curR = 0;
         }
     }
+}
+
+template<typename T, int SIZE>
+void WrappedBuffer<T, SIZE>::put(T items[], unsigned int count)
+{
+    unsigned int newSize = size() + count;
+
+    if (!count)
+        return;
+    while (count > SIZE)
+    {
+        count -= SIZE;
+        items += SIZE;
+    }
+    if (curW + count >= SIZE)
+    {
+        if (curW +1 != SIZE)
+        {
+            memcpy(&buffer[curW +1], items, sizeof(T) * (SIZE - curW -1));
+            items += (SIZE - curW -1);
+            count -= (SIZE - curW -1);
+        }
+        curW = -1;
+    }
+    memcpy(&buffer[curW +1], items, sizeof(T) * count);
+    curW += count;
+    if (curW == SIZE)
+    {
+        curW = 0;
+        curR = 1;
+    }
+    else if (newSize >= SIZE)
+        curR = (curW +1) % SIZE;
 }
 
 template<typename T, int SIZE>

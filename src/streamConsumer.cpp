@@ -13,9 +13,15 @@ StreamConsumer::~StreamConsumer()
         delete root;
 }
 
-StreamConsumer *StreamConsumer::read(std::istream &stream)
+StreamConsumer *StreamConsumer::withConfig(const Params *p)
 {
-    StreamConsumer *inst = new StreamConsumer(stream);
+    params = p;
+    return this;
+}
+
+StreamConsumer *StreamConsumer::read(std::istream &stream, const Params *config)
+{
+    StreamConsumer *inst = (new StreamConsumer(stream))->withConfig(config);
     inst->root = inst->readNext(nullptr);
     return inst;
 }
@@ -137,6 +143,25 @@ JSonElement *StreamConsumer::consumeToken(JSonContainer *parent, std::string &bu
                     buf += c;
                     escaped = false;
                 }
+                else if (c == 'u')
+                {
+                    if (params && params->isIgnoringUnicode())
+                    {
+                        buf += "\\u";
+                        escaped = false;
+                    }
+                    else
+                    {
+                        char unicodeBuf[4];
+                        stream.read(unicodeBuf, 4);
+                        std::streamsize gcount = stream.gcount();
+                        history.put(unicodeBuf, gcount);
+                        if (gcount != 4)
+                            break;
+                        appendUnicode(unicodeBuf, buf);
+                        escaped = false;
+                    }
+                }
                 else
                     throw JsonEscapedException(c, stream.tellg(), history);
             }
@@ -223,6 +248,13 @@ JSonElement *StreamConsumer::consumeToken(JSonContainer *parent, std::string &bu
     }
     buf = "";
     return nullptr;
+}
+
+void StreamConsumer::appendUnicode(const char unicode[4], std::string &buf)
+{
+    std::string rawHex = { '0', 'x', unicode[0], unicode[1], unicode[2], unicode[3], '\0' };
+    wchar_t unichar = std::stoul(rawHex, nullptr, 16);
+    buf += unichar;
 }
 
 bool StreamConsumer::ignoreChar(char c) const noexcept

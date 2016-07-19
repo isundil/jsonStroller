@@ -144,11 +144,106 @@ bool testBorder()
     return _testBorder(test);
 }
 
+bool _testBatch(WrappedBuffer<char, 3> &test)
+{
+    char buf[] = {'a', 'b', 'c', 'd', 'e'};
+
+    test.put(buf, 2);
+    if (test.size() != 2)
+        FAILED(test.size(), "!=", 2);
+    if (test.toString() != "ab")
+        FAILED(test.toString(), "!=", "ab");
+    test.put(&buf[2], 2);
+    if (test.size() != 3)
+        FAILED(test.size(), "!=", 3);
+    if (test.toString() != "bcd")
+        FAILED(test.toString(), "!=", "bcd");
+    test.put(&buf[2], 2);
+    if (test.size() != 3)
+        FAILED(test.size(), "!=", 3);
+    if (test.toString() != "dcd")
+        FAILED(test.toString(), "!=", "dcd");
+    test.put(&buf[3], 2);
+    if (test.size() != 3)
+        FAILED(test.size(), "!=", 3);
+    if (test.toString() != "dde")
+        FAILED(test.toString(), "!=", "dde");
+    test.put(&buf[2], 2);
+    if (test.size() != 3)
+        FAILED(test.size(), "!=", 3);
+    if (test.toString() != "ecd")
+        FAILED(test.toString(), "!=", "ecd");
+    test.put(buf, 3);
+    if (test.size() != 3)
+        FAILED(test.size(), "!=", 3);
+    if (test.toString() != "abc")
+        FAILED(test.toString(), "!=", "abc");
+    test.put(buf, 5);
+    if (test.size() != 3)
+        FAILED(test.size(), "!=", 3);
+    if (test.toString() != "cde")
+        FAILED(test.toString(), "!=", "cde");
+
+    test.pop_back();
+    if (test.size() != 2)
+        FAILED(test.size(), "!=", 2);
+    if (test.toString() != "cd")
+        FAILED(test.toString(), "!=", "cd");
+    test.put(buf, 2);
+    if (test.size() != 3)
+        FAILED(test.size(), "!=", 3);
+    if (test.toString() != "dab")
+        FAILED(test.toString(), "!=", "dab");
+
+    test.pop_back();
+    if (test.size() != 2)
+        FAILED(test.size(), "!=", 2);
+    if (test.toString() != "da")
+        FAILED(test.toString(), "!=", "da");
+    test.put(buf, 2);
+    if (test.size() != 3)
+        FAILED(test.size(), "!=", 3);
+    if (test.toString() != "aab")
+        FAILED(test.toString(), "!=", "aab");
+
+    test.pop_back();
+    if (test.size() != 2)
+        FAILED(test.size(), "!=", 2);
+    if (test.toString() != "aa")
+        FAILED(test.toString(), "!=", "aa");
+    test.put(&buf[1], 2);
+    if (test.size() != 3)
+        FAILED(test.size(), "!=", 3);
+    if (test.toString() != "abc")
+        FAILED(test.toString(), "!=", "abc");
+
+    test.pop_back();
+    if (test.size() != 2)
+        FAILED(test.size(), "!=", 2);
+    if (test.toString() != "ab")
+        FAILED(test.toString(), "!=", "ab");
+    test.put(buf, 2);
+    if (test.size() != 3)
+        FAILED(test.size(), "!=", 3);
+    if (test.toString() != "bab")
+        FAILED(test.toString(), "!=", "bab");
+    return true;
+}
+
+bool testBatch()
+{
+    WrappedBuffer<char, 3> test;
+
+    return _testBatch(test);
+}
+
 int main()
 {
     if (!simpleTest())
         exit(EXIT_FAILURE);
     if (!testBorder())
+        exit(EXIT_FAILURE);
+    if (!testBatch())
         exit(EXIT_FAILURE);
     exit(EXIT_SUCCESS);
 }
