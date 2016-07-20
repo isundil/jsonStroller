@@ -211,6 +211,8 @@ bool CurseOutput::writeContent(std::pair<int, int> &cursor, const std::pair<unsi
 
 bool CurseOutput::writeKey(const std::string &key, const std::string &after, std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, OutputFlag flags)
 {
+    if (cursor.second - topleft < 0)
+        return 1;
     writeKey(key, cursor, maxSize, flags, after.size());
     write(after.c_str(), maxSize.first, flags);
     cursor.first -= INDENT_LEVEL;
@@ -219,6 +221,8 @@ bool CurseOutput::writeKey(const std::string &key, const std::string &after, std
 
 bool CurseOutput::writeKey(const std::string &key, std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, OutputFlag flags, unsigned int extraLen)
 {
+    if (cursor.second - topleft < 0)
+        return 1;
     char oldType = flags.type();
     flags.type(OutputFlag::TYPE_OBJKEY);
     cursor.second += write(cursor.first, cursor.second, key, maxSize.first -extraLen -2, flags);
