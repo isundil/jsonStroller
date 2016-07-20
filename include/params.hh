@@ -5,7 +5,13 @@
 #include <string>
 #include <istream>
 
-class Params
+class AParams
+{
+    public:
+        virtual bool isIgnoringUnicode() const =0;
+};
+
+class Params: public AParams
 {
     public:
         Params(int ac, char **av);
@@ -13,6 +19,7 @@ class Params
 
         std::basic_istream<char> &getInput() const;
         bool isValid() const;
+        bool colorEnabled() const;
 
         static void usage(const std::string &) noexcept;
 
@@ -24,5 +31,6 @@ class Params
         const std::string progName;
         std::list<std::string> params;
         bool ignoreUnicode;
+        bool colorMode;
 };
 

@@ -1,5 +1,8 @@
 #include "jsonPrimitive.hh"
 
+AJsonPrimitive::~AJsonPrimitive()
+{}
+
 template<> JSonPrimitive<double>::~JSonPrimitive() {}
 template<> JSonPrimitive<bool>::~JSonPrimitive() {}
 template<> JSonPrimitive<int>::~JSonPrimitive() {}

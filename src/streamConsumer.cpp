@@ -13,13 +13,13 @@ StreamConsumer::~StreamConsumer()
         delete root;
 }
 
-StreamConsumer *StreamConsumer::withConfig(const Params *p)
+StreamConsumer *StreamConsumer::withConfig(const AParams *p)
 {
     params = p;
     return this;
 }
 
-StreamConsumer *StreamConsumer::read(std::istream &stream, const Params *config)
+StreamConsumer *StreamConsumer::read(std::istream &stream, const AParams *config)
 {
     StreamConsumer *inst = (new StreamConsumer(stream))->withConfig(config);
     inst->root = inst->readNext(nullptr);

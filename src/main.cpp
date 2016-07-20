@@ -30,7 +30,7 @@ void run(Params *params)
         std::cerr << buffer << std::endl << std::string(buffer.size() -1, '~') << '^' << std::endl;
         return;
     }
-    out = new CurseOutput(root);
+    out = new CurseOutput(root, *params);
     out->run();
     delete out;
     delete stream;

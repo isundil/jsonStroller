@@ -1,6 +1,8 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <curses.h>
+#include <unistd.h>
 #include "params.hh"
 
 Params::Params(int ac, char **av) :progName(*av), params(std::list<std::string>(ac -1))
@@ -8,6 +10,7 @@ Params::Params(int ac, char **av) :progName(*av), params(std::list<std::string>(
     bool written = false;
     std::stringstream *input = nullptr;
     ignoreUnicode = false;
+    colorMode = isatty(1);
 
     while (*(++av))
     {
@@ -33,6 +36,20 @@ Params::Params(int ac, char **av) :progName(*av), params(std::list<std::string>(
             }
             else if (tmp == "--ascii")
                 ignoreUnicode = true;
+            else if (tmp == "--color")
+                colorMode = true;
+            else if (tmp.find("--color=") == 0)
+            {
+                std::string mode = (*av) + 8;
+                if (mode == "always")
+                    colorMode = true;
+                else if (mode == "never")
+                    colorMode = false;
+                else if (mode == "auto")
+                    colorMode = isatty(1);
+                else
+                    throw std::runtime_error("Invalid option for --color: " +mode);
+            }
             else
                 throw std::runtime_error("Invalid argument: " +tmp);
         }
@@ -67,10 +84,14 @@ void Params::usage(const std::string &progName) noexcept
     std::cout << "Usage: " << progName << " [OPTIONS] [--] INPUT" << std::endl;
     std::cout << "\t\t-f filename\tread input from (filename) instead of stdin" << std::endl;
     std::cout << "\t\t--ascii\tignore unicode values" << std::endl;
+    std::cout << "\t\t--color[=MODE]\tColorize output, MODE can be always (default when ommited), never or auto (default if --color is ommited)" << std::endl;
 }
 
 bool Params::isValid() const
 { return true; }
+
+bool Params::colorEnabled() const
+{ return colorMode; }
 
 bool Params::isIgnoringUnicode() const
 { return ignoreUnicode; }

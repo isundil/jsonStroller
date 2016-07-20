@@ -13,10 +13,10 @@ class StreamConsumer
     public:
         virtual ~StreamConsumer();
 
-        static StreamConsumer *read(std::istream &stream, const Params *params=nullptr);
+        static StreamConsumer *read(std::istream &stream, const AParams *params=nullptr);
         JSonElement * const getRoot() const;
 
-        StreamConsumer *withConfig(const Params *);
+        StreamConsumer *withConfig(const AParams *);
 
     private:
         StreamConsumer(std::istream &stream);
@@ -33,7 +33,7 @@ class StreamConsumer
 
         std::istream &stream;
         JSonElement *root;
-        const Params *params;
+        const AParams *params;
 
         WrappedBuffer<char, ERROR_HISTORY_LEN> history;
 
