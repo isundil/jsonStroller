@@ -125,7 +125,6 @@ bool CurseOutput::writeContainer(std::pair<int, int> &cursor, const std::pair<un
     else
         memcpy(childDelimiter, "[]", sizeof(*childDelimiter) * 2);
 
-    cursor.first += INDENT_LEVEL /2;
     if (collapsed.find((const JSonContainer *)item) != collapsed.end())
     {
         std::string ss;
@@ -134,14 +133,13 @@ bool CurseOutput::writeContainer(std::pair<int, int> &cursor, const std::pair<un
     }
     else
     {
-        cursor.second += write(cursor.first, cursor.second, childDelimiter[0], maxSize.first, selection == item);
+        cursor.second += write(cursor.first, cursor.second, childDelimiter[0], maxSize.first, getFlag(item));
         if (cursor.second - topleft > 0 && (unsigned)(cursor.second - topleft) > maxSize.second -1)
                 return false;
         if (!writeContent(cursor, maxSize, (const std::list<JSonElement *> *)item))
             return false;
-        cursor.second += write(cursor.first, cursor.second, childDelimiter[1], maxSize.first, selection == item);
+        cursor.second += write(cursor.first, cursor.second, childDelimiter[1], maxSize.first, getFlag(item));
     }
-    cursor.first -= INDENT_LEVEL /2;
     return (cursor.second - topleft < 0 || (unsigned)(cursor.second - topleft) <= maxSize.second -1);
 }
 
@@ -149,9 +147,12 @@ bool CurseOutput::writeContent(std::pair<int, int> &cursor, const std::pair<unsi
 {
     const JSonContainer *item = (const JSonContainer *)_item;
     bool containerIsObject = (dynamic_cast<const JSonObject *>(item) != nullptr);
-    cursor.first += INDENT_LEVEL /2;
+    bool result = true;
+    cursor.first += INDENT_LEVEL;
+
     for (std::list<JSonElement *>::const_iterator i = item->cbegin(); i != item->cend(); ++i)
     {
+        result = false;
         if (containerIsObject)
         {
             JSonObjectEntry *ent = (JSonObjectEntry*) *i;
@@ -161,38 +162,40 @@ bool CurseOutput::writeContent(std::pair<int, int> &cursor, const std::pair<unsi
             if (isContainer && collapsed.find((const JSonContainer*)(**ent)) != collapsed.cend())
             {
                 if (dynamic_cast<const JSonObject *>(**ent))
-                    writeKey(key, "{ ... }", cursor, maxSize, getFlag(ent));
-                else
-                    writeKey(key, "[ ... ]", cursor, maxSize, getFlag(ent));
-                if (cursor.second - topleft > 0 && (unsigned)(cursor.second - topleft) > maxSize.second -1)
-                        return false;
+                {
+                    if (!writeKey(key, "{ ... }", cursor, maxSize, getFlag(ent)))
+                        break;
+                }
+                else if (!writeKey(key, "[ ... ]", cursor, maxSize, getFlag(ent)) || (cursor.second - topleft > 0 && (unsigned)(cursor.second - topleft) > maxSize.second -1))
+                    break;
             }
             else if (!isContainer)
             {
-                writeKey(key, ((**ent)->stringify()), cursor, maxSize, getFlag(ent));
-                if (cursor.second - topleft > 0 && (unsigned)(cursor.second - topleft) > maxSize.second -1)
-                        return false;
+                if (!writeKey(key, ((**ent)->stringify()), cursor, maxSize, getFlag(ent)) || (cursor.second - topleft > 0 && (unsigned)(cursor.second - topleft) > maxSize.second -1))
+                    break;
             }
             else if (((JSonContainer*)(**ent))->size() == 0)
             {
                 if (dynamic_cast<const JSonObject *>(**ent) )
-                    writeKey(key, "{ }", cursor, maxSize, getFlag(ent));
-                else
-                    writeKey(key, "[ ]", cursor, maxSize, getFlag(ent));
-                if (cursor.second - topleft > 0 && (unsigned)(cursor.second - topleft) > maxSize.second -1)
-                        return false;
+                {
+                    if (!writeKey(key, "{ }", cursor, maxSize, getFlag(ent)))
+                        break;
+                }
+                else if (!writeKey(key, "[ ]", cursor, maxSize, getFlag(ent)) || (cursor.second - topleft > 0 && (unsigned)(cursor.second - topleft) > maxSize.second -1))
+                    break;
             }
             else
             {
                 if (!writeKey(key, cursor, maxSize, selection == ent))
-                    return false;
-                cursor.first -= INDENT_LEVEL /2;
+                    break;
                 const JSonElement *saveSelection = selection;
                 if (selection == ent)
                     selection = **ent;
+                cursor.first += INDENT_LEVEL /2;
                 if (!redraw(cursor, maxSize, **ent, (const JSonContainer *)item))
                 {
                     selection = saveSelection;
+                    cursor.first -= INDENT_LEVEL /2;
                     return false;
                 }
                 selection = saveSelection;
@@ -202,35 +205,44 @@ bool CurseOutput::writeContent(std::pair<int, int> &cursor, const std::pair<unsi
         else
         {
             if (!redraw(cursor, maxSize, *i, (const JSonContainer *)item))
-                return false;
+                break;
         }
+        result = true;
     }
-    cursor.first -= INDENT_LEVEL /2;
-    return true;
+    cursor.first -= INDENT_LEVEL;
+    //result will be false if for loop break'd at some time, true otherwise
+    return result;
 }
 
 bool CurseOutput::writeKey(const std::string &key, const std::string &after, std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, OutputFlag flags)
 {
     if (cursor.second - topleft < 0)
-        return 1;
-    writeKey(key, cursor, maxSize, flags, after.size());
+    {
+        cursor.second++;
+        return true;
+    }
+    if (!writeKey(key, cursor, maxSize, flags, after.size()))
+        return false;
+    //TODO check result if write goes to new line
     write(after.c_str(), maxSize.first, flags);
-    cursor.first -= INDENT_LEVEL;
-    return (cursor.second - topleft < 0 || (unsigned)(cursor.second - topleft) <= maxSize.second -1);
+    return true;
 }
 
 bool CurseOutput::writeKey(const std::string &key, std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, OutputFlag flags, unsigned int extraLen)
 {
     if (cursor.second - topleft < 0)
-        return 1;
+    {
+        cursor.second++;
+        return true;
+    }
     char oldType = flags.type();
     flags.type(OutputFlag::TYPE_OBJKEY);
-    cursor.second += write(cursor.first, cursor.second, key, maxSize.first -extraLen -2, flags);
+    write(cursor.first, cursor.second, key, maxSize.first -extraLen -2, flags);
+    cursor.second ++;
     flags.type(OutputFlag::TYPE_OBJ);
     write(": ", maxSize.first, flags);
     flags.type(oldType);
-    cursor.first += INDENT_LEVEL;
-    return (cursor.second - topleft < 0 || (unsigned)(cursor.second - topleft) <= maxSize.second -1);
+    return (cursor.second - topleft < 0 || (unsigned)(cursor.second - topleft) <= maxSize.second);
 }
 
 unsigned int CurseOutput::write(const int &x, const int &y, const JSonElement *item, unsigned int maxWidth, OutputFlag flags)

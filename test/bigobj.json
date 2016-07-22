@@ -1,0 +1,20 @@
+[[[{
+    "a2":42, "b2":43, "c2":[true,false,true,"coucou"],
+    "a3":[true,false,true,"coucou"], "b3":[true,false,true,"coucou"], "c3":[true,false,true,"coucou"],
+    "a4":[true,false,true,"coucou"], "b4":[true,false,true,"coucou"], "c4":[true,false,true,"coucou"],
+    "a5":[true,false,true,"coucou"], "b5":[true,false,true,"coucou"], "c5":[true,false,true,"coucou"],
+    "a6":[true,false,true,"coucou"], "b6":[true,false,true,"coucou"], "c6":[true,false,true,"coucou"],
+    "a7":[true,false,true,"coucou"], "b7":[true,false,true,"coucou"], "c7":[true,false,true,"coucou"],
+    "a8":[true,false,true,"coucou"], "b8":[true,false,true,"coucou"], "c8":[true,false,true,"coucou"],
+    "a9":[true,false,true,"coucou"], "b9":[true,false,true,"coucou"], "c9":[true,false,true,"coucou"],
+    "a10":[true,false,true,"coucou"], "b10":[true,false,true,"coucou"], "c10":[true,false,true,"coucou"],
+    "a11":[true,false,true,"coucou"], "b11":[true,false,true,"coucou"], "c11":[true,false,true,"coucou"],
+    "a12":[true,false,true,"coucou"], "b12":[true,false,true,"coucou"], "c12":false,
+    "a13":[true,false,true,"coucou"], "b13":[true,false,true,"coucou"], "c13":[true,false,true,"coucou"],
+    "a14":[true,false,true,"coucou"], "b14":[true,false,true,"coucou"], "c14":[true,false,true,"coucou"],
+    "a15":[true,false,true,"coucou"], "b15":[true,false,true,"coucou"], "c15":[true,false,true,"coucou"],
+    "a16":[true,false,true,"coucou"], "b16":[true,false,true,"coucou"], "c16":[true,false,true,"coucou"],
+    "a17":[true,false,true,"coucou"], "b17":[true,false,true,"coucou"], "c17":[true,false,true,"coucou"],
+    "a18":[true,false,true,"coucou"], "b18":[true,false,true,"coucou"], "c18":[true,false,true,"coucou"],
+    "a19":[true,false,true,"coucou"], "b19":[true,false,true,"coucou"], "c19":[true,false,true,"coucou"]
+}]]]
