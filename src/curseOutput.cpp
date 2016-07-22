@@ -11,6 +11,7 @@
 #include "jsonPrimitive.hh"
 
 static CurseOutput *runningInst = nullptr;
+class SelectionOutOfRange {};
 
 CurseOutput::CurseOutput(JSonElement *root, const Params &p): data(root), selection(root), params(p)
 { }
@@ -32,7 +33,8 @@ void CurseOutput::loop()
     breakLoop = false;
     do
     {
-        redraw();
+        while (!redraw())
+            ;
     } while(readInput());
 }
 
@@ -79,7 +81,18 @@ bool CurseOutput::redraw()
     getScreenSize(screenSize, cursor);
     cursor.first = cursor.second = 0;
     clear();
-    result = redraw(cursor, screenSize, data, dynamic_cast<const JSonContainer *> (data));
+    try {
+        result = redraw(cursor, screenSize, data, dynamic_cast<const JSonContainer *> (data));
+    }
+    catch (SelectionOutOfRange &e)
+    {
+        return false;
+    }
+    if (!result && !selectFound)
+    {
+        topleft++;
+        return false;
+    }
     if (!result && !select_down)
         selectIsLast = true;
     if (!select_down)
@@ -96,7 +109,7 @@ bool CurseOutput::redraw()
     if (!select_up)
         select_up = selection;
     refresh();
-    return result;
+    return true;
 }
 
 bool CurseOutput::redraw(std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, const JSonElement *item, const JSonContainer *parent)
@@ -341,8 +354,13 @@ void CurseOutput::checkSelection(const JSonElement *item, const JSonElement *par
     {
         if (selection == item)
         {
-            if (cursor.second <= topleft)
+            if (cursor.second == topleft)
                 selectIsFirst = true;
+            else if (cursor.second < topleft)
+            {
+                topleft = cursor.second;
+                throw SelectionOutOfRange(); //break and restart painting
+            }
             selectFound = true;
         }
         else if (!item->getParent() || !dynamic_cast<const JSonObjectEntry*>(item->getParent()))
