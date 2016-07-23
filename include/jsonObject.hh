@@ -25,13 +25,13 @@ class JSonObject: public JSonContainer
     class DoubleKeyException: public JsonException
     {
         public:
-            DoubleKeyException(unsigned long long offset, const std::string &key, WrappedBuffer<char, ERROR_HISTORY_LEN> &buf);
+            DoubleKeyException(unsigned long long offset, const std::string &key, LinearHistory &buf);
     };
 
     class NotAKeyException: public JsonException
     {
         public:
-            NotAKeyException(unsigned long long offset, WrappedBuffer<char, ERROR_HISTORY_LEN> &buf);
+            NotAKeyException(unsigned long long offset, LinearHistory &buf);
     };
 };
 

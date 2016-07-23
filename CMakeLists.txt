@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 
-add_executable(jsonstroll src/main.cpp src/jsonContainer.cpp src/params.cpp src/curseOutput.cpp src/outputFlag.cpp src/streamConsumer.cpp src/jsonArray.cpp src/jsonObjectEntry.cpp src/jsonObject.cpp src/jsonElement.cpp src/jsonPrimitive.cpp src/jsonException.cpp)
-add_executable(json_test test/src/main.cpp src/jsonContainer.cpp src/streamConsumer.cpp src/jsonArray.cpp src/jsonObjectEntry.cpp src/jsonObject.cpp src/jsonElement.cpp src/jsonPrimitive.cpp src/jsonException.cpp)
+add_executable(jsonstroll src/main.cpp src/jsonContainer.cpp src/params.cpp src/curseOutput.cpp src/linearHistory.cpp src/outputFlag.cpp src/streamConsumer.cpp src/jsonArray.cpp src/jsonObjectEntry.cpp src/jsonObject.cpp src/jsonElement.cpp src/jsonPrimitive.cpp src/jsonException.cpp)
+add_executable(json_test test/src/main.cpp src/jsonContainer.cpp src/linearHistory.cpp src/streamConsumer.cpp src/jsonArray.cpp src/jsonObjectEntry.cpp src/jsonObject.cpp src/jsonElement.cpp src/jsonPrimitive.cpp src/jsonException.cpp)
 add_executable(wrapped_test test/src/wrapped.cpp)
 
 set_property(TARGET jsonstroll PROPERTY RUNTIME_OUTPUT_DIRECTORY bin)

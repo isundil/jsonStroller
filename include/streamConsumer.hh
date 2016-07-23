@@ -1,12 +1,11 @@
 #pragma once
 
 #include <istream>
-#include "config.h"
 #include "params.hh"
 #include "jsonObject.hh"
 #include "jsonArray.hh"
 #include "jsonPrimitive.hh"
-#include "wrappedBuffer.hpp"
+#include "linearHistory.hh"
 
 class StreamConsumer
 {
@@ -35,7 +34,7 @@ class StreamConsumer
         JSonElement *root;
         const AParams *params;
 
-        WrappedBuffer<char, ERROR_HISTORY_LEN> history;
+        LinearHistory history;
 
     private:
         static float _stof(const std::string &);

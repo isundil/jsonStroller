@@ -10,11 +10,20 @@ class WrappedBuffer
         WrappedBuffer();
         virtual ~WrappedBuffer();
 
-        void put(T item);
-        void put(T item[], unsigned int count);
+        virtual void put(T item);
+        virtual void put(T item[], unsigned int count);
         void pop_back();
+        void reset();
 
+        /**
+         * @return total size appended since instanciation or clear()
+        **/
+        unsigned int totalSize() const;
         unsigned int size() const;
+
+        /**
+         * @return Current size (cannot be greater than SIZE
+        **/
         std::basic_string<T> toString() const;
         T* toArray(T arr[SIZE]) const;
 
@@ -22,6 +31,7 @@ class WrappedBuffer
         T buffer[SIZE];
         int curR;
         int curW;
+        unsigned int written;
 };
 
 template<typename T, int SIZE>
@@ -33,8 +43,21 @@ WrappedBuffer<T, SIZE>::~WrappedBuffer()
 { }
 
 template<typename T, int SIZE>
+void WrappedBuffer<T, SIZE>::reset()
+{
+    curR = 0;
+    curW = -1;
+    written = 0;
+}
+
+template<typename T, int SIZE>
+unsigned int WrappedBuffer<T, SIZE>::totalSize() const
+{ return written; }
+
+template<typename T, int SIZE>
 void WrappedBuffer<T, SIZE>::put(T item)
 {
+    written++;
     if (curW +1 == SIZE)
     {
         curR = 1;
@@ -64,6 +87,7 @@ void WrappedBuffer<T, SIZE>::put(T items[], unsigned int count)
 
     if (!count)
         return;
+    written += count;
     while (count > SIZE)
     {
         count -= SIZE;
@@ -94,6 +118,7 @@ template<typename T, int SIZE>
 void WrappedBuffer<T, SIZE>::pop_back()
 {
     unsigned int oldSize = size();
+    written--;
     if (oldSize == 0)
         return;
     else if (oldSize == 1)
@@ -114,8 +139,6 @@ unsigned int WrappedBuffer<T, SIZE>::size() const
         return 0;
     return (curR > curW) ? (SIZE - curR + curW +1) : (curW - curR +1);
 }
-
-#include <iostream>
 
 template<typename T, int SIZE>
 std::basic_string<T> WrappedBuffer<T, SIZE>::toString() const

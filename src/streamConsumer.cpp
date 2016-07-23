@@ -159,7 +159,13 @@ JSonElement *StreamConsumer::consumeToken(JSonContainer *parent, std::string &bu
                         history.put(unicodeBuf, gcount);
                         if (gcount != 4)
                             break;
-                        appendUnicode(unicodeBuf, buf);
+                        try {
+                            appendUnicode(unicodeBuf, buf);
+                        }
+                        catch (std::invalid_argument &e)
+                        {
+                            throw JsonHexvalueException(e.what(), stream.tellg(), history);
+                        }
                         escaped = false;
                     }
                 }
@@ -259,7 +265,7 @@ static unsigned char hexbyte(const char c)
         return c - 'A' + 10;
     if (c >= 'a' && c <= 'f')
         return c - 'a' + 10;
-    return 0;
+    throw std::invalid_argument(JsonHexvalueException::msg(c));
 }
 
 static unsigned char hexbyte(const char str[2])

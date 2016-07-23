@@ -29,7 +29,7 @@ void run(Params *params)
     }
     catch (JsonException &e)
     {
-        std::cerr << params->getProgName() << ": [" << typeid(e).name() << "] ("  << e.what() << ") error while reading" << std::endl;
+        std::cerr << params->getProgName() << ": [" << typeid(e).name() << "] at line " << e.currentLine() << " ("  << e.what() << ") error while reading" << std::endl;
         std::string buffer = e.getHistory();
         std::cerr << buffer << std::endl << std::string(buffer.size() -1, '~') << '^' << std::endl;
         return;

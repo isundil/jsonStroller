@@ -62,12 +62,12 @@ std::string JSonObject::stringify() const
     return "{ }";
 }
 
-JSonObject::DoubleKeyException::DoubleKeyException(unsigned long long pos, const std::string &key, WrappedBuffer<char, ERROR_HISTORY_LEN> &buf):
+JSonObject::DoubleKeyException::DoubleKeyException(unsigned long long pos, const std::string &key, LinearHistory &buf):
     JsonException("Unexpected double key " +key +" for object", pos, buf)
 {
 }
 
-JSonObject::NotAKeyException::NotAKeyException(unsigned long long pos, WrappedBuffer<char, ERROR_HISTORY_LEN> &buf):
+JSonObject::NotAKeyException::NotAKeyException(unsigned long long pos, LinearHistory &buf):
     JsonException("expected string key for object", pos, buf)
 { }
 
