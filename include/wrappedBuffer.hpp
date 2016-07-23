@@ -115,18 +115,31 @@ unsigned int WrappedBuffer<T, SIZE>::size() const
     return (curR > curW) ? (SIZE - curR + curW +1) : (curW - curR +1);
 }
 
+#include <iostream>
+
 template<typename T, int SIZE>
 std::basic_string<T> WrappedBuffer<T, SIZE>::toString() const
 {
-    std::basic_string<T> result(size(), (T) 0);
     const unsigned int size = this->size();
-    int from = (curR == SIZE) ? 0 : curR;
-    unsigned int j = 0;
+    std::basic_string<T> result;
+    if (!size)
+        return result;
+    result.reserve(size);
+    const int from = (curR == SIZE) ? 0 : curR;
+    int i = 0;
+    unsigned int j =0;
 
-    for (int i = from; (curW > curR && i <= curW) || (curW <= curR && i < SIZE); ++i)
-        result[j++] = buffer[i];
-    for (int i = 0; j < size; ++i)
-        result[j++] = buffer[i];
+    for (i = from; (curW >= from && i <= curW) || (curW < from && i < SIZE); ++i)
+    {
+        j++;
+        result += buffer[i];
+    }
+    i = 0;
+    while (i <= curW && j < size)
+    {
+        result += buffer[i++];
+        j++;
+    }
     return result;
 }
 

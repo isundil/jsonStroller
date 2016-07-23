@@ -7,14 +7,14 @@
 
 void run(Params *params)
 {
-    StreamConsumer *stream;
+    StreamConsumer stream(StreamConsumer(params->getInput()));
+    stream.withConfig(params);
     CurseOutput *out;
     JSonElement *root;
 
     try
     {
-        stream = StreamConsumer::read(params->getInput(), params);
-        root = stream->getRoot();
+        root = stream.read()->getRoot();
         if (!root)
             throw EofException();
     }
@@ -33,7 +33,6 @@ void run(Params *params)
     out = new CurseOutput(root, *params);
     out->run();
     delete out;
-    delete stream;
 }
 
 int main(int ac, char **av)

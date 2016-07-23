@@ -33,7 +33,7 @@ void CurseOutput::loop()
     breakLoop = false;
     do
     {
-        while (!redraw())
+        while (!redraw()) //TODO opti going down
             ;
     } while(readInput());
 }

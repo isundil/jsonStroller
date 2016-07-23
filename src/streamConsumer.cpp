@@ -4,7 +4,7 @@
 #include "jsonElement.hh"
 #include "streamConsumer.hh"
 
-StreamConsumer::StreamConsumer(std::istream &s): stream(s)
+StreamConsumer::StreamConsumer(std::istream &s): stream(s), root(nullptr)
 { }
 
 StreamConsumer::~StreamConsumer()
@@ -19,11 +19,12 @@ StreamConsumer *StreamConsumer::withConfig(const AParams *p)
     return this;
 }
 
-StreamConsumer *StreamConsumer::read(std::istream &stream, const AParams *config)
+StreamConsumer *StreamConsumer::read()
 {
-    StreamConsumer *inst = (new StreamConsumer(stream))->withConfig(config);
-    inst->root = inst->readNext(nullptr);
-    return inst;
+    if (root)
+        return this;
+    root = readNext(nullptr);
+    return this;
 }
 
 JSonElement *StreamConsumer::readNext(JSonContainer *parent)

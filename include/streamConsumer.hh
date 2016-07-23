@@ -11,15 +11,15 @@
 class StreamConsumer
 {
     public:
+        StreamConsumer(std::istream &stream);
         virtual ~StreamConsumer();
 
-        static StreamConsumer *read(std::istream &stream, const AParams *params=nullptr);
+        StreamConsumer *read();
         JSonElement * const getRoot() const;
 
         StreamConsumer *withConfig(const AParams *);
 
     private:
-        StreamConsumer(std::istream &stream);
         /**
          * @return true on success
         **/

@@ -11,7 +11,7 @@ const char testJson[] = "{\"widget\": {\"debug\": \"on\",\"window\": {\"title\":
 StreamConsumer *toJson(std::string str)
 {
     std::stringstream input(str);
-    return StreamConsumer::read(input);
+    return (new StreamConsumer(input))->read();
 }
 
 void checkArray()
@@ -113,6 +113,7 @@ void checkSample()
 {
     StreamConsumer *root = toJson(testJson);
     root->getRoot();
+    delete root;
 }
 
 int main(int ac, char **av)
