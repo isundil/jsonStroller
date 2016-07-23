@@ -1,6 +1,5 @@
 #include <iostream>
 #include <sstream>
-#include "jsonException.hh"
 #include "jsonElement.hh"
 #include "streamConsumer.hh"
 
@@ -11,6 +10,10 @@ StreamConsumer::~StreamConsumer()
 {
     if (root)
         delete root;
+    for (Warning i : warnings)
+    {
+        delete i.getPtrUnsafe();
+    }
 }
 
 StreamConsumer *StreamConsumer::withConfig(const AParams *p)
@@ -72,7 +75,15 @@ JSonObject *StreamConsumer::readObject(JSonContainer *parent)
         if (result == nullptr)
             result = new JSonObject(parent);
         else if (result->contains(key->getValue()))
-            throw JSonObject::DoubleKeyException(stream.tellg(), key->getValue(), history); //Double key
+        {
+            if (params->isStrict())
+                throw JSonObject::DoubleKeyException(stream.tellg(), key->getValue(), history);
+            else // add Warning, new key erase previous one
+            {
+                result->erase(key->getValue());
+                warnings.push_back(Warning(new JSonObject::DoubleKeyException(stream.tellg(), key->getValue(), history)));
+            }
+        }
         JSonElement *child = readNext(result);
         result->push(key->getValue(), child);
         delete keyObj;
@@ -288,4 +299,7 @@ bool StreamConsumer::ignoreChar(char c) const noexcept
 {
     return (c <= 32 || c >= 127 || c == '\n');
 }
+
+const std::list<Warning> &StreamConsumer::getMessages() const
+{ return warnings; }
 

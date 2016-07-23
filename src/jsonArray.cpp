@@ -5,10 +5,8 @@ JSonArray::JSonArray(JSonContainer *p): JSonContainer(p)
 
 JSonArray::~JSonArray()
 {
-    for (iterator i = begin(); i != end(); ++i)
-    {
-        delete *i;
-    }
+    for (JSonElement *i : *this)
+        delete i;
 }
 
 JSonElement *JSonArray::firstChild()

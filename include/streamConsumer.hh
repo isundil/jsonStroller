@@ -6,6 +6,7 @@
 #include "jsonArray.hh"
 #include "jsonPrimitive.hh"
 #include "linearHistory.hh"
+#include "warning.hh"
 
 class StreamConsumer
 {
@@ -15,6 +16,7 @@ class StreamConsumer
 
         StreamConsumer *read();
         JSonElement * const getRoot() const;
+        const std::list<Warning> &getMessages() const;
 
         StreamConsumer *withConfig(const AParams *);
 
@@ -34,6 +36,7 @@ class StreamConsumer
         JSonElement *root;
         const AParams *params;
 
+        std::list<Warning> warnings;
         LinearHistory history;
 
     private:

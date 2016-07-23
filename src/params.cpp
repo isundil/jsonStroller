@@ -5,7 +5,7 @@
 #include <unistd.h>
 #include "params.hh"
 
-Params::Params(int ac, char **av) :progName(*av), params(std::list<std::string>(ac -1))
+Params::Params(int ac, char **av) :progName(*av), params(std::list<std::string>(ac -1)), strict(true)
 {
     bool written = false;
     std::stringstream *input = nullptr;
@@ -34,6 +34,8 @@ Params::Params(int ac, char **av) :progName(*av), params(std::list<std::string>(
             {
                 input = new std::stringstream();
             }
+            else if (tmp == "-W")
+                strict = false;
             else if (tmp == "--ascii")
                 ignoreUnicode = true;
             else if (tmp == "--color")
@@ -85,10 +87,14 @@ void Params::usage(const std::string &progName) noexcept
     std::cout << "\t\t-f filename\tread input from (filename) instead of stdin" << std::endl;
     std::cout << "\t\t--ascii\tignore unicode values" << std::endl;
     std::cout << "\t\t--color[=MODE]\tColorize output, MODE can be always (default when ommited), never or auto (default if --color is ommited)" << std::endl;
+    std::cout << "\t\t-W\tdisable strict mode (warning does not interrupt reading)" << std::endl;
 }
 
 bool Params::isValid() const
 { return true; }
+
+bool Params::isStrict() const
+{ return strict; }
 
 bool Params::colorEnabled() const
 { return colorMode; }

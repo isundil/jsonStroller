@@ -13,6 +13,7 @@ class JSonObject: public JSonContainer
 
         void push(const std::string &key, JSonElement *child);
         JSonObject::const_iterator find(const std::string &key) const;
+        bool erase(const std::string &);
         bool contains(const std::string &) const;
 
         virtual JSonElement *firstChild();

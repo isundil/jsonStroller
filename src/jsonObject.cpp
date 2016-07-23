@@ -5,10 +5,8 @@ JSonObject::JSonObject(JSonContainer *p): JSonContainer(p)
 
 JSonObject::~JSonObject()
 {
-    for (iterator i = begin(); i != end(); ++i)
-    {
-        delete (*i);
-    }
+    for (JSonElement *i : *this)
+        delete i;
 }
 
 void JSonObject::push(const std::string &key, JSonElement *child)
@@ -26,6 +24,16 @@ JSonObject::const_iterator JSonObject::find(const std::string &key) const
         ++it;
     }
     return it;
+}
+
+bool JSonObject::erase(const std::string &key)
+{
+    JSonObject::const_iterator it = find(key);
+    if (it == this->cend())
+        return false;
+    delete *it;
+    std::list<JSonElement *>::erase(it);
+    return true;
 }
 
 bool JSonObject::contains(const std::string &key) const

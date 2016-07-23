@@ -163,12 +163,12 @@ bool CurseOutput::writeContent(std::pair<int, int> &cursor, const std::pair<unsi
     bool result = true;
     cursor.first += INDENT_LEVEL;
 
-    for (std::list<JSonElement *>::const_iterator i = item->cbegin(); i != item->cend(); ++i)
+    for (JSonElement *i : *item)
     {
         result = false;
         if (containerIsObject)
         {
-            JSonObjectEntry *ent = (JSonObjectEntry*) *i;
+            JSonObjectEntry *ent = (JSonObjectEntry*) i;
             bool isContainer = (dynamic_cast<const JSonContainer *>(**ent) != nullptr);
             std::string key = ent->stringify();
             checkSelection(ent, (JSonContainer*) item, cursor);
@@ -217,7 +217,7 @@ bool CurseOutput::writeContent(std::pair<int, int> &cursor, const std::pair<unsi
         }
         else
         {
-            if (!redraw(cursor, maxSize, *i, (const JSonContainer *)item))
+            if (!redraw(cursor, maxSize, i, (const JSonContainer *)item))
                 break;
         }
         result = true;

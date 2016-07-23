@@ -6,6 +6,13 @@
 #include "params.hh"
 #include "jsonException.hh"
 
+void displayException(const Params *params, const JsonException &e)
+{
+    std::string buffer = e.getHistory();
+    std::cerr << params->getProgName() << ": [" << typeid(e).name() << "] at line " << e.currentLine() << " ("  << e.what() << ") while reading" << std::endl;
+    std::cerr << buffer << std::endl << std::string(buffer.size() -1, '~') << '^' << std::endl;
+}
+
 void run(Params *params)
 {
 
@@ -29,10 +36,14 @@ void run(Params *params)
     }
     catch (JsonException &e)
     {
-        std::cerr << params->getProgName() << ": [" << typeid(e).name() << "] at line " << e.currentLine() << " ("  << e.what() << ") error while reading" << std::endl;
-        std::string buffer = e.getHistory();
-        std::cerr << buffer << std::endl << std::string(buffer.size() -1, '~') << '^' << std::endl;
+        std::cerr << "Error: ";
+        displayException(params, e);
         return;
+    }
+    for (Warning w : stream.getMessages())
+    {
+        std::cerr << "Warning: ";
+        displayException(params, w());
     }
     out = new CurseOutput(root, *params);
     out->run();

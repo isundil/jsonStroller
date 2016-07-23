@@ -9,6 +9,7 @@ class AParams
 {
     public:
         virtual bool isIgnoringUnicode() const =0;
+        virtual bool isStrict() const =0;
 };
 
 class Params: public AParams
@@ -19,6 +20,7 @@ class Params: public AParams
 
         std::basic_istream<char> &getInput() const;
         bool isValid() const;
+        bool isStrict() const;
         bool colorEnabled() const;
 
         static void usage(const std::string &) noexcept;
@@ -32,5 +34,6 @@ class Params: public AParams
         std::list<std::string> params;
         bool ignoreUnicode;
         bool colorMode;
+        bool strict;
 };
 

@@ -1,0 +1,6 @@
+{
+    "0":true, "a":true,
+    "b":true,
+    "1":true, "a":false,
+    "2":true, "a":0
+}
