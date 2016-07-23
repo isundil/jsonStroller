@@ -1,5 +1,6 @@
 #include <iostream>
 #include <typeinfo>
+#include <locale.h>
 #include "streamConsumer.hh"
 #include "curseOutput.hh"
 #include "params.hh"
@@ -7,11 +8,14 @@
 
 void run(Params *params)
 {
+
     StreamConsumer stream(StreamConsumer(params->getInput()));
     stream.withConfig(params);
     CurseOutput *out;
     JSonElement *root;
 
+    if (!params->isIgnoringUnicode())
+        setlocale(LC_ALL, "");
     try
     {
         root = stream.read()->getRoot();

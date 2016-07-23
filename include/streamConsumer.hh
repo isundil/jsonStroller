@@ -29,7 +29,7 @@ class StreamConsumer
         JSonObject *readObject(JSonContainer *parent);
         JSonArray *readArray(JSonContainer *parent);
         bool ignoreChar(char c) const noexcept;
-        void appendUnicode(const char [4], std::string &);
+        static void appendUnicode(const char [4], std::string &);
 
         std::istream &stream;
         JSonElement *root;

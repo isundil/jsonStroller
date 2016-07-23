@@ -251,11 +251,31 @@ JSonElement *StreamConsumer::consumeToken(JSonContainer *parent, std::string &bu
     return nullptr;
 }
 
+static unsigned char hexbyte(const char c)
+{
+    if (c >= '0' && c <= '9')
+        return c - '0';
+    if (c >= 'A' && c <= 'F')
+        return c - 'A' + 10;
+    if (c >= 'a' && c <= 'f')
+        return c - 'a' + 10;
+    return 0;
+}
+
+static unsigned char hexbyte(const char str[2])
+{
+    unsigned char result = 0;
+    result = (hexbyte(*str) <<4) + hexbyte(str[1]);
+    return result;
+}
+
 void StreamConsumer::appendUnicode(const char unicode[4], std::string &buf)
 {
-    std::string rawHex = { '0', 'x', unicode[0], unicode[1], unicode[2], unicode[3], '\0' };
-    wchar_t unichar = std::stoul(rawHex, nullptr, 16);
-    buf += unichar;
+    unsigned short uni = (hexbyte(unicode) <<8) + hexbyte(unicode+2);
+    char test[5];
+    bzero(test, sizeof(*test) *5);
+    snprintf(test, 4, "%lc", uni);
+    buf += test;
 }
 
 bool StreamConsumer::ignoreChar(char c) const noexcept
