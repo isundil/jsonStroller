@@ -8,6 +8,9 @@ const char OutputFlag::TYPE_OBJ     =4;
 const char OutputFlag::TYPE_OBJKEY  =5;
 const char OutputFlag::TYPE_ARR     =6;
 
+const char OutputFlag::SPECIAL_NONE     =50;
+const char OutputFlag::SPECIAL_SEARCH   =51;
+
 OutputFlag::OutputFlag(short m): mode(m)
 { }
 

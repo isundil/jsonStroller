@@ -270,49 +270,49 @@ unsigned int CurseOutput::write(const int &x, const int &y, const char item, uns
         return 1;
     if (flags.selected())
         attron(A_REVERSE | A_BOLD);
-    bool color = (colors.find(flags.type()) != colors.end());
-    if (color)
-        attron(COLOR_PAIR(flags.type()));
+    char color = OutputFlag::SPECIAL_NONE;
+
+    if (params.colorEnabled() && search_pattern.size() == 1 && search_pattern.c_str()[0] == item)
+        color = OutputFlag::SPECIAL_SEARCH;
+    else if (colors.find(flags.type()) != colors.end())
+        color = flags.type();
+
+    if (color != OutputFlag::SPECIAL_NONE)
+        attron(COLOR_PAIR(color));
     mvprintw(offsetY, x, "%c", item);
     attroff(A_REVERSE | A_BOLD);
-    if (color)
-        attroff(COLOR_PAIR(flags.type()));
+    if (color != OutputFlag::SPECIAL_NONE)
+        attroff(COLOR_PAIR(color));
     return getNbLines(x +1, maxWidth);
 }
 
-void CurseOutput::write(const char *str, unsigned int maxWidth, const OutputFlag flags) const
+void CurseOutput::write(const std::string &str, unsigned int maxWidth, const OutputFlag flags) const
 {
-    if (flags.selected())
-        attron(A_REVERSE | A_BOLD);
-    bool color = (colors.find(flags.type()) != colors.end());
-    if (color)
-        attron(COLOR_PAIR(flags.type()));
-    printw("%s", str);
-    attroff(A_REVERSE | A_BOLD);
-    if (color)
-        attroff(COLOR_PAIR(flags.type()));
-}
+    char color = OutputFlag::SPECIAL_NONE;
+    if (params.colorEnabled() && !search_pattern.empty() && str.find(search_pattern) != str.npos)
+        color = OutputFlag::SPECIAL_SEARCH;
+    else if (colors.find(flags.type()) != colors.end())
+        color = flags.type();
 
-unsigned int CurseOutput::write(const int &x, const int &y, const char *str, unsigned int maxWidth, const OutputFlag flags)
-{
-    int offsetY = y - topleft;
-    if (offsetY < 0)
-        return 1;
+    if (color != OutputFlag::SPECIAL_NONE)
+        attron(COLOR_PAIR(color));
     if (flags.selected())
         attron(A_REVERSE | A_BOLD);
-    bool color = (colors.find(flags.type()) != colors.end());
-    if (color)
-        attron(COLOR_PAIR(flags.type()));
-    mvprintw(offsetY, x, "%s", str);
+
+    printw("%s", str.c_str());
     attroff(A_REVERSE | A_BOLD);
-    if (color)
-        attroff(COLOR_PAIR(flags.type()));
-    return getNbLines(strlen(str) +x, maxWidth);
+    if (color != OutputFlag::SPECIAL_NONE)
+        attroff(COLOR_PAIR(color));
 }
 
 unsigned int CurseOutput::write(const int &x, const int &y, const std::string &str, unsigned int maxWidth, const OutputFlag flags)
 {
-    return write(x, y, str.c_str(), maxWidth, flags);
+    int offsetY = y - topleft;
+    if (offsetY < 0)
+        return 1;
+    move(y, x);
+    write(str, maxWidth, flags);
+    return getNbLines(str.size() +x, maxWidth);
 }
 
 unsigned int CurseOutput::getNbLines(float nbChar, unsigned int maxWidth)
@@ -323,9 +323,14 @@ unsigned int CurseOutput::getNbLines(float nbChar, unsigned int maxWidth)
     return nLine +1;
 }
 
-void CurseOutput::getScreenSize(std::pair<unsigned int, unsigned int> &screenSize, std::pair<int, int> &bs) const
+void CurseOutput::getScreenSize(std::pair<unsigned int, unsigned int> &screenSize) const
 {
     getmaxyx(stdscr, screenSize.second, screenSize.first);
+}
+
+void CurseOutput::getScreenSize(std::pair<unsigned int, unsigned int> &screenSize, std::pair<int, int> &bs) const
+{
+    getScreenSize(screenSize);
     getbegyx(stdscr, bs.second, bs.first);
 }
 
@@ -488,9 +493,65 @@ bool CurseOutput::readInput()
                     break;
                 return true;
             }
+
+            case '/':
+                search_pattern = search();
+
+            case 'n':
+            case 'N':
+                jumpToNextSearch();
+                return true;
         }
     }
     return false;
+}
+
+void CurseOutput::jumpToNextSearch()
+{
+    // TODO find next occurence of this->search_pattern after selection and "selection = it" (and unfold parent, if any)
+}
+
+const std::string CurseOutput::search()
+{
+    std::string buffer;
+
+    curs_set(true);
+    keypad(stdscr, false);
+    wtimeout(stdscr, -1);
+    while (true)
+    {
+        int c;
+
+        clear();
+        redraw();
+        initSearch(buffer);
+        refresh();
+        c = getch();
+        if (c == '\n')
+            break;
+        else if (c == '\b' || c == 127)
+            buffer.pop_back();
+        else
+            buffer += c;
+    }
+    wtimeout(stdscr, 150);
+    keypad(stdscr, true);
+    curs_set(false);
+
+    return buffer;
+}
+
+void CurseOutput::initSearch(const std::string &buffer) const
+{
+    std::pair<unsigned int, unsigned int> screenSize;
+    getScreenSize(screenSize);
+    size_t bufsize = buffer.size();
+    if (params.colorEnabled())
+        attron(COLOR_PAIR(OutputFlag::SPECIAL_SEARCH));
+    mvprintw(screenSize.second -1, 0, "/%s%*c", buffer.c_str(), screenSize.first - bufsize - 1, ' ');
+    move(screenSize.second -1, bufsize +1);
+    if (params.colorEnabled())
+        attroff(COLOR_PAIR(OutputFlag::SPECIAL_SEARCH));
 }
 
 void CurseOutput::init()
@@ -520,6 +581,7 @@ void CurseOutput::init()
         init_pair(OutputFlag::TYPE_BOOL, COLOR_RED, COLOR_BLACK);
         init_pair(OutputFlag::TYPE_STRING, COLOR_CYAN, COLOR_BLACK);
         init_pair(OutputFlag::TYPE_OBJKEY, COLOR_CYAN, COLOR_BLACK);
+        init_pair(OutputFlag::SPECIAL_SEARCH, COLOR_WHITE, COLOR_BLUE);
         colors.insert(OutputFlag::TYPE_NUMBER);
         colors.insert(OutputFlag::TYPE_BOOL);
         colors.insert(OutputFlag::TYPE_STRING);

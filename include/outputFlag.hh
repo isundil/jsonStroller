@@ -26,5 +26,8 @@ class OutputFlag
         static const char TYPE_OBJ;
         static const char TYPE_OBJKEY;
         static const char TYPE_ARR;
+
+        static const char SPECIAL_NONE;
+        static const char SPECIAL_SEARCH;
 };
 
