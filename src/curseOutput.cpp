@@ -317,7 +317,7 @@ unsigned int CurseOutput::write(const int &x, const int &y, const std::string &s
     int offsetY = y - topleft;
     if (offsetY < 0)
         return 1;
-    move(y, x);
+    move(offsetY, x);
     write(str, maxWidth, flags);
     return getNbLines(str.size() +x, maxWidth);
 }
