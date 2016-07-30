@@ -610,11 +610,18 @@ bool CurseOutput::jumpToNextSearch(bool scanParent, bool redraw, const JSonEleme
         this->redraw("Pattern not found");
         return false;
     }
-    //TODO if parents are collapsed:
-    // - unfold all parents ?
-    // - select closest-to-root folded parent ?
+    unfold(selection);
     this->redraw();
     return true;
+}
+
+void CurseOutput::unfold(const JSonElement *item)
+{
+    while (item->getParent())
+    {
+        collapsed.erase((const JSonContainer*)item->getParent());
+        item = item->getParent();
+    }
 }
 
 const std::string CurseOutput::search()

@@ -54,6 +54,11 @@ class CurseOutput
         const std::string search();
         void writeBottomLine(const std::string &currentBuffer, short color) const;
 
+        /**
+         * unfold all item's parents
+        **/
+        void unfold(const JSonElement *);
+
         std::set<const JSonContainer *> collapsed;
 
         const JSonElement *data, *selection;
