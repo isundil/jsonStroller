@@ -2,14 +2,14 @@
 
 #include "jsonElement.hh"
 
-class AJsonPrimitive
+class AJSonPrimitive
 {
     public:
-        virtual ~AJsonPrimitive();
+        virtual ~AJSonPrimitive();
 };
 
 template <typename T>
-class JSonPrimitive: public JSonElement, public AJsonPrimitive
+class JSonPrimitive: public JSonElement, public AJSonPrimitive
 {
     public:
         JSonPrimitive(JSonContainer *parent, T const &v);

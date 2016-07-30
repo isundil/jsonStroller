@@ -33,6 +33,7 @@ class CurseOutput
          * return false if bottom of screen is touched
         **/
         bool redraw();
+        bool redraw(const std::string &errorMsg);
         bool redraw(std::pair<int, int> &, const std::pair<unsigned int, unsigned int> &maxWidth, const JSonElement *, const JSonContainer *);
         bool readInput();
         void getScreenSize(std::pair<unsigned int, unsigned int> &) const;
@@ -49,9 +50,9 @@ class CurseOutput
         bool writeContainer(std::pair<int, int> &, const std::pair<unsigned int, unsigned int> &maxSize, const JSonContainer *);
         bool writeContent(std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, const std::list<JSonElement *> * obj);
 
-        void jumpToNextSearch();
+        bool jumpToNextSearch(bool scanParent, bool redraw, const JSonElement *initial_selection);
         const std::string search();
-        void initSearch(const std::string &currentBuffer) const;
+        void writeBottomLine(const std::string &currentBuffer, short color) const;
 
         std::set<const JSonContainer *> collapsed;
 

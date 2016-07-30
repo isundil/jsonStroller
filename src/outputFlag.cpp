@@ -10,6 +10,7 @@ const char OutputFlag::TYPE_ARR     =6;
 
 const char OutputFlag::SPECIAL_NONE     =50;
 const char OutputFlag::SPECIAL_SEARCH   =51;
+const char OutputFlag::SPECIAL_ERROR    =52;
 
 OutputFlag::OutputFlag(short m): mode(m)
 { }

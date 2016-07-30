@@ -31,6 +31,12 @@ std::string JSonObjectEntry::stringify() const
     return key;
 }
 
+bool JSonObjectEntry::match(const std::string &search_pattern) const
+{
+    const std::string strEntry = (**this)->stringify();
+    return JSonElement::match(search_pattern) || strEntry.find(search_pattern) != strEntry.npos;
+}
+
 /*
 const JSonElement *JSonObjectEntry::findPrev() const
 {

@@ -6,9 +6,9 @@
 #include <string.h>
 
 #include "curseOutput.hh"
+#include "jsonPrimitive.hh"
 #include "jsonObject.hh"
 #include "jsonArray.hh"
-#include "jsonPrimitive.hh"
 
 static CurseOutput *runningInst = nullptr;
 class SelectionOutOfRange {};
@@ -110,6 +110,13 @@ bool CurseOutput::redraw()
         select_up = selection;
     refresh();
     return true;
+}
+
+bool CurseOutput::redraw(const std::string &errorMsg)
+{
+    bool result = redraw();
+    writeBottomLine(errorMsg, OutputFlag::SPECIAL_ERROR);
+    return result;
 }
 
 bool CurseOutput::redraw(std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, const JSonElement *item, const JSonContainer *parent)
@@ -344,7 +351,7 @@ const OutputFlag CurseOutput::getFlag(const JSonElement *item) const
         res.type(OutputFlag::TYPE_STRING);
     else if (dynamic_cast<const JSonPrimitive<bool> *>(i))
         res.type(OutputFlag::TYPE_BOOL);
-    else if (dynamic_cast<const AJsonPrimitive *>(i))
+    else if (dynamic_cast<const AJSonPrimitive *>(i))
         res.type(OutputFlag::TYPE_NUMBER);
     else if (dynamic_cast<const JSonObject*>(i))
         res.type(OutputFlag::TYPE_OBJ);
@@ -499,16 +506,115 @@ bool CurseOutput::readInput()
 
             case 'n':
             case 'N':
-                jumpToNextSearch();
-                return true;
+                jumpToNextSearch(true, true, selection);
+                // jumpToNextSearch have its own redraw, so no need to return true here
+                break;
         }
     }
     return false;
 }
 
-void CurseOutput::jumpToNextSearch()
+//TODO move to JSonElement ?
+bool CurseOutput::jumpToNextSearch(bool scanParent, bool redraw, const JSonElement *initial_selection)
 {
-    // TODO find next occurence of this->search_pattern after selection and "selection = it" (and unfold parent, if any)
+    bool found = false;
+    const JSonElement *current = selection;
+    const JSonElement *prev = nullptr;
+
+    while (current && !found)
+    {
+        if (dynamic_cast<const JSonContainer *> (current) == nullptr)
+        {
+            //ObjectEntry or Primitive
+            const JSonElement* entryChild = nullptr;
+            char isObjectEntry = 0;
+            if (dynamic_cast<const JSonObjectEntry *>(current) != nullptr)
+            {
+                entryChild = **((const JSonObjectEntry*)current);
+                if (dynamic_cast<const JSonContainer *> (entryChild) == nullptr)
+                    isObjectEntry = 1;
+                else
+                    isObjectEntry = 2;
+            }
+            const std::string str = current->stringify();
+            std::string strEntry;
+            if (isObjectEntry == 1)
+                strEntry = entryChild->stringify();
+            if (current != initial_selection && entryChild != initial_selection && current->match(search_pattern))
+            {
+                selection = current;
+                found = true;
+                break;
+            }
+            if (isObjectEntry == 2)
+            {
+                const JSonElement *_selection = selection;
+                selection = entryChild;
+                if (jumpToNextSearch(false, false, initial_selection))
+                {
+                    found = true;
+                    break;
+                }
+                selection = _selection;
+            }
+            prev = current;
+        }
+        else
+        {
+            //Object or array
+            for (const JSonElement *i : *(const JSonContainer*)current)
+            {
+                if (prev != nullptr)
+                {
+                    if (prev != i)
+                        continue;
+                    else
+                    {
+                        prev = nullptr;
+                        continue;
+                    }
+                }
+                const JSonElement *_selection = selection;
+                selection = i;
+                if (jumpToNextSearch(false, false, initial_selection))
+                {
+                    found = true;
+                    break;
+                }
+                selection = _selection;
+            }
+        }
+        if (!scanParent)
+            break;
+        current = current->getParent();
+    }
+    bool foundAfterLoop = false;
+    if (!found && scanParent && selection != data)
+    {
+        const JSonElement *_selection = selection;
+        selection = data;
+        if (jumpToNextSearch(false, false, initial_selection))
+            foundAfterLoop = true;
+        else
+            selection = _selection;
+    }
+    if (!redraw)
+        return found;
+    if (foundAfterLoop || (!found && selection->match(search_pattern)))
+    {
+        this->redraw("Search hit BOTTOM, continuing at TOP");
+        return true;
+    }
+    if (!found)
+    {
+        this->redraw("Pattern not found");
+        return false;
+    }
+    //TODO if parents are collapsed:
+    // - unfold all parents ?
+    // - select closest-to-root folded parent ?
+    this->redraw();
+    return true;
 }
 
 const std::string CurseOutput::search()
@@ -524,7 +630,7 @@ const std::string CurseOutput::search()
 
         clear();
         redraw();
-        initSearch(buffer);
+        writeBottomLine('/' +buffer, OutputFlag::SPECIAL_SEARCH);
         refresh();
         c = getch();
         if (c == '\n')
@@ -541,17 +647,17 @@ const std::string CurseOutput::search()
     return buffer;
 }
 
-void CurseOutput::initSearch(const std::string &buffer) const
+void CurseOutput::writeBottomLine(const std::string &buffer, short color) const
 {
     std::pair<unsigned int, unsigned int> screenSize;
     getScreenSize(screenSize);
     size_t bufsize = buffer.size();
     if (params.colorEnabled())
-        attron(COLOR_PAIR(OutputFlag::SPECIAL_SEARCH));
-    mvprintw(screenSize.second -1, 0, "/%s%*c", buffer.c_str(), screenSize.first - bufsize - 1, ' ');
-    move(screenSize.second -1, bufsize +1);
+        attron(COLOR_PAIR(color));
+    mvprintw(screenSize.second -1, 0, "%s%*c", buffer.c_str(), screenSize.first - bufsize, ' ');
+    move(screenSize.second -1, bufsize);
     if (params.colorEnabled())
-        attroff(COLOR_PAIR(OutputFlag::SPECIAL_SEARCH));
+        attroff(COLOR_PAIR(color));
 }
 
 void CurseOutput::init()
@@ -582,6 +688,7 @@ void CurseOutput::init()
         init_pair(OutputFlag::TYPE_STRING, COLOR_CYAN, COLOR_BLACK);
         init_pair(OutputFlag::TYPE_OBJKEY, COLOR_CYAN, COLOR_BLACK);
         init_pair(OutputFlag::SPECIAL_SEARCH, COLOR_WHITE, COLOR_BLUE);
+        init_pair(OutputFlag::SPECIAL_ERROR, COLOR_WHITE, COLOR_RED);
         colors.insert(OutputFlag::TYPE_NUMBER);
         colors.insert(OutputFlag::TYPE_BOOL);
         colors.insert(OutputFlag::TYPE_STRING);

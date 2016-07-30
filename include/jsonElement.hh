@@ -19,6 +19,7 @@ class JSonElement
 
         const JSonElement *findPrev() const;
         const JSonElement *findNext() const;
+        virtual bool match(const std::string &) const;
 
     private:
         JSonElement();

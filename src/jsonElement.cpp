@@ -71,3 +71,8 @@ const JSonElement* JSonElement::findNext() const
     return parent->findNext();
 }
 
+bool JSonElement::match(const std::string &search_pattern) const
+{
+    const std::string str = stringify();
+    return str.find(search_pattern) != str.npos;
+}

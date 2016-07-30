@@ -1,6 +1,6 @@
 #include "jsonPrimitive.hh"
 
-AJsonPrimitive::~AJsonPrimitive()
+AJSonPrimitive::~AJSonPrimitive()
 {}
 
 template<> JSonPrimitive<double>::~JSonPrimitive() {}
