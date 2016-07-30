@@ -557,7 +557,6 @@ bool CurseOutput::jumpToNextSearch(bool scanParent, bool redraw, const JSonEleme
                 }
                 selection = _selection;
             }
-            prev = current;
         }
         else
         {
@@ -586,6 +585,7 @@ bool CurseOutput::jumpToNextSearch(bool scanParent, bool redraw, const JSonEleme
         }
         if (!scanParent)
             break;
+        prev = current;
         current = current->getParent();
     }
     bool foundAfterLoop = false;
