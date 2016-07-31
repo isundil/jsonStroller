@@ -18,3 +18,17 @@
 # define INDENT_LEVEL 4
 #endif //INDENT_LEVEL
 
+/**
+ * Version number
+**/
+#ifndef  VERSION
+# define VERSION "1.0RC1"
+#endif //VERSION
+#ifndef  VERSIONDATE
+# define VERSIONDATE "Jul 31 2016"
+#endif //VERSIONDATE
+
+#ifndef  STROLL_PROGNAME
+# define STROLL_PROGNAME "jsonstroll"
+#endif //STROLL_PROGNAME
+

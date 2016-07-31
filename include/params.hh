@@ -34,6 +34,11 @@ class Params: public AParams
         virtual ~Params();
 
         /**
+         * Interpret input
+        **/
+        virtual bool read();
+
+        /**
          * retun input
          * can be file stream (-f), stringstream ( -- INPUT), or std::cin (none)
         **/
@@ -47,7 +52,12 @@ class Params: public AParams
          * print usage
          * @param program name
         **/
-        static void usage(const std::string &) noexcept;
+        virtual void usage() const noexcept;
+        /**
+         * print version number
+         * @param program name
+        **/
+        virtual void version() const noexcept;
         /**
          * get argv[0]
         **/

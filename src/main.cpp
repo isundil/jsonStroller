@@ -57,19 +57,21 @@ void run(Params *params)
 
 int main(int ac, char **av)
 {
-    Params *params;
+    Params *params = new Params(ac, av);
+    bool _run = false;
 
     try {
-        params = new Params(ac, av);
+        _run = params->read();
     }
     catch (std::runtime_error &e)
     {
         std::cerr << *av << ": " << e.what() << std::endl;
-        Params::usage(*av);
+        params->usage();
+        delete params;
         exit (EXIT_FAILURE);
     }
 
-    if (params->isValid())
+    if (_run)
         run(params);
     delete params;
     return 0;

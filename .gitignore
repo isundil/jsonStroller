@@ -41,4 +41,5 @@
 /Makefile
 .fuse_hidden*
 /vgcore.10462
+/install_manifest.txt
 
