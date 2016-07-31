@@ -53,10 +53,10 @@ JSonElement *StreamConsumer::readNext(JSonContainer *parent)
     return root;
 }
 
-const JSonElement * const StreamConsumer::getRoot() const
+const JSonElement * StreamConsumer::getRoot() const
 { return root; }
 
-JSonElement * const StreamConsumer::getRoot()
+JSonElement * StreamConsumer::getRoot()
 { return root; }
 
 JSonObject *StreamConsumer::readObject(JSonContainer *parent)

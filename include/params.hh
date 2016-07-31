@@ -30,7 +30,7 @@ class AParams
 class Params: public AParams
 {
     public:
-        Params(int ac, char **av);
+        Params(char **av);
         virtual ~Params();
 
         /**

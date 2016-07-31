@@ -57,7 +57,8 @@ void run(Params *params)
 
 int main(int ac, char **av)
 {
-    Params *params = new Params(ac, av);
+    (void) ac;
+    Params *params = new Params(av);
     bool _run = false;
 
     try {

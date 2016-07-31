@@ -32,8 +32,8 @@ class StreamConsumer
         /**
          * get root node
         **/
-        const JSonElement * const getRoot() const;
-        JSonElement * const getRoot();
+        const JSonElement * getRoot() const;
+        JSonElement * getRoot();
 
         /**
          * return non-blocking error messages

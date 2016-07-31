@@ -13,7 +13,7 @@
 
 #include "config.h"
 
-Params::Params(int ac, char **av) :progName(*av), strict(true)
+Params::Params(char **av) :progName(*av), strict(true)
 {
     av++;
     while (*av)

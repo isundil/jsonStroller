@@ -247,8 +247,8 @@ bool CurseOutput::writeKey(const std::string &key, const std::string &after, std
     }
     if (!writeKey(key, cursor, maxSize, flags, after.size()))
         return false;
+    write(after.c_str(), flags);
     //TODO check result if write goes to new line
-    write(after.c_str(), maxSize.first, flags);
     return true;
 }
 
@@ -261,10 +261,9 @@ bool CurseOutput::writeKey(const std::string &key, std::pair<int, int> &cursor, 
     }
     char oldType = flags.type();
     flags.type(OutputFlag::TYPE_OBJKEY);
-    write(cursor.first, cursor.second, key, maxSize.first -extraLen -2, flags);
-    cursor.second ++;
+    cursor.second += write(cursor.first, cursor.second, key, maxSize.first -extraLen -2, flags);
     flags.type(OutputFlag::TYPE_OBJ);
-    write(": ", maxSize.first, flags);
+    write(": ", flags);
     flags.type(oldType);
     return (cursor.second - scrollTop < 0 || (unsigned)(cursor.second - scrollTop) <= maxSize.second);
 }
@@ -297,7 +296,7 @@ unsigned int CurseOutput::write(const int &x, const int &y, const char item, uns
     return getNbLines(x +1, maxWidth);
 }
 
-void CurseOutput::write(const std::string &str, unsigned int maxWidth, const OutputFlag flags) const
+void CurseOutput::write(const std::string &str, const OutputFlag flags) const
 {
     char color = OutputFlag::SPECIAL_NONE;
     if (params.colorEnabled() && !search_pattern.empty() && str.find(search_pattern) != str.npos)
@@ -322,7 +321,7 @@ unsigned int CurseOutput::write(const int &x, const int &y, const std::string &s
     if (offsetY < 0)
         return 1;
     move(offsetY, x);
-    write(str, maxWidth, flags);
+    write(str, flags);
     return getNbLines(str.size() +x, maxWidth);
 }
 

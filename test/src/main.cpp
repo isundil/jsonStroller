@@ -116,7 +116,7 @@ void checkSample()
     delete root;
 }
 
-int main(int ac, char **av)
+int main()
 {
     checkTypes();
     checkArray();
