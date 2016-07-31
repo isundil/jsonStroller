@@ -31,6 +31,29 @@ void LinearHistory::put(char item)
 
 void LinearHistory::put(char items[], unsigned int count)
 {
+    if (willReset)
+    {
+        reset();
+        line++;
+        willReset = false;
+    }
+    for (unsigned int i=0; i < count; ++i)
+    {
+        if (items[i] == '\n')
+        {
+            if (i < count -1)
+            {
+                willReset = true;
+                put(&items[i +1], count -i);
+                return;
+            }
+            else
+            {
+                willReset = true;
+                return;
+            }
+        }
+    }
     WrappedBuffer<char, ERROR_HISTORY_LEN>::put(items, count);
 }
 

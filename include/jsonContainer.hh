@@ -14,6 +14,10 @@ class JSonContainer: public JSonElement, public std::list<JSonElement*>
     public:
         JSonContainer(JSonContainer *parent);
         virtual ~JSonContainer();
+
+        /**
+         * Get the first item of this container
+        **/
         virtual JSonElement *firstChild() =0;
         virtual const JSonElement *firstChild() const =0;
 };

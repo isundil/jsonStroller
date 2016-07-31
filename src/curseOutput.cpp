@@ -78,17 +78,15 @@ static void _resizeFnc(int signo)
 
 bool CurseOutput::redraw()
 {
-    std::pair<unsigned int, unsigned int> screenSize;
-    std::pair<int, int> cursor;
+    const std::pair<unsigned int, unsigned int> screenSize = getScreenSize();
+    std::pair<int, int> cursor(0, 0);
     bool result;
 
     select_up = select_down = nullptr;
-    selectFound = selectIsLast = selectIsFirst = false;
-    getScreenSize(screenSize, cursor);
-    cursor.first = cursor.second = 0;
+    selectFound = selectIsLast = false;
     clear();
     try {
-        result = redraw(cursor, screenSize, data, dynamic_cast<const JSonContainer *> (data));
+        result = redraw(cursor, screenSize, data);
     }
     catch (SelectionOutOfRange &e)
     {
@@ -96,7 +94,7 @@ bool CurseOutput::redraw()
     }
     if (!result && !selectFound)
     {
-        topleft++;
+        scrollTop++;
         return false;
     }
     if (!result && !select_down)
@@ -125,9 +123,9 @@ bool CurseOutput::redraw(const std::string &errorMsg)
     return result;
 }
 
-bool CurseOutput::redraw(std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, const JSonElement *item, const JSonContainer *parent)
+bool CurseOutput::redraw(std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, const JSonElement *item)
 {
-    checkSelection(item, parent, cursor);
+    checkSelection(item, cursor);
     if (dynamic_cast<const JSonContainer*>(item))
     {
         if (!writeContainer(cursor, maxSize, (const JSonContainer *) item))
@@ -136,7 +134,7 @@ bool CurseOutput::redraw(std::pair<int, int> &cursor, const std::pair<unsigned i
     else
     {
         cursor.second += write(cursor.first, cursor.second, item, maxSize.first, getFlag(item));
-        if (cursor.second - topleft > 0 && (unsigned)(cursor.second - topleft) > maxSize.second -1)
+        if (cursor.second - scrollTop > 0 && (unsigned)(cursor.second - scrollTop) > maxSize.second -1)
             return false;
     }
     return true;
@@ -160,13 +158,13 @@ bool CurseOutput::writeContainer(std::pair<int, int> &cursor, const std::pair<un
     else
     {
         cursor.second += write(cursor.first, cursor.second, childDelimiter[0], maxSize.first, getFlag(item));
-        if (cursor.second - topleft > 0 && (unsigned)(cursor.second - topleft) > maxSize.second -1)
+        if (cursor.second - scrollTop > 0 && (unsigned)(cursor.second - scrollTop) > maxSize.second -1)
                 return false;
         if (!writeContent(cursor, maxSize, (const std::list<JSonElement *> *)item))
             return false;
         cursor.second += write(cursor.first, cursor.second, childDelimiter[1], maxSize.first, getFlag(item));
     }
-    return (cursor.second - topleft < 0 || (unsigned)(cursor.second - topleft) <= maxSize.second -1);
+    return (cursor.second - scrollTop < 0 || (unsigned)(cursor.second - scrollTop) <= maxSize.second -1);
 }
 
 bool CurseOutput::writeContent(std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, const std::list<JSonElement*> *_item)
@@ -184,7 +182,7 @@ bool CurseOutput::writeContent(std::pair<int, int> &cursor, const std::pair<unsi
             JSonObjectEntry *ent = (JSonObjectEntry*) i;
             bool isContainer = (dynamic_cast<const JSonContainer *>(**ent) != nullptr);
             std::string key = ent->stringify();
-            checkSelection(ent, (JSonContainer*) item, cursor);
+            checkSelection(ent, cursor);
             if (isContainer && collapsed.find((const JSonContainer*)(**ent)) != collapsed.cend())
             {
                 if (dynamic_cast<const JSonObject *>(**ent))
@@ -192,12 +190,12 @@ bool CurseOutput::writeContent(std::pair<int, int> &cursor, const std::pair<unsi
                     if (!writeKey(key, "{ ... }", cursor, maxSize, getFlag(ent)))
                         break;
                 }
-                else if (!writeKey(key, "[ ... ]", cursor, maxSize, getFlag(ent)) || (cursor.second - topleft > 0 && (unsigned)(cursor.second - topleft) > maxSize.second -1))
+                else if (!writeKey(key, "[ ... ]", cursor, maxSize, getFlag(ent)) || (cursor.second - scrollTop > 0 && (unsigned)(cursor.second - scrollTop) > maxSize.second -1))
                     break;
             }
             else if (!isContainer)
             {
-                if (!writeKey(key, ((**ent)->stringify()), cursor, maxSize, getFlag(ent)) || (cursor.second - topleft > 0 && (unsigned)(cursor.second - topleft) > maxSize.second -1))
+                if (!writeKey(key, ((**ent)->stringify()), cursor, maxSize, getFlag(ent)) || (cursor.second - scrollTop > 0 && (unsigned)(cursor.second - scrollTop) > maxSize.second -1))
                     break;
             }
             else if (((JSonContainer*)(**ent))->size() == 0)
@@ -207,7 +205,7 @@ bool CurseOutput::writeContent(std::pair<int, int> &cursor, const std::pair<unsi
                     if (!writeKey(key, "{ }", cursor, maxSize, getFlag(ent)))
                         break;
                 }
-                else if (!writeKey(key, "[ ]", cursor, maxSize, getFlag(ent)) || (cursor.second - topleft > 0 && (unsigned)(cursor.second - topleft) > maxSize.second -1))
+                else if (!writeKey(key, "[ ]", cursor, maxSize, getFlag(ent)) || (cursor.second - scrollTop > 0 && (unsigned)(cursor.second - scrollTop) > maxSize.second -1))
                     break;
             }
             else
@@ -218,7 +216,7 @@ bool CurseOutput::writeContent(std::pair<int, int> &cursor, const std::pair<unsi
                 if (selection == ent)
                     selection = **ent;
                 cursor.first += INDENT_LEVEL /2;
-                if (!redraw(cursor, maxSize, **ent, (const JSonContainer *)item))
+                if (!redraw(cursor, maxSize, **ent))
                 {
                     selection = saveSelection;
                     cursor.first -= INDENT_LEVEL /2;
@@ -230,7 +228,7 @@ bool CurseOutput::writeContent(std::pair<int, int> &cursor, const std::pair<unsi
         }
         else
         {
-            if (!redraw(cursor, maxSize, i, (const JSonContainer *)item))
+            if (!redraw(cursor, maxSize, i))
                 break;
         }
         result = true;
@@ -242,7 +240,7 @@ bool CurseOutput::writeContent(std::pair<int, int> &cursor, const std::pair<unsi
 
 bool CurseOutput::writeKey(const std::string &key, const std::string &after, std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, OutputFlag flags)
 {
-    if (cursor.second - topleft < 0)
+    if (cursor.second - scrollTop < 0)
     {
         cursor.second++;
         return true;
@@ -256,7 +254,7 @@ bool CurseOutput::writeKey(const std::string &key, const std::string &after, std
 
 bool CurseOutput::writeKey(const std::string &key, std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, OutputFlag flags, unsigned int extraLen)
 {
-    if (cursor.second - topleft < 0)
+    if (cursor.second - scrollTop < 0)
     {
         cursor.second++;
         return true;
@@ -268,7 +266,7 @@ bool CurseOutput::writeKey(const std::string &key, std::pair<int, int> &cursor, 
     flags.type(OutputFlag::TYPE_OBJ);
     write(": ", maxSize.first, flags);
     flags.type(oldType);
-    return (cursor.second - topleft < 0 || (unsigned)(cursor.second - topleft) <= maxSize.second);
+    return (cursor.second - scrollTop < 0 || (unsigned)(cursor.second - scrollTop) <= maxSize.second);
 }
 
 unsigned int CurseOutput::write(const int &x, const int &y, const JSonElement *item, unsigned int maxWidth, OutputFlag flags)
@@ -278,7 +276,7 @@ unsigned int CurseOutput::write(const int &x, const int &y, const JSonElement *i
 
 unsigned int CurseOutput::write(const int &x, const int &y, const char item, unsigned int maxWidth, OutputFlag flags)
 {
-    int offsetY = y - topleft;
+    int offsetY = y - scrollTop;
     if (offsetY < 0)
         return 1;
     if (flags.selected())
@@ -320,7 +318,7 @@ void CurseOutput::write(const std::string &str, unsigned int maxWidth, const Out
 
 unsigned int CurseOutput::write(const int &x, const int &y, const std::string &str, unsigned int maxWidth, const OutputFlag flags)
 {
-    int offsetY = y - topleft;
+    int offsetY = y - scrollTop;
     if (offsetY < 0)
         return 1;
     move(offsetY, x);
@@ -336,15 +334,15 @@ unsigned int CurseOutput::getNbLines(float nbChar, unsigned int maxWidth)
     return nLine +1;
 }
 
-void CurseOutput::getScreenSize(std::pair<unsigned int, unsigned int> &screenSize) const
+const std::pair<unsigned int, unsigned int> CurseOutput::getScreenSize() const
 {
-    getmaxyx(stdscr, screenSize.second, screenSize.first);
-}
-
-void CurseOutput::getScreenSize(std::pair<unsigned int, unsigned int> &screenSize, std::pair<int, int> &bs) const
-{
-    getScreenSize(screenSize);
+    std::pair<int, int> bs;
+    std::pair<int, int> sc;
+    getmaxyx(stdscr, sc.second, sc.first);
     getbegyx(stdscr, bs.second, bs.first);
+    sc.first -= bs.first;
+    sc.second -= bs.second;
+    return sc;
 }
 
 const OutputFlag CurseOutput::getFlag(const JSonElement *item) const
@@ -366,19 +364,14 @@ const OutputFlag CurseOutput::getFlag(const JSonElement *item) const
     return res;
 }
 
-void CurseOutput::checkSelection(const JSonElement *item, const JSonElement *parent, const std::pair<int, int> &cursor)
+void CurseOutput::checkSelection(const JSonElement *item, const std::pair<int, int> &cursor)
 {
     if (!selectFound)
     {
         if (selection == item)
         {
-            if (cursor.second == topleft)
-                selectIsFirst = true;
-            else if (cursor.second < topleft)
-            {
-                topleft = cursor.second;
-                throw SelectionOutOfRange(); //break and restart painting
-            }
+            if (cursor.second < scrollTop) //Selection is above vp, move scroll pos to selection and start drawing
+                scrollTop = cursor.second;
             selectFound = true;
         }
         else if (!item->getParent() || !dynamic_cast<const JSonObjectEntry*>(item->getParent()))
@@ -418,17 +411,14 @@ bool CurseOutput::readInput()
             case KEY_UP:
             case 'K':
             case 'k':
-                if (selectIsFirst && topleft)
-                    topleft = std::max(topleft -3, 0);
-                else
-                    selection = select_up;
+                selection = select_up;
                 return true;
 
             case KEY_DOWN:
             case 'j':
             case 'J':
                 if (selectIsLast)
-                    topleft += 2;
+                    scrollTop += 2;
                 else if (selection != select_down)
                     selection = select_down;
                 else
@@ -641,8 +631,6 @@ const std::string CurseOutput::search()
     {
         int c;
 
-        clear();
-        redraw();
         writeBottomLine('/' +buffer, OutputFlag::SPECIAL_SEARCH);
         refresh();
         c = getch();
@@ -650,6 +638,7 @@ const std::string CurseOutput::search()
             break;
         else if (c == '\b' || c == 127)
             buffer.pop_back();
+        // TODO check kill-key and throw noInputException
         else
             buffer += c;
     }
@@ -662,8 +651,7 @@ const std::string CurseOutput::search()
 
 void CurseOutput::writeBottomLine(const std::string &buffer, short color) const
 {
-    std::pair<unsigned int, unsigned int> screenSize;
-    getScreenSize(screenSize);
+    const std::pair<unsigned int, unsigned int> screenSize = getScreenSize();
     size_t bufsize = buffer.size();
     if (params.colorEnabled())
         attron(COLOR_PAIR(color));
@@ -712,7 +700,7 @@ void CurseOutput::init()
     signal(SIGINT, _resizeFnc);
     signal(SIGTERM, _resizeFnc);
     signal(SIGKILL, _resizeFnc);
-    topleft = 0;
+    scrollTop = 0;
 }
 
 void CurseOutput::shutdown()

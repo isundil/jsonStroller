@@ -17,24 +17,46 @@ class JSonObject: public JSonContainer
         JSonObject(JSonContainer *parent);
         virtual ~JSonObject();
 
+        /**
+         * Add entry
+        **/
         void push(const std::string &key, JSonElement *child);
+
+        /**
+         * find object by key
+        **/
         JSonObject::const_iterator find(const std::string &key) const;
+        /**
+         * remove object by key
+        **/
         bool erase(const std::string &);
+        /**
+         * check if object exists
+        **/
         bool contains(const std::string &) const;
+
+        /**
+         * fetch object by key
+        **/
+        const JSonElement* get(const std::string &) const;
 
         virtual JSonElement *firstChild();
         virtual const JSonElement *firstChild() const;
 
-        const JSonElement* get(const std::string &) const;
-
         virtual std::string stringify() const;
 
+    /**
+     * multiple objects exists for this key
+    **/
     class DoubleKeyException: public JsonException
     {
         public:
             DoubleKeyException(unsigned long long offset, const std::string &key, LinearHistory &buf);
     };
 
+    /**
+     * Invalid value for key
+    **/
     class NotAKeyException: public JsonException
     {
         public:

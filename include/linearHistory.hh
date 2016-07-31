@@ -15,13 +15,26 @@ class LinearHistory: public WrappedBuffer<char, ERROR_HISTORY_LEN>
         LinearHistory();
         ~LinearHistory();
 
+        /**
+         * Get line number
+        **/
         unsigned int currentLine() const;
 
+        /**
+         * Insert char(s)
+         * If new-line found, reinitialize and increment line
+        **/
         void put(char item);
         void put(char item[], unsigned int count);
 
     private:
+        /**
+         * True if new line found, and should reset at new put
+        **/
         bool willReset;
+        /**
+         * Current line
+        **/
         unsigned int line;
 };
 

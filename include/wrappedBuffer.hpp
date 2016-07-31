@@ -6,8 +6,15 @@
 
 #pragma once
 
+#include <stdexcept>
 #include <string.h>
 #include <string>
+
+class NotImplementedException: public std::logic_error
+{
+    public:
+        NotImplementedException(): std::logic_error("Not implemented") {};
+};
 
 template <typename T, int SIZE =10>
 class WrappedBuffer
@@ -16,19 +23,31 @@ class WrappedBuffer
         WrappedBuffer();
         virtual ~WrappedBuffer();
 
+        /**
+         * append item(s) to buffer
+        **/
         virtual void put(T item);
-        virtual void put(T item[], unsigned int count);
+        virtual void put(T items[], unsigned int count);
+        /**
+         * remove last item from buffer
+        **/
         void pop_back();
+        /**
+         * empty the buffer
+        **/
         void reset();
 
         /**
          * @return total size appended since instanciation or clear()
         **/
         unsigned int totalSize() const;
+        /**
+         * @return Current size (cannot be greater than SIZE
+        **/
         unsigned int size() const;
 
         /**
-         * @return Current size (cannot be greater than SIZE
+         * @return basic_string representation of the buffer
         **/
         std::basic_string<T> toString() const;
         T* toArray(T arr[SIZE]) const;
@@ -175,6 +194,7 @@ std::basic_string<T> WrappedBuffer<T, SIZE>::toString() const
 template<typename T, int SIZE>
 T* WrappedBuffer<T, SIZE>::toArray(T arr[SIZE]) const
 {
+    throw NotImplementedException();
     if (!arr)
         arr = new T[SIZE]();
     //TODO

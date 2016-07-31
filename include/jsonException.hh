@@ -10,9 +10,15 @@
 #include "config.h"
 #include "linearHistory.hh"
 
+/**
+ * Reach end of input prematurelly
+**/
 class EofException: public std::exception
 { };
 
+/**
+ * std json parse exception
+**/
 class JsonException: public std::exception
 {
     public:
@@ -26,10 +32,40 @@ class JsonException: public std::exception
     protected:
         const unsigned long long offset;
         const LinearHistory history;
-        const std::string _what;
+        std::string _what;
 };
 
-class JsonHexvalueException: public JsonException
+/**
+ * Expected JSon value (primitive / object / array), got crap
+**/
+class JsonNotJsonException: public JsonException
+{
+    public:
+        JsonNotJsonException(unsigned long long offet, LinearHistory &h);
+};
+
+/**
+ * Expected char, got crap
+**/
+class JsonUnexpectedException: public JsonException
+{
+    public:
+        JsonUnexpectedException(const char expected, unsigned long long offset, LinearHistory &h);
+};
+
+/**
+ * cannot interpret input as boolean/number
+**/
+class JsonFormatException: public JsonException
+{
+    public:
+        JsonFormatException(unsigned long long offset, LinearHistory &h);
+};
+
+/**
+ * Invalid hexadecimal value
+**/
+class JsonHexvalueException: public JsonFormatException
 {
     public:
         JsonHexvalueException(const std::string &what, unsigned long long offset, LinearHistory &hist);
@@ -38,24 +74,10 @@ class JsonHexvalueException: public JsonException
         static std::string msg(char c);
 };
 
-class JsonNotJsonException: public JsonException
-{
-    public:
-        JsonNotJsonException(unsigned long long offet, LinearHistory &h);
-};
-
-class JsonUnexpectedException: public JsonException
-{
-    public:
-        JsonUnexpectedException(const char expected, unsigned long long offset, LinearHistory &h);
-};
-
-class JsonFormatException: public JsonException
-{
-    public:
-        JsonFormatException(unsigned long long offset, LinearHistory &h);
-};
-
+/**
+ * unknown escaped entry in string
+ * (eg. \crap)
+**/
 class JsonEscapedException: public JsonException
 {
     public:

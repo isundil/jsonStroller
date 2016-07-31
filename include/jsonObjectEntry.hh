@@ -19,8 +19,15 @@ class JSonObjectEntry: public JSonElement
         std::string stringify() const;
 
         bool operator==(const std::string &) const;
+        /**
+         * Get associated value
+        **/
         const JSonElement *operator*() const;
         JSonElement *operator*();
+
+        /**
+         * check if key or value match search pattern
+        **/
         bool match(const std::string &) const;
 
     protected:

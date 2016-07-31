@@ -5,17 +5,16 @@
 **/
 
 #include <iostream>
-#include <typeinfo>
 #include <locale.h>
 #include "streamConsumer.hh"
 #include "curseOutput.hh"
 #include "params.hh"
 #include "jsonException.hh"
 
-void displayException(const Params *params, const JsonException &e)
+void displayException(const Params *params, const std::string &type, const JsonException &e)
 {
     std::string buffer = e.getHistory();
-    std::cerr << params->getProgName() << ": [" << typeid(e).name() << "] at line " << e.currentLine() << " ("  << e.what() << ") while reading" << std::endl;
+    std::cerr << params->getProgName() << ": [" << type << "] at line " << e.currentLine() << " ("  << e.what() << ") while reading" << std::endl;
     std::cerr << buffer << std::endl << std::string(buffer.size() -1, '~') << '^' << std::endl;
 }
 
@@ -37,19 +36,19 @@ void run(Params *params)
     }
     catch (EofException &e)
     {
-        std::cerr << params->getProgName() << ": " << typeid(e).name() << " ("  << e.what() << ") error while reading" << std::endl;
+        std::cerr << params->getProgName() << ": " << Warning::getType(e) << " ("  << e.what() << ") error while reading" << std::endl;
         return;
     }
     catch (JsonException &e)
     {
         std::cerr << "Error: ";
-        displayException(params, e);
+        displayException(params, Warning::getType(e), e);
         return;
     }
     for (Warning w : stream.getMessages())
     {
         std::cerr << "Warning: ";
-        displayException(params, w());
+        displayException(params, w.getType(), w());
     }
     out = new CurseOutput(root, *params);
     out->run();

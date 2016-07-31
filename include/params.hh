@@ -13,8 +13,18 @@
 class AParams
 {
     public:
+        /**
+         * true if --ascii
+        **/
         virtual bool isIgnoringUnicode() const =0;
+        /**
+         * false if -W
+        **/
         virtual bool isStrict() const =0;
+        /**
+         * true if --color match conditions
+        **/
+        virtual bool colorEnabled() const =0;
 };
 
 class Params: public AParams
@@ -23,20 +33,43 @@ class Params: public AParams
         Params(int ac, char **av);
         virtual ~Params();
 
+        /**
+         * retun input
+         * can be file stream (-f), stringstream ( -- INPUT), or std::cin (none)
+        **/
         std::basic_istream<char> &getInput() const;
+        /**
+         * false if invalid argument is passed
+        **/
         bool isValid() const;
+
+        /**
+         * print usage
+         * @param program name
+        **/
+        static void usage(const std::string &) noexcept;
+        /**
+         * get argv[0]
+        **/
+        const std::string &getProgName() const;
+
+        /**
+         * flags
+        **/
         bool isStrict() const;
         bool colorEnabled() const;
-
-        static void usage(const std::string &) noexcept;
-
-        const std::string &getProgName() const;
         bool isIgnoringUnicode() const;
 
     private:
+        /**
+         * input stream
+         * can be null for stdin
+        **/
         std::basic_istream<char> *input;
+
         const std::string progName;
         std::list<std::string> params;
+
         bool ignoreUnicode;
         bool colorMode;
         bool strict;

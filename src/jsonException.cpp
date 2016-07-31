@@ -10,11 +10,15 @@
 JsonException::JsonException(const std::string &wh, unsigned long long pos, LinearHistory &h): offset(pos), history(h), _what(wh)
 { }
 
-JsonHexvalueException::JsonHexvalueException(const std::string &what, unsigned long long o, LinearHistory &h): JsonException(what, o, h)
-{ }
+JsonHexvalueException::JsonHexvalueException(const std::string &what, unsigned long long o, LinearHistory &h): JsonFormatException(o, h)
+{
+    _what = what;
+}
 
-JsonHexvalueException::JsonHexvalueException(char c, unsigned long long o, LinearHistory &h): JsonException(JsonHexvalueException::msg(c), o, h)
-{ }
+JsonHexvalueException::JsonHexvalueException(char c, unsigned long long o, LinearHistory &h): JsonFormatException(o, h)
+{
+    _what = JsonHexvalueException::msg(c);
+}
 
 JsonFormatException::JsonFormatException(unsigned long long pos, LinearHistory &h):
     JsonException("invalid value", pos, h)

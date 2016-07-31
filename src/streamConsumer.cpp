@@ -16,10 +16,6 @@ StreamConsumer::~StreamConsumer()
 {
     if (root)
         delete root;
-    for (Warning i : warnings)
-    {
-        delete i.getPtrUnsafe();
-    }
 }
 
 StreamConsumer *StreamConsumer::withConfig(const AParams *p)
@@ -57,10 +53,11 @@ JSonElement *StreamConsumer::readNext(JSonContainer *parent)
     return root;
 }
 
-JSonElement * const StreamConsumer::getRoot() const
-{
-    return root;
-}
+const JSonElement * const StreamConsumer::getRoot() const
+{ return root; }
+
+JSonElement * const StreamConsumer::getRoot()
+{ return root; }
 
 JSonObject *StreamConsumer::readObject(JSonContainer *parent)
 {
@@ -87,7 +84,7 @@ JSonObject *StreamConsumer::readObject(JSonContainer *parent)
             else // add Warning, new key erase previous one
             {
                 result->erase(key->getValue());
-                warnings.push_back(Warning(new JSonObject::DoubleKeyException(stream.tellg(), key->getValue(), history)));
+                warnings.push_back(Warning(JSonObject::DoubleKeyException(stream.tellg(), key->getValue(), history)));
             }
         }
         JSonElement *child = readNext(result);
@@ -285,16 +282,18 @@ static unsigned char hexbyte(const char c)
     throw std::invalid_argument(JsonHexvalueException::msg(c));
 }
 
-static unsigned char hexbyte(const char str[2])
+template<typename T>
+static T hexbyte(const char str[], unsigned int len)
 {
-    unsigned char result = 0;
-    result = (hexbyte(*str) <<4) + hexbyte(str[1]);
+    T result = 0;
+    for (unsigned int i =0; i < len; ++i)
+        result = (result << 4) + hexbyte(str[i]);
     return result;
 }
 
 void StreamConsumer::appendUnicode(const char unicode[4], std::string &buf)
 {
-    unsigned short uni = (hexbyte(unicode) <<8) + hexbyte(unicode+2);
+    unsigned short uni = hexbyte<unsigned short>(unicode, 4);
     char test[5];
     bzero(test, sizeof(*test) *5);
     snprintf(test, 4, "%lc", uni);
