@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.8)
 SET (CUSTOM_BINARY_OUTPUT_DIR bin)
 SET (DOC_OUTPUT doc/)
 add_definitions ("-Wall")
-add_definitions ("-g3")
+add_definitions ("-O3")
 
 add_executable(jsonstroll
     src/main.cpp
