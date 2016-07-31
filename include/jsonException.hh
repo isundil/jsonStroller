@@ -1,3 +1,9 @@
+/**
+ * jsonException.hh for jsonstroller
+ *
+ * Author: isundil <isundill@gmail.com>
+**/
+
 #pragma once
 
 #include <exception>

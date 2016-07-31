@@ -1,3 +1,8 @@
+/**
+ * config.h for jsonstroller
+ *
+ * Author: isundil <isundill@gmail.com>
+**/
 
 #ifndef  ERROR_HISTORY_LEN
 # define ERROR_HISTORY_LEN 45

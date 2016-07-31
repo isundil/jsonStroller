@@ -1,3 +1,9 @@
+/**
+ * jsonObject.cpp for jsonstroller
+ *
+ * Author: isundil <isundill@gmail.com>
+**/
+
 #include "jsonObject.hh"
 
 JSonObject::JSonObject(JSonContainer *p): JSonContainer(p)

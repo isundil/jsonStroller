@@ -1,3 +1,9 @@
+/**
+ * curseOutput.cpp for jsonstroller
+ *
+ * Author: isundil <isundill@gmail.com>
+**/
+
 #include <iostream>
 
 #include <sys/ioctl.h>

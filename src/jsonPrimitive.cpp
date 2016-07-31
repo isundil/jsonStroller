@@ -1,3 +1,9 @@
+/**
+ * jsonPrimitive.cpp for jsonstroller
+ *
+ * Author: isundil <isundill@gmail.com>
+**/
+
 #include "jsonPrimitive.hh"
 
 AJSonPrimitive::~AJSonPrimitive()

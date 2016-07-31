@@ -1,3 +1,9 @@
+/**
+ * jsonObjectEntry.cpp for jsonstroller
+ *
+ * Author: isundil <isundill@gmail.com>
+**/
+
 #include "jsonObjectEntry.hh"
 #include "jsonObject.hh"
 

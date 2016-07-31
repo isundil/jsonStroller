@@ -1,3 +1,9 @@
+/**
+ * streamConsumer.cpp for jsonstroller
+ *
+ * Author: isundil <isundill@gmail.com>
+**/
+
 #include <iostream>
 #include <sstream>
 #include "jsonElement.hh"

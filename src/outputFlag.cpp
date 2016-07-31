@@ -1,3 +1,9 @@
+/**
+ * outputFlag.cpp for jsonstroller
+ *
+ * Author: isundil <isundill@gmail.com>
+**/
+
 #include "outputFlag.hh"
 
 const char OutputFlag::TYPE_UNKNOWN =0;

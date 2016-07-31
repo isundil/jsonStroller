@@ -1,3 +1,9 @@
+/**
+ * wrappedBuffer.hpp for jsonstroller
+ *
+ * Author: isundil <isundill@gmail.com>
+**/
+
 #pragma once
 
 #include <string.h>

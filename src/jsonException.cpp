@@ -1,3 +1,9 @@
+/**
+ * jsonException.cpp for jsonstroller
+ *
+ * Author: isundil <isundill@gmail.com>
+**/
+
 #include <string>
 #include "jsonException.hh"
 

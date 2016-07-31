@@ -1,3 +1,9 @@
+/**
+ * params.cpp for jsonstroller
+ *
+ * Author: isundil <isundill@gmail.com>
+**/
+
 #include <fstream>
 #include <iostream>
 #include <sstream>

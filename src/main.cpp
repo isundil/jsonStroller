@@ -1,3 +1,9 @@
+/**
+ * main.cpp for jsonstroller
+ *
+ * Author: isundil <isundill@gmail.com>
+**/
+
 #include <iostream>
 #include <typeinfo>
 #include <locale.h>

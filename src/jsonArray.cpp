@@ -1,3 +1,9 @@
+/**
+ * jsonArray.cpp for jsonstroller
+ *
+ * Author: isundil <isundill@gmail.com>
+**/
+
 #include "jsonArray.hh"
 
 JSonArray::JSonArray(JSonContainer *p): JSonContainer(p)

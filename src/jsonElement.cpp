@@ -1,3 +1,9 @@
+/**
+ * jsonElement.cpp for jsonstroller
+ *
+ * Author: isundil <isundill@gmail.com>
+**/
+
 #include "jsonElement.hh"
 #include "jsonContainer.hh"
 #include "jsonObjectEntry.hh"

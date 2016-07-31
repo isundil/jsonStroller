@@ -1,3 +1,9 @@
+/**
+ * linearHistory.cpp for jsonstroller
+ *
+ * Author: isundil <isundill@gmail.com>
+**/
+
 #include "linearHistory.hh"
 
 LinearHistory::LinearHistory(): willReset(false), line(1)

@@ -1,3 +1,9 @@
+/**
+ * curseOutput.hh for jsonstroller
+ *
+ * Author: isundil <isundill@gmail.com>
+**/
+
 #pragma once
 
 #include <ncurses.h>

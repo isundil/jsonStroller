@@ -1,3 +1,8 @@
+/**
+ * warning.cpp for jsonstroller
+ *
+ * Author: isundil <isundill@gmail.com>
+**/
 
 #include "warning.hh"
 
