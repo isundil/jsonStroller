@@ -11,12 +11,12 @@
 #include <unistd.h>
 #include <signal.h>
 #include <string.h>
-#include <stack>
 
 #include "curseOutput.hh"
 #include "jsonPrimitive.hh"
 #include "jsonObject.hh"
 #include "jsonArray.hh"
+#include "except.hh"
 
 static CurseOutput *runningInst = nullptr;
 class SelectionOutOfRange {};
@@ -501,7 +501,14 @@ bool CurseOutput::readInput()
 
             case '/':
             {
-                const std::string search_pattern = inputSearch();
+                std::string search_pattern;
+                try {
+                    search_pattern = inputSearch();
+                }
+                catch (interruptedException &e)
+                {
+                    return true;
+                }
                 search_result.clear();
                 if (search_pattern.empty())
                     return true;
@@ -608,11 +615,12 @@ void CurseOutput::unfold(const JSonElement *item)
 const std::string CurseOutput::inputSearch()
 {
     std::string buffer;
+    bool abort = false;
 
     curs_set(true);
     keypad(stdscr, false);
     wtimeout(stdscr, -1);
-    while (true)
+    while (!abort)
     {
         int c;
 
@@ -626,7 +634,8 @@ const std::string CurseOutput::inputSearch()
             if (!buffer.empty())
                 buffer.pop_back();
         }
-        // TODO check kill-key and throw noInputException
+        else if (c == 27)
+            abort = true;
         else
             buffer += c;
     }
@@ -634,6 +643,8 @@ const std::string CurseOutput::inputSearch()
     keypad(stdscr, true);
     curs_set(false);
 
+    if (abort)
+        throw interruptedException();
     return buffer;
 }
 

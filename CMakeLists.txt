@@ -8,19 +8,22 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
 
 add_executable(jsonstroll
     src/main.cpp
-    src/jsonContainer.cpp
     src/warning.cpp
     src/params.cpp
     src/curseOutput.cpp
     src/linearHistory.cpp
     src/outputFlag.cpp
     src/streamConsumer.cpp
-    src/jsonArray.cpp
-    src/jsonObjectEntry.cpp
-    src/jsonObject.cpp
+
     src/jsonElement.cpp
+    src/jsonArray.cpp
+    src/jsonObject.cpp
+    src/jsonContainer.cpp
+    src/jsonObjectEntry.cpp
     src/jsonPrimitive.cpp
+
     src/jsonException.cpp
+    src/except.cpp
     )
 
 set_property(TARGET jsonstroll PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CUSTOM_BINARY_OUTPUT_DIR})
