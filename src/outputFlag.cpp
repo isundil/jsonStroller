@@ -36,6 +36,18 @@ bool OutputFlag::selected(bool v)
     return v;
 }
 
+bool OutputFlag::searched() const
+{ return mode & OutputFlag::MODE_SEARCHED; }
+
+bool OutputFlag::searched(bool v)
+{
+    if (v)
+        mode |= OutputFlag::MODE_SEARCHED;
+    else
+        mode &= ~OutputFlag::MODE_SEARCHED;
+    return v;
+}
+
 char OutputFlag::type() const
 { return _type; }
 

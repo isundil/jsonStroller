@@ -109,12 +109,19 @@ class CurseOutput
          * find next search occurence and select it (wich cause viewport to move, eventually)
          * Have it own redraw because may have to write message
         **/
-        bool jumpToNextSearch(bool scanParent, bool redraw, const JSonElement *initial_selection);
+        bool jumpToNextSearch(const JSonElement *initial_selection, bool &);
+        bool jumpToNextSearch();
+
         /**
          * prompt for user input, and return it
          * @throws noInputException if user use a kill-key (to exit buffer)
         **/
-        const std::string search();
+        const std::string inputSearch();
+        /**
+         * find occurences of search result and fill this#search_result
+        **/
+        unsigned int search(const std::string &, const JSonElement *);
+
         /**
          * Write a message on the last line, using color
         **/
@@ -141,9 +148,10 @@ class CurseOutput
         **/
         const JSonElement *selection;
         /**
-         * currently searching pattern
+         * currently searching pattern and its results
         **/
-        std::string search_pattern;
+        std::list<const JSonElement*> search_result;
+
         /**
          * prev/next items to be selected on up/down keys
         **/

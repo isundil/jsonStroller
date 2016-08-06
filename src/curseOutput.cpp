@@ -7,9 +7,11 @@
 #include <iostream>
 
 #include <sys/ioctl.h>
+#include <algorithm>
 #include <unistd.h>
 #include <signal.h>
 #include <string.h>
+#include <stack>
 
 #include "curseOutput.hh"
 #include "jsonPrimitive.hh"
@@ -276,13 +278,14 @@ unsigned int CurseOutput::write(const int &x, const int &y, const JSonElement *i
 unsigned int CurseOutput::write(const int &x, const int &y, const char item, unsigned int maxWidth, OutputFlag flags)
 {
     int offsetY = y - scrollTop;
-    if (offsetY < 0)
-        return 1;
-    if (flags.selected())
-        attron(A_REVERSE | A_BOLD);
     char color = OutputFlag::SPECIAL_NONE;
 
-    if (params.colorEnabled() && search_pattern.size() == 1 && search_pattern.c_str()[0] == item)
+    if (offsetY < 0)
+        return 1;
+
+    if (flags.selected())
+        attron(A_REVERSE | A_BOLD);
+    if (flags.searched())
         color = OutputFlag::SPECIAL_SEARCH;
     else if (colors.find(flags.type()) != colors.end())
         color = flags.type();
@@ -299,15 +302,14 @@ unsigned int CurseOutput::write(const int &x, const int &y, const char item, uns
 void CurseOutput::write(const std::string &str, const OutputFlag flags) const
 {
     char color = OutputFlag::SPECIAL_NONE;
-    if (params.colorEnabled() && !search_pattern.empty() && str.find(search_pattern) != str.npos)
+    if (flags.selected())
+        attron(A_REVERSE | A_BOLD);
+    if (flags.searched())
         color = OutputFlag::SPECIAL_SEARCH;
     else if (colors.find(flags.type()) != colors.end())
         color = flags.type();
-
     if (color != OutputFlag::SPECIAL_NONE)
         attron(COLOR_PAIR(color));
-    if (flags.selected())
-        attron(A_REVERSE | A_BOLD);
 
     printw("%s", str.c_str());
     attroff(A_REVERSE | A_BOLD);
@@ -350,6 +352,7 @@ const OutputFlag CurseOutput::getFlag(const JSonElement *item) const
     const JSonElement *i = dynamic_cast<const JSonObjectEntry*>(item) ? **((const JSonObjectEntry*)item) : item;
 
     res.selected(item == selection);
+    res.searched(std::find(search_result.cbegin(), search_result.cend(), item) != search_result.cend());
     if (dynamic_cast<const JSonPrimitive<std::string> *>(i))
         res.type(OutputFlag::TYPE_STRING);
     else if (dynamic_cast<const JSonPrimitive<bool> *>(i))
@@ -497,116 +500,99 @@ bool CurseOutput::readInput()
             }
 
             case '/':
-                search_pattern = search();
+            {
+                const std::string search_pattern = inputSearch();
+                search_result.clear();
+                if (search_pattern.empty())
+                    return true;
+                search(search_pattern, data);
+            }
 
             case 'n':
             case 'N':
-                jumpToNextSearch(true, true, selection);
-                // jumpToNextSearch have its own redraw, so no need to return true here
+                if (search_result.empty())
+                    this->redraw("Pattern not found");
+                else if (jumpToNextSearch())
+                    return true;
                 break;
         }
     }
     return false;
 }
 
-//TODO move to JSonElement ?
-bool CurseOutput::jumpToNextSearch(bool scanParent, bool redraw, const JSonElement *initial_selection)
+unsigned int CurseOutput::search(const std::string &search_pattern, const JSonElement *current)
 {
-    bool found = false;
-    const JSonElement *current = selection;
-    const JSonElement *prev = nullptr;
+    const JSonContainer *container = dynamic_cast<const JSonContainer *> (current);
+    const JSonObjectEntry *objEntry = dynamic_cast<const JSonObjectEntry *> (current);
+    unsigned int result =0;
 
-    while (current && !found)
+    if (container)
     {
-        if (dynamic_cast<const JSonContainer *> (current) == nullptr)
+        if (!container->empty())
+            for (const JSonElement *it : *container)
+                result += search(search_pattern, it);
+    }
+    else
+    {
+        if (current && current->match(search_pattern))
         {
-            //ObjectEntry or Primitive
-            const JSonElement* entryChild = nullptr;
-            char isObjectEntry = 0;
-            if (dynamic_cast<const JSonObjectEntry *>(current) != nullptr)
+            if (current->getParent() && dynamic_cast<const JSonObjectEntry*>(current->getParent()))
             {
-                entryChild = **((const JSonObjectEntry*)current);
-                if (dynamic_cast<const JSonContainer *> (entryChild) == nullptr)
-                    isObjectEntry = 1;
-                else
-                    isObjectEntry = 2;
+                if (current->getParent() != selection)
+                    search_result.push_back(current->getParent());
             }
-            const std::string str = current->stringify();
-            std::string strEntry;
-            if (isObjectEntry == 1)
-                strEntry = entryChild->stringify();
-            if (current != initial_selection && entryChild != initial_selection && current->match(search_pattern))
-            {
-                selection = current;
-                found = true;
-                break;
-            }
-            if (isObjectEntry == 2)
-            {
-                const JSonElement *_selection = selection;
-                selection = entryChild;
-                if (jumpToNextSearch(false, false, initial_selection))
-                {
-                    found = true;
-                    break;
-                }
-                selection = _selection;
-            }
+            else
+                search_result.push_back(current);
+            result++;
         }
-        else
+        if (objEntry)
+            result += search(search_pattern, **objEntry);
+    }
+    result = search_result.size();
+    return result;
+}
+
+bool CurseOutput::jumpToNextSearch(const JSonElement *current, bool &selectFound)
+{
+    const JSonContainer *container = dynamic_cast<const JSonContainer *> (current);
+    const JSonObjectEntry *objEntry = dynamic_cast<const JSonObjectEntry *> (current);
+
+    if (selection == current)
+        selectFound = true;
+    if (container)
+    {
+        if (!container->empty())
+            for (const JSonElement *it : *container)
+                if (jumpToNextSearch(it, selectFound))
+                    return true;
+    }
+    else
+    {
+        if (current && std::find(search_result.cbegin(), search_result.cend(), current) != search_result.cend() && current != selection && selectFound)
         {
-            //Object or array
-            for (const JSonElement *i : *(const JSonContainer*)current)
-            {
-                if (prev != nullptr)
-                {
-                    if (prev != i)
-                        continue;
-                    else
-                    {
-                        prev = nullptr;
-                        continue;
-                    }
-                }
-                const JSonElement *_selection = selection;
-                selection = i;
-                if (jumpToNextSearch(false, false, initial_selection))
-                {
-                    found = true;
-                    break;
-                }
-                selection = _selection;
-            }
+            selection = current;
+            return true;
         }
-        if (!scanParent)
-            break;
-        prev = current;
-        current = current->getParent();
+        if (objEntry)
+            if (jumpToNextSearch(**objEntry, selectFound))
+                return true;
     }
-    bool foundAfterLoop = false;
-    if (!found && scanParent && selection != data)
+    return false;
+}
+
+bool CurseOutput::jumpToNextSearch()
+{
+    bool selectFound = false;
+    bool res = jumpToNextSearch(data, selectFound);
+
+    if (!res)
     {
-        const JSonElement *_selection = selection;
-        selection = data;
-        if (jumpToNextSearch(false, false, initial_selection))
-            foundAfterLoop = true;
-        else
-            selection = _selection;
-    }
-    if (!redraw)
-        return found;
-    if (foundAfterLoop || (!found && selection->match(search_pattern)))
-    {
-        this->redraw("Search hit BOTTOM, continuing at TOP");
-        return true;
-    }
-    if (!found)
-    {
-        this->redraw("Pattern not found");
+        selection = *(search_result.cbegin());
+        unfold(selection);
+        redraw("Search hit BOTTOM, continuing at TOP");
         return false;
     }
     unfold(selection);
-    this->redraw();
     return true;
 }
 
@@ -619,7 +605,7 @@ void CurseOutput::unfold(const JSonElement *item)
     }
 }
 
-const std::string CurseOutput::search()
+const std::string CurseOutput::inputSearch()
 {
     std::string buffer;
 
@@ -636,7 +622,10 @@ const std::string CurseOutput::search()
         if (c == '\n')
             break;
         else if (c == '\b' || c == 127)
-            buffer.pop_back();
+        {
+            if (!buffer.empty())
+                buffer.pop_back();
+        }
         // TODO check kill-key and throw noInputException
         else
             buffer += c;

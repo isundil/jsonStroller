@@ -28,6 +28,7 @@ class JsonException: public std::exception
         const char *what() const noexcept;
 
         unsigned int currentLine() const;
+        unsigned int currentCol() const;
 
     protected:
         const unsigned long long offset;

@@ -45,6 +45,9 @@ std::string JsonHexvalueException::msg(char c)
 unsigned int JsonException::currentLine() const
 { return history.currentLine(); }
 
+unsigned int JsonException::currentCol() const
+{ return history.totalSize(); }
+
 std::string JsonException::getHistory() const
 { return history.toString(); }
 

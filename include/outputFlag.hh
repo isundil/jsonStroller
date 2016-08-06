@@ -19,6 +19,12 @@ class OutputFlag
         bool selected(bool v);
 
         /**
+         * get/set SEARCH byte
+        **/
+        bool searched() const;
+        bool searched(bool v);
+
+        /**
          * get/set item's type
         **/
         char type() const;
@@ -36,6 +42,7 @@ class OutputFlag
 
     public:
         static const short MODE_SELECTED = 1;
+        static const short MODE_SEARCHED = 2;
 
         static const char TYPE_UNKNOWN;
         static const char TYPE_STRING;

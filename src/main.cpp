@@ -14,7 +14,7 @@
 void displayException(const Params *params, const std::string &type, const JsonException &e)
 {
     std::string buffer = e.getHistory();
-    std::cerr << params->getProgName() << ": [" << type << "] at line " << e.currentLine() << " ("  << e.what() << ") while reading" << std::endl;
+    std::cerr << params->getProgName() << ": [" << type << "] at line " << e.currentLine() << ", " << e.currentCol() << " ("  << e.what() << ") while reading" << std::endl;
     std::cerr << buffer << std::endl << std::string(buffer.size() -1, '~') << '^' << std::endl;
 }
 

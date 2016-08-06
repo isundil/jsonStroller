@@ -25,11 +25,6 @@ class JSonObjectEntry: public JSonElement
         const JSonElement *operator*() const;
         JSonElement *operator*();
 
-        /**
-         * check if key or value match search pattern
-        **/
-        bool match(const std::string &) const;
-
     protected:
         const std::string key;
         JSonElement * const value;
