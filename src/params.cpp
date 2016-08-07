@@ -35,21 +35,7 @@ bool Params::read()
         std::string tmp(*i);
         if (!input)
         {
-            if (tmp == "-f")
-            {
-                i++;
-                if (i == params.cend())
-                    throw std::runtime_error("Invalid use of -f without argument");
-                tmp = *i;
-                std::ifstream *in = new std::ifstream(tmp);
-                if (!in->is_open())
-                {
-                    delete in;
-                    throw std::runtime_error("Cannot open " +tmp +" for reading");
-                }
-                this->input = in;
-            }
-            else if (tmp == "--")
+            if (tmp == "--")
             {
                 input = new std::stringstream();
             }
@@ -79,8 +65,18 @@ bool Params::read()
                 else
                     throw std::runtime_error("Invalid option for --color: " +mode);
             }
-            else
+            else if (tmp.find("-") == 0)
                 throw std::runtime_error("Invalid argument: " +tmp);
+            else
+            {
+                std::ifstream *in = new std::ifstream(tmp);
+                if (!in->is_open())
+                {
+                    delete in;
+                    throw std::runtime_error("Cannot open " +tmp +" for reading");
+                }
+                this->input = in;
+            }
         }
         else
         {
@@ -111,11 +107,15 @@ std::basic_istream<char> &Params::getInput() const
 
 void Params::usage() const noexcept
 {
-    std::cout << "Usage: " << progName << " [OPTIONS] [--] INPUT" << std::endl
+    std::cout << "Usage: "
+    << progName << " [OPTIONS]" << std::endl
+    << "or: " << progName << " [OPTIONS] FILENAME" << std::endl
+    << "or: " << progName << " [OPTIONS] -- INPUT" << std::endl
     << "Read json input and print it using ncurse" << std::endl << std::endl
-    << "if not INPUT nor -f, use standard input" << std::endl << std::endl
+    << "if not INPUT nor FILENAME, use standard input" << std::endl << std::endl
 
-    << "  -f filename\t\tread input from filename instead of stdin" << std::endl
+    << "  FILENAME\t\tread input from filename instead of stdin" << std::endl
+    << "  INPUT\t\tuse this as input instead of stdin" << std::endl
     << "  -W \t\t\tconsider continuing on non-blocking errors" << std::endl
     << "  --ascii\t\tignore unicode values" << std::endl
     << "  --color[=MODE]\tcolorize output, MODE can be never or always (default when ommited)" << std::endl
