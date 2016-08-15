@@ -19,7 +19,7 @@
 #include "except.hh"
 
 static CurseOutput *runningInst = nullptr;
-class SelectionOutOfRange {};
+class SelectionOutOfRange { };
 
 CurseOutput::CurseOutput(JSonElement *root, const Params &p): data(root), selection(root), params(p)
 { }
@@ -56,7 +56,7 @@ bool CurseOutput::onsig(int signo)
         if (ioctl(fileno(screen_fd ? screen_fd : stdout), TIOCGWINSZ, &size) == 0)
             resize_term(size.ws_row, size.ws_col);
         clear();
-        redraw();
+        while (!redraw());
         break;
 
     case SIGKILL:
@@ -82,6 +82,9 @@ bool CurseOutput::redraw()
 {
     const std::pair<unsigned int, unsigned int> screenSize = getScreenSize();
     std::pair<int, int> cursor(0, 0);
+    /**
+     * Will be true if the json's last item is visible
+    **/
     bool result;
 
     select_up = select_down = nullptr;
@@ -155,7 +158,7 @@ bool CurseOutput::writeContainer(std::pair<int, int> &cursor, const std::pair<un
     {
         std::string ss;
         ss.append(&childDelimiter[0], 1).append(" ... ").append(&childDelimiter[1], 1);
-        cursor.second += write(cursor.first, cursor.second, ss, maxSize.first, selection == item);
+        cursor.second += write(cursor.first, cursor.second, ss, maxSize.first, getFlag(item));
     }
     else
     {
@@ -189,7 +192,7 @@ bool CurseOutput::writeContent(std::pair<int, int> &cursor, const std::pair<unsi
             {
                 if (dynamic_cast<const JSonObject *>(**ent))
                 {
-                    if (!writeKey(key, "{ ... }", cursor, maxSize, getFlag(ent)))
+                    if (!writeKey(key, "{ ... }", cursor, maxSize, getFlag(ent)) || (cursor.second - scrollTop > 0 && (unsigned)(cursor.second - scrollTop) > maxSize.second -1))
                         break;
                 }
                 else if (!writeKey(key, "[ ... ]", cursor, maxSize, getFlag(ent)) || (cursor.second - scrollTop > 0 && (unsigned)(cursor.second - scrollTop) > maxSize.second -1))
@@ -204,7 +207,7 @@ bool CurseOutput::writeContent(std::pair<int, int> &cursor, const std::pair<unsi
             {
                 if (dynamic_cast<const JSonObject *>(**ent) )
                 {
-                    if (!writeKey(key, "{ }", cursor, maxSize, getFlag(ent)))
+                    if (!writeKey(key, "{ }", cursor, maxSize, getFlag(ent)) || (cursor.second - scrollTop > 0 && (unsigned)(cursor.second - scrollTop) > maxSize.second -1))
                         break;
                 }
                 else if (!writeKey(key, "[ ]", cursor, maxSize, getFlag(ent)) || (cursor.second - scrollTop > 0 && (unsigned)(cursor.second - scrollTop) > maxSize.second -1))
@@ -212,7 +215,7 @@ bool CurseOutput::writeContent(std::pair<int, int> &cursor, const std::pair<unsi
             }
             else
             {
-                if (!writeKey(key, cursor, maxSize, selection == ent))
+                if (!writeKey(key, cursor, maxSize, getFlag(ent)))
                     break;
                 const JSonElement *saveSelection = selection;
                 if (selection == ent)
