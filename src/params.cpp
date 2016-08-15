@@ -13,7 +13,7 @@
 
 #include "config.h"
 
-Params::Params(char **av) :progName(*av), strict(true)
+Params::Params(char **av): input(nullptr), progName(*av), strict(true)
 {
     av++;
     while (*av)
@@ -36,9 +36,7 @@ bool Params::read()
         if (!input)
         {
             if (tmp == "--")
-            {
                 input = new std::stringstream();
-            }
             else if (tmp == "-W")
                 strict = false;
             else if (tmp == "--ascii")
@@ -115,7 +113,7 @@ void Params::usage() const noexcept
     << "if not INPUT nor FILENAME, use standard input" << std::endl << std::endl
 
     << "  FILENAME\t\tread input from filename instead of stdin" << std::endl
-    << "  INPUT\t\tuse this as input instead of stdin" << std::endl
+    << "  INPUT\t\t\tuse this as input instead of stdin" << std::endl
     << "  -W \t\t\tconsider continuing on non-blocking errors" << std::endl
     << "  --ascii\t\tignore unicode values" << std::endl
     << "  --color[=MODE]\tcolorize output, MODE can be never or always (default when ommited)" << std::endl

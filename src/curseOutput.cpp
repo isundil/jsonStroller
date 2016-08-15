@@ -614,7 +614,7 @@ void CurseOutput::unfold(const JSonElement *item)
 
 const SearchPattern *CurseOutput::inputSearch()
 {
-    std::string buffer;
+    std::wstring buffer;
     bool abort = false;
 
     curs_set(true);
@@ -623,12 +623,12 @@ const SearchPattern *CurseOutput::inputSearch()
     {
         int c;
 
-        writeBottomLine('/' +buffer, OutputFlag::SPECIAL_SEARCH);
+        writeBottomLine(L'/' +buffer, OutputFlag::SPECIAL_SEARCH);
         refresh();
-        c = getch();
-        if (c == '\n')
+        c = getwchar();
+        if (c == L'\r')
             break;
-        else if (c == '\b' || c == 127)
+        else if (c == L'\b' || c == 127)
         {
             if (!buffer.empty())
                 buffer.pop_back();
@@ -647,10 +647,24 @@ const SearchPattern *CurseOutput::inputSearch()
 void CurseOutput::writeBottomLine(const std::string &buffer, short color) const
 {
     const std::pair<unsigned int, unsigned int> screenSize = getScreenSize();
-    size_t bufsize = buffer.size();
+    const size_t bufsize = buffer.size();
+
     if (params.colorEnabled())
         attron(COLOR_PAIR(color));
     mvprintw(screenSize.second -1, 0, "%s%*c", buffer.c_str(), screenSize.first - bufsize, ' ');
+    move(screenSize.second -1, bufsize);
+    if (params.colorEnabled())
+        attroff(COLOR_PAIR(color));
+}
+
+void CurseOutput::writeBottomLine(const std::wstring &buffer, short color) const
+{
+    const std::pair<unsigned int, unsigned int> screenSize = getScreenSize();
+    const size_t bufsize = buffer.size();
+
+    if (params.colorEnabled())
+        attron(COLOR_PAIR(color));
+    mvprintw(screenSize.second -1, 0, "%S%*c", buffer.c_str(), screenSize.first - bufsize, ' ');
     move(screenSize.second -1, bufsize);
     if (params.colorEnabled())
         attroff(COLOR_PAIR(color));

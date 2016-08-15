@@ -43,6 +43,7 @@ class Params: public AParams
          * can be file stream (-f), stringstream ( -- INPUT), or std::cin (none)
         **/
         std::basic_istream<char> &getInput() const;
+
         /**
          * false if invalid argument is passed
         **/
@@ -53,11 +54,13 @@ class Params: public AParams
          * @param program name
         **/
         virtual void usage() const noexcept;
+
         /**
          * print version number
          * @param program name
         **/
         virtual void version() const noexcept;
+
         /**
          * get argv[0]
         **/

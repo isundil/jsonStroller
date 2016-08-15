@@ -7,7 +7,7 @@ class JSonElement;
 class SearchPattern
 {
     public:
-        SearchPattern(const char *);
+        SearchPattern(const wchar_t *);
         ~SearchPattern();
 
         bool isEmpty() const;
@@ -16,12 +16,12 @@ class SearchPattern
         /**
          * Comparison function, for std::search use
         **/
-        bool operator()(char a, char b);
+        bool operator()(wchar_t a, wchar_t b);
 
     private:
-        void evalFlags(const char *);
+        void evalFlags(const wchar_t *);
 
-        std::string pattern;
+        std::wstring pattern;
         short flags;
         short typeFlag;
 
