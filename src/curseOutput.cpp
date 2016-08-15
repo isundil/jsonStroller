@@ -12,6 +12,7 @@
 #include <signal.h>
 #include <string.h>
 
+#include "searchPattern.hh"
 #include "curseOutput.hh"
 #include "jsonPrimitive.hh"
 #include "jsonObject.hh"
@@ -504,18 +505,14 @@ bool CurseOutput::readInput()
 
             case '/':
             {
-                std::string search_pattern;
-                try {
-                    search_pattern = inputSearch();
-                }
-                catch (interruptedException &e)
-                {
+                const SearchPattern *search_pattern = inputSearch();
+                if (!search_pattern)
                     return true;
-                }
                 search_result.clear();
-                if (search_pattern.empty())
+                if (search_pattern->isEmpty())
                     return true;
-                search(search_pattern, data);
+                search(*search_pattern, data);
+                delete search_pattern;
             }
 
             case 'n':
@@ -530,7 +527,7 @@ bool CurseOutput::readInput()
     return false;
 }
 
-unsigned int CurseOutput::search(const std::string &search_pattern, const JSonElement *current)
+unsigned int CurseOutput::search(const SearchPattern &search_pattern, const JSonElement *current)
 {
     const JSonContainer *container = dynamic_cast<const JSonContainer *> (current);
     const JSonObjectEntry *objEntry = dynamic_cast<const JSonObjectEntry *> (current);
@@ -615,13 +612,12 @@ void CurseOutput::unfold(const JSonElement *item)
     }
 }
 
-const std::string CurseOutput::inputSearch()
+const SearchPattern *CurseOutput::inputSearch()
 {
     std::string buffer;
     bool abort = false;
 
     curs_set(true);
-    keypad(stdscr, false);
     wtimeout(stdscr, -1);
     while (!abort)
     {
@@ -643,12 +639,9 @@ const std::string CurseOutput::inputSearch()
             buffer += c;
     }
     wtimeout(stdscr, 150);
-    keypad(stdscr, true);
     curs_set(false);
 
-    if (abort)
-        throw interruptedException();
-    return buffer;
+    return abort ? nullptr : new SearchPattern(buffer.c_str());
 }
 
 void CurseOutput::writeBottomLine(const std::string &buffer, short color) const

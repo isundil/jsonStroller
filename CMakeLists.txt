@@ -14,6 +14,7 @@ add_executable(jsonstroll
     src/linearHistory.cpp
     src/outputFlag.cpp
     src/streamConsumer.cpp
+    src/searchPattern.cpp
 
     src/jsonElement.cpp
     src/jsonArray.cpp
@@ -42,6 +43,7 @@ add_executable(json_test
     src/jsonContainer.cpp
     src/warning.cpp
     src/linearHistory.cpp
+    src/searchPattern.cpp
     src/streamConsumer.cpp
     src/jsonArray.cpp
     src/jsonObjectEntry.cpp

@@ -19,6 +19,7 @@ class JSonContainer;
 class JSonArray;
 class JSonObject;
 template<class T> class Optional;
+class SearchPattern;
 
 class CurseOutput
 {
@@ -116,11 +117,11 @@ class CurseOutput
          * prompt for user input, and return it
          * @throws noInputException if user use a kill-key (to exit buffer)
         **/
-        const std::string inputSearch();
+        const SearchPattern *inputSearch();
         /**
          * find occurences of search result and fill this#search_result
         **/
-        unsigned int search(const std::string &, const JSonElement *);
+        unsigned int search(const SearchPattern &, const JSonElement *);
 
         /**
          * Write a message on the last line, using color
