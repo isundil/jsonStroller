@@ -55,6 +55,10 @@ void SearchPattern::evalFlags(const char *s)
             typeFlag = SearchPattern::TYPE_STRING;
         else if (*s == 'o')
             typeFlag = SearchPattern::TYPE_OBJKEY;
+        else if (*s == 'w')
+            flags |= SearchPattern::FLAG_WHOLEWORD;
+        else if (*s == 'f')
+            flags |= SearchPattern::FLAG_WHOLESTR;
         s++;
     }
 }
@@ -64,6 +68,8 @@ bool SearchPattern::isEmpty() const
 
 bool SearchPattern::operator()(char a, char b)
 {
+    if (a == '\t')
+        a = ' ';
     if (flags & SearchPattern::FLAG_CASE)
         return std::tolower(a) == b;
     return a == b;
@@ -85,12 +91,23 @@ bool SearchPattern::match(const std::string &str, const JSonElement *type) const
                 !(dynamic_cast<const JSonPrimitive<long long> *>(type)))
             return false;
     }
+    if ((flags & FLAG_WHOLESTR && str.length() != pattern.length())
+            || pattern.length() > str.length())
+        return false;
+    if (flags & FLAG_WHOLEWORD && str.length() > pattern.length())
+    {
+        std::string pattern = ' ' +this->pattern +' ';
+            return std::search(str.begin(), str.end(), pattern.begin(), pattern.end(), *this) != str.end();
+    }
     return std::search(str.begin(), str.end(), pattern.begin(), pattern.end(), *this) != str.end();
 }
 
-const short SearchPattern::FLAG_CASE    = 1;
-const short SearchPattern::TYPE_BOOL    = 1;
-const short SearchPattern::TYPE_NUMBER  = 2;
-const short SearchPattern::TYPE_STRING  = 3;
-const short SearchPattern::TYPE_OBJKEY  = 4;
+const short SearchPattern::FLAG_CASE        = 1;
+const short SearchPattern::FLAG_WHOLEWORD   = 2;
+const short SearchPattern::FLAG_WHOLESTR    = 4;
+
+const short SearchPattern::TYPE_BOOL        = 1;
+const short SearchPattern::TYPE_NUMBER      = 2;
+const short SearchPattern::TYPE_STRING      = 3;
+const short SearchPattern::TYPE_OBJKEY      = 4;
 
