@@ -130,7 +130,7 @@ bool CurseOutput::redraw(const std::string &errorMsg)
     return result;
 }
 
-bool CurseOutput::redraw(std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, const JSonElement *item)
+bool CurseOutput::redraw(std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, JSonElement *item)
 {
     checkSelection(item, cursor);
     if (dynamic_cast<const JSonContainer*>(item))
@@ -160,24 +160,24 @@ bool CurseOutput::writeContainer(std::pair<int, int> &cursor, const std::pair<un
     {
         std::string ss;
         ss.append(&childDelimiter[0], 1).append(" ... ").append(&childDelimiter[1], 1);
-        cursor.second += write(cursor.first, cursor.second, ss, maxSize.first, getFlag(item));
+        cursor.second += write(cursor.first, cursor.second, ss, 7, maxSize.first, getFlag(item));
     }
     else
     {
         cursor.second += write(cursor.first, cursor.second, childDelimiter[0], maxSize.first, getFlag(item));
         if (cursor.second - scrollTop > 0 && (unsigned)(cursor.second - scrollTop) > maxSize.second -1)
                 return false;
-        if (!writeContent(cursor, maxSize, (const std::list<JSonElement *> *)item))
+        if (!writeContent(cursor, maxSize, (std::list<JSonElement *> *)item))
             return false;
         cursor.second += write(cursor.first, cursor.second, childDelimiter[1], maxSize.first, getFlag(item));
     }
     return (cursor.second - scrollTop < 0 || (unsigned)(cursor.second - scrollTop) <= maxSize.second -1);
 }
 
-bool CurseOutput::writeContent(std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, const std::list<JSonElement*> *_item)
+bool CurseOutput::writeContent(std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, std::list<JSonElement*> *_item)
 {
-    const JSonContainer *item = (const JSonContainer *)_item;
-    bool containerIsObject = (dynamic_cast<const JSonObject *>(item) != nullptr);
+    JSonContainer *item = (JSonContainer *)_item;
+    bool containerIsObject = (dynamic_cast<JSonObject *>(item) != nullptr);
     bool result = true;
     cursor.first += INDENT_LEVEL;
 
@@ -187,37 +187,38 @@ bool CurseOutput::writeContent(std::pair<int, int> &cursor, const std::pair<unsi
         if (containerIsObject)
         {
             JSonObjectEntry *ent = (JSonObjectEntry*) i;
-            bool isContainer = (dynamic_cast<const JSonContainer *>(**ent) != nullptr);
+            bool isContainer = (dynamic_cast<JSonContainer *>(**ent) != nullptr);
             std::string key = ent->stringify();
             checkSelection(ent, cursor);
-            if (isContainer && collapsed.find((const JSonContainer*)(**ent)) != collapsed.cend())
+            if (isContainer && collapsed.find((JSonContainer*)(**ent)) != collapsed.cend())
             {
-                if (dynamic_cast<const JSonObject *>(**ent))
+                if (dynamic_cast<JSonObject *>(**ent))
                 {
-                    if (!writeKey(key, "{ ... }", cursor, maxSize, getFlag(ent)) || (cursor.second - scrollTop > 0 && (unsigned)(cursor.second - scrollTop) > maxSize.second -1))
+                    if (!writeKey(key, ent->lazystrlen(), "{ ... }", cursor, maxSize, getFlag(ent)) || (cursor.second - scrollTop > 0 && (unsigned)(cursor.second - scrollTop) > maxSize.second -1))
                         break;
                 }
-                else if (!writeKey(key, "[ ... ]", cursor, maxSize, getFlag(ent)) || (cursor.second - scrollTop > 0 && (unsigned)(cursor.second - scrollTop) > maxSize.second -1))
+                else if (!writeKey(key, ent->lazystrlen(), "[ ... ]", cursor, maxSize, getFlag(ent)) || (cursor.second - scrollTop > 0 && (unsigned)(cursor.second - scrollTop) > maxSize.second -1))
                     break;
             }
             else if (!isContainer)
             {
-                if (!writeKey(key, ((**ent)->stringify()), cursor, maxSize, getFlag(ent)) || (cursor.second - scrollTop > 0 && (unsigned)(cursor.second - scrollTop) > maxSize.second -1))
+                JSonElement *eContent = **ent;
+                if (!writeKey(key, ent->lazystrlen(), eContent->stringify(), eContent->lazystrlen(), cursor, maxSize, getFlag(ent)) || (cursor.second - scrollTop > 0 && (unsigned)(cursor.second - scrollTop) > maxSize.second -1))
                     break;
             }
             else if (((JSonContainer*)(**ent))->size() == 0)
             {
                 if (dynamic_cast<const JSonObject *>(**ent) )
                 {
-                    if (!writeKey(key, "{ }", cursor, maxSize, getFlag(ent)) || (cursor.second - scrollTop > 0 && (unsigned)(cursor.second - scrollTop) > maxSize.second -1))
+                    if (!writeKey(key, ent->lazystrlen(), "{ }", cursor, maxSize, getFlag(ent)) || (cursor.second - scrollTop > 0 && (unsigned)(cursor.second - scrollTop) > maxSize.second -1))
                         break;
                 }
-                else if (!writeKey(key, "[ ]", cursor, maxSize, getFlag(ent)) || (cursor.second - scrollTop > 0 && (unsigned)(cursor.second - scrollTop) > maxSize.second -1))
+                else if (!writeKey(key, ent->lazystrlen(), "[ ]", cursor, maxSize, getFlag(ent)) || (cursor.second - scrollTop > 0 && (unsigned)(cursor.second - scrollTop) > maxSize.second -1))
                     break;
             }
             else
             {
-                if (!writeKey(key, cursor, maxSize, getFlag(ent)))
+                if (!writeKey(key, ent->lazystrlen(), cursor, maxSize, getFlag(ent)))
                     break;
                 const JSonElement *saveSelection = selection;
                 if (selection == ent)
@@ -245,21 +246,7 @@ bool CurseOutput::writeContent(std::pair<int, int> &cursor, const std::pair<unsi
     return result;
 }
 
-bool CurseOutput::writeKey(const std::string &key, const std::string &after, std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, OutputFlag flags)
-{
-    if (cursor.second - scrollTop < 0)
-    {
-        cursor.second++;
-        return true;
-    }
-    if (!writeKey(key, cursor, maxSize, flags, after.size()))
-        return false;
-    write(after.c_str(), flags);
-    //TODO check result if write goes to new line
-    return true;
-}
-
-bool CurseOutput::writeKey(const std::string &key, std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, OutputFlag flags, unsigned int extraLen)
+bool CurseOutput::writeKey(const std::string &key, const size_t keylen, const std::string &after, size_t afterlen, std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, OutputFlag flags)
 {
     if (cursor.second - scrollTop < 0)
     {
@@ -268,16 +255,39 @@ bool CurseOutput::writeKey(const std::string &key, std::pair<int, int> &cursor, 
     }
     char oldType = flags.type();
     flags.type(OutputFlag::TYPE_OBJKEY);
-    cursor.second += write(cursor.first, cursor.second, key, maxSize.first -extraLen -2, flags);
+    write(cursor.first, cursor.second, key, 0, 1, flags);
+    flags.type(OutputFlag::TYPE_OBJ);
+    write(": ", flags);
+    flags.type(oldType);
+    write(after.c_str(), flags);
+    cursor.second += getNbLines(cursor.first +keylen +2 +afterlen, maxSize.first);
+    return (cursor.second - scrollTop < 0 || (unsigned)(cursor.second - scrollTop) <= maxSize.second);
+}
+
+bool CurseOutput::writeKey(const std::string &key, const size_t keylen, const std::string &after, std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, OutputFlag flags)
+{
+    return writeKey(key, keylen, after, after.size(), cursor, maxSize, flags);
+}
+
+bool CurseOutput::writeKey(const std::string &key, const size_t keylen, std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, OutputFlag flags, unsigned int extraLen)
+{
+    if (cursor.second - scrollTop < 0)
+    {
+        cursor.second++;
+        return true;
+    }
+    char oldType = flags.type();
+    flags.type(OutputFlag::TYPE_OBJKEY);
+    cursor.second += write(cursor.first, cursor.second, key, keylen, maxSize.first -extraLen -2, flags);
     flags.type(OutputFlag::TYPE_OBJ);
     write(": ", flags);
     flags.type(oldType);
     return (cursor.second - scrollTop < 0 || (unsigned)(cursor.second - scrollTop) <= maxSize.second);
 }
 
-unsigned int CurseOutput::write(const int &x, const int &y, const JSonElement *item, unsigned int maxWidth, OutputFlag flags)
+unsigned int CurseOutput::write(const int &x, const int &y, JSonElement *item, unsigned int maxWidth, OutputFlag flags)
 {
-    return write(x, y, item->stringify(), maxWidth, flags);
+    return write(x, y, item->stringify(), item->lazystrlen(), maxWidth, flags);
 }
 
 unsigned int CurseOutput::write(const int &x, const int &y, const char item, unsigned int maxWidth, OutputFlag flags)
@@ -322,19 +332,19 @@ void CurseOutput::write(const std::string &str, const OutputFlag flags) const
         attroff(COLOR_PAIR(color));
 }
 
-unsigned int CurseOutput::write(const int &x, const int &y, const std::string &str, unsigned int maxWidth, const OutputFlag flags)
+unsigned int CurseOutput::write(const int &x, const int &y, const std::string &str, const size_t strlen, unsigned int maxWidth, const OutputFlag flags)
 {
     int offsetY = y - scrollTop;
     if (offsetY < 0)
         return 1;
     move(offsetY, x);
     write(str, flags);
-    return getNbLines(str.size() +x, maxWidth);
+    return getNbLines(strlen +x, maxWidth);
 }
 
-unsigned int CurseOutput::getNbLines(float nbChar, unsigned int maxWidth)
+unsigned int CurseOutput::getNbLines(const size_t nbChar, unsigned int maxWidth)
 {
-    float nLine = nbChar / maxWidth;
+    double nLine = (double) nbChar / maxWidth;
     if (nLine == (unsigned int) nLine)
         return nLine;
     return nLine +1;
