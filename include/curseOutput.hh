@@ -65,7 +65,7 @@ class CurseOutput
         /**
          * redraw item and children
         **/
-        bool redraw(std::pair<int, int> &, const std::pair<unsigned int, unsigned int> &maxWidth, const JSonElement *item);
+        bool redraw(std::pair<int, int> &, const std::pair<unsigned int, unsigned int> &maxWidth, JSonElement *item);
 
         /**
          * Wait for input
@@ -89,7 +89,7 @@ class CurseOutput
          * @param @maxWidth screen width
          * @return the number of line written
         **/
-        static unsigned int getNbLines(float nbChar, unsigned int maxWidth);
+        static unsigned int getNbLines(const size_t nbChar, unsigned int maxWidth);
 
         /**
          * get flags to be passed to write.
@@ -104,13 +104,14 @@ class CurseOutput
          * Warning: this one does not check line height, because he's not aware of cursor position
         **/
         void write(const std::string &str, const OutputFlag flags) const;
-        unsigned int write(const int &x, const int &y, const JSonElement *item, unsigned int maxWidth, const OutputFlag);
-        unsigned int write(const int &x, const int &y, const std::string &item, unsigned int maxWidth, const OutputFlag);
+        unsigned int write(const int &x, const int &y, JSonElement *item, unsigned int maxWidth, const OutputFlag);
+        unsigned int write(const int &x, const int &y, const std::string &item, const size_t len, unsigned int maxWidth, const OutputFlag);
         unsigned int write(const int &x, const int &y, const char item, unsigned int maxWidth, const OutputFlag);
-        bool writeKey(const std::string &key, std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxWidth, OutputFlag, unsigned int extraLen =0);
-        bool writeKey(const std::string &key, const std::string &after, std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxWidth, OutputFlag);
+        bool writeKey(const std::string &key, const size_t keylen, std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxWidth, OutputFlag, unsigned int extraLen =0);
+        bool writeKey(const std::string &key, const size_t keylen, const std::string &after, const size_t afterlen, std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxWidth, OutputFlag);
+        bool writeKey(const std::string &key, const size_t keylen, const std::string &after, std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxWidth, OutputFlag);
         bool writeContainer(std::pair<int, int> &, const std::pair<unsigned int, unsigned int> &maxSize, const JSonContainer *);
-        bool writeContent(std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, const std::list<JSonElement *> * obj);
+        bool writeContent(std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, std::list<JSonElement *> * obj);
 
         /**
          * find next search occurence and select it (wich cause viewport to move, eventually)
@@ -151,7 +152,7 @@ class CurseOutput
         /**
          * Root item
         **/
-        const JSonElement *data;
+        JSonElement * const data;
 
         /**
          * selected item

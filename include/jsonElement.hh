@@ -21,6 +21,13 @@ class JSonElement
          * return string-representative of this JSonElement
         **/
         virtual std::string stringify() const =0;
+
+        /**
+         * get the number of col string will output
+        **/
+        virtual size_t strlen() const;
+        virtual size_t lazystrlen();
+
         /**
          * return number of parents this item has
         **/
@@ -56,5 +63,7 @@ class JSonElement
          * Not a JSonContainer because JSonObjectEntry can be a parent and isn't a JSonContainer either
         **/
         JSonElement *parent;
+
+        size_t _strlen;
 };
 

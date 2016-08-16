@@ -361,7 +361,7 @@ void StreamConsumer::appendUnicode(const char unicode[4], std::stringstream &buf
     char test[5];
     bzero(test, sizeof(*test) *5);
     snprintf(test, 4, "%lc", uni);
-    buf.write(test, 4);
+    buf.write(test, 3);
 }
 
 std::string StreamConsumer::extractUnicode(const char *buf)

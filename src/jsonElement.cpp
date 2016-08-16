@@ -9,7 +9,7 @@
 #include "jsonObjectEntry.hh"
 #include "searchPattern.hh"
 
-JSonElement::JSonElement(JSonElement *p): parent(p)
+JSonElement::JSonElement(JSonElement *p): parent(p), _strlen(0)
 { }
 
 JSonElement::~JSonElement()
@@ -18,6 +18,30 @@ JSonElement::~JSonElement()
 void JSonElement::setParent(JSonElement *p)
 {
     parent = p;
+}
+
+size_t JSonElement::lazystrlen()
+{
+    if (_strlen)
+        return _strlen;
+    const std::string buf = stringify();
+    if (!buf.size())
+        return _strlen;
+    wchar_t wbuf[buf.size()];
+    mbstowcs(wbuf, buf.c_str(), buf.size() * sizeof(wchar_t));
+    return _strlen = wcslen(wbuf);
+}
+
+size_t JSonElement::strlen() const
+{
+    if (_strlen)
+        return _strlen;
+    const std::string buf = stringify();
+    if (!buf.size())
+        return _strlen;
+    wchar_t wbuf[buf.size()];
+    mbtowc(wbuf, buf.c_str(), buf.size());
+    return wcslen(wbuf);
 }
 
 unsigned int JSonElement::getLevel() const
