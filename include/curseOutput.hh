@@ -18,7 +18,6 @@ class JSonElement;
 class JSonContainer;
 class JSonArray;
 class JSonObject;
-template<class T> class Optional;
 class SearchPattern;
 
 class CurseOutput
@@ -48,10 +47,12 @@ class CurseOutput
          * Initialize ncurses
         **/
         void init();
+
         /**
          * Release ncurses
         **/
         void shutdown();
+
         /**
          * return false if bottom of screen is touched
          * redraw all data
@@ -65,19 +66,23 @@ class CurseOutput
          * redraw item and children
         **/
         bool redraw(std::pair<int, int> &, const std::pair<unsigned int, unsigned int> &maxWidth, const JSonElement *item);
+
         /**
          * Wait for input
          * @return false if ncurses should stop
         **/
         bool readInput();
+
         /**
          * get the screen size
         **/
         const std::pair<unsigned int, unsigned int> getScreenSize() const;
+
         /**
          * set the select_up and select_down pointers, scroll to selection if it is above view port
         **/
         void checkSelection(const JSonElement *item, const std::pair<int, int>&);
+
         /**
          * Return the number of lines written while writting nbChar bytes
          * @param nbChar col written
@@ -85,6 +90,7 @@ class CurseOutput
          * @return the number of line written
         **/
         static unsigned int getNbLines(float nbChar, unsigned int maxWidth);
+
         /**
          * get flags to be passed to write.
          * Contains indications on who to write item
@@ -118,6 +124,7 @@ class CurseOutput
          * @throws noInputException if user use a kill-key (to exit buffer)
         **/
         const SearchPattern *inputSearch();
+
         /**
          * find occurences of search result and fill this#search_result
         **/
@@ -145,10 +152,12 @@ class CurseOutput
          * Root item
         **/
         const JSonElement *data;
+
         /**
          * selected item
         **/
         const JSonElement *selection;
+
         /**
          * currently searching pattern and its results
         **/
@@ -158,27 +167,33 @@ class CurseOutput
          * prev/next items to be selected on up/down keys
         **/
         const JSonElement *select_up, *select_down;
+
         /**
          * Program params (ac/av)
         **/
         const Params &params;
+
         /**
          * ncurses stuff
         **/
         SCREEN *screen;
         FILE *screen_fd;
+
         /**
          * Used by signals to stop reading input and shutdown ncurses
         **/
         bool breakLoop;
+
         /**
          * Viewport start
         **/
         int scrollTop;
+
         /**
          * initialized colors
         **/
         std::set<char /* OutputFlag::TYPE_SOMETHING */> colors;
+
         /**
          * Selection helpers
          * Used for moving viewport

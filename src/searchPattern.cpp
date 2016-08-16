@@ -5,23 +5,7 @@
 #include "jsonObjectEntry.hh"
 #include "jsonPrimitive.hh"
 
-SearchPattern::SearchPattern(const char *input): flags(0)
-{
-    init(input);
-}
-
-SearchPattern::SearchPattern(const std::wstring &buffer)
-{
-    const size_t size = buffer.size();
-    char bytesString[size * sizeof(wchar_t)];
-    wcstombs(&bytesString[0], buffer.c_str(), sizeof(bytesString));
-    init(bytesString);
-}
-
-SearchPattern::~SearchPattern()
-{ }
-
-void SearchPattern::init(const char *input)
+SearchPattern::SearchPattern(const std::string &input): flags(0)
 {
     size_t pos = 0;
     bool escaped = false;
@@ -51,6 +35,9 @@ void SearchPattern::init(const char *input)
     }
     pattern = ss.str();
 }
+
+SearchPattern::~SearchPattern()
+{ }
 
 void SearchPattern::evalFlags(const char *s)
 {

@@ -18,6 +18,7 @@
 #include "jsonObject.hh"
 #include "jsonArray.hh"
 #include "except.hh"
+#include "streamConsumer.hh"
 
 static CurseOutput *runningInst = nullptr;
 class SelectionOutOfRange { };
@@ -643,7 +644,17 @@ const SearchPattern *CurseOutput::inputSearch()
     wtimeout(stdscr, 150);
     curs_set(false);
 
-    return abort ? nullptr : new SearchPattern(buffer);
+    {
+        const size_t size = buffer.size();
+        char bytesString[size * sizeof(wchar_t)];
+        wcstombs(&bytesString[0], buffer.c_str(), sizeof(bytesString));
+        std::string str;
+        if (params.isIgnoringUnicode())
+            str = bytesString;
+        else
+            str = StreamConsumer::extractUnicode(bytesString);
+        return abort ? nullptr : new SearchPattern(str);
+    }
 }
 
 void CurseOutput::writeBottomLine(const std::string &buffer, short color) const

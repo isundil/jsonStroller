@@ -364,6 +364,28 @@ void StreamConsumer::appendUnicode(const char unicode[4], std::stringstream &buf
     buf.write(test, 4);
 }
 
+std::string StreamConsumer::extractUnicode(const char *buf)
+{
+    std::stringstream result;
+
+    for (; *buf; buf++)
+    {
+        if (*buf == '\\' && buf[1] == 'u' && buf[2] && buf[3] && buf[4] && buf[5])
+        {
+            appendUnicode(buf +2, result);
+            buf += 6;
+        }
+        else
+            result.write(buf, 1);
+    }
+    return result.str();
+}
+
+std::string StreamConsumer::extractUnicode(const std::string &buf)
+{
+    return extractUnicode(buf.c_str());
+}
+
 bool StreamConsumer::ignoreChar(char c) const noexcept
 {
     return (c <= 32 || c >= 127 || c == '\n');
