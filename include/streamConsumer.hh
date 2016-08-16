@@ -49,7 +49,12 @@ class StreamConsumer
         /**
          * @return non-null on successfully read JSonElement, or null if token (',', '[', ...)
         **/
-        JSonElement *consumeToken(JSonContainer *parent, std::string &buf);
+        JSonElement *consumeToken(JSonContainer *parent, std::stringstream &buf);
+        JSonElement *consumeString(JSonContainer *parent, std::stringstream &buf);
+        JSonElement *consumeBool(JSonContainer *parent, std::stringstream &buf, char c);
+        JSonElement *consumeNumber(JSonContainer *parent, std::stringstream &buf, char c);
+        JSonElement *consumeNull(JSonContainer *parent, std::stringstream &buf);
+
         /**
          * read next item, fill object or array if found
         **/
@@ -70,7 +75,7 @@ class StreamConsumer
         /**
          * compute unicode value and append it to buffer
         **/
-        static void appendUnicode(const char [4], std::string &);
+        static void appendUnicode(const char [4], std::stringstream &);
 
         /**
          * input stream

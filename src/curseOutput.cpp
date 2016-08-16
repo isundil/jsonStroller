@@ -361,6 +361,8 @@ const OutputFlag CurseOutput::getFlag(const JSonElement *item) const
         res.type(OutputFlag::TYPE_STRING);
     else if (dynamic_cast<const JSonPrimitive<bool> *>(i))
         res.type(OutputFlag::TYPE_BOOL);
+    else if (dynamic_cast<const JSonPrimitive<Null> *>(i))
+        res.type(OutputFlag::TYPE_NULL);
     else if (dynamic_cast<const AJSonPrimitive *>(i))
         res.type(OutputFlag::TYPE_NUMBER);
     else if (dynamic_cast<const JSonObject*>(i))
@@ -695,6 +697,7 @@ void CurseOutput::init()
         start_color();
         init_pair(OutputFlag::TYPE_NUMBER, COLOR_GREEN, COLOR_BLACK);
         init_pair(OutputFlag::TYPE_BOOL, COLOR_RED, COLOR_BLACK);
+        init_pair(OutputFlag::TYPE_NULL, COLOR_RED, COLOR_BLACK);
         init_pair(OutputFlag::TYPE_STRING, COLOR_CYAN, COLOR_BLACK);
         init_pair(OutputFlag::TYPE_OBJKEY, COLOR_CYAN, COLOR_BLACK);
         init_pair(OutputFlag::SPECIAL_SEARCH, COLOR_WHITE, COLOR_BLUE);
@@ -703,6 +706,7 @@ void CurseOutput::init()
         colors.insert(OutputFlag::TYPE_BOOL);
         colors.insert(OutputFlag::TYPE_STRING);
         colors.insert(OutputFlag::TYPE_OBJKEY);
+        colors.insert(OutputFlag::TYPE_NULL);
     }
 
     signal(SIGWINCH, _resizeFnc);
