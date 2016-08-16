@@ -23,19 +23,22 @@
 static CurseOutput *runningInst = nullptr;
 class SelectionOutOfRange { };
 
-CurseOutput::CurseOutput(JSonElement *root, const Params &p): data(root), selection(root), params(p)
-{ }
-
-CurseOutput::~CurseOutput()
-{ }
-
-void CurseOutput::run()
+CurseOutput::CurseOutput(const Params &p): data(nullptr), selection(nullptr), params(p)
 {
     runningInst = this;
     init();
-    loop();
+}
+
+CurseOutput::~CurseOutput()
+{
     shutdown();
     runningInst = nullptr;
+}
+
+void CurseOutput::run(JSonElement *root)
+{
+    selection = data = root;
+    loop();
 }
 
 void CurseOutput::loop()

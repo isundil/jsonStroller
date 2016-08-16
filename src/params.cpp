@@ -13,7 +13,7 @@
 
 #include "config.h"
 
-Params::Params(char **av): input(nullptr), progName(*av), strict(true)
+Params::Params(char **av): progName(*av), strict(true)
 {
     av++;
     while (*av)
@@ -21,6 +21,12 @@ Params::Params(char **av): input(nullptr), progName(*av), strict(true)
         params.push_back(*av);
         av++;
     }
+}
+
+Params::~Params()
+{
+    for (std::basic_istream<char> *in : inputs)
+        delete in;
 }
 
 bool Params::read()
@@ -36,7 +42,7 @@ bool Params::read()
         if (!input)
         {
             if (tmp == "--")
-                input = new std::stringstream();
+                inputs.push_back(input = new std::stringstream());
             else if (tmp == "-W")
                 strict = false;
             else if (tmp == "--ascii")
@@ -73,7 +79,7 @@ bool Params::read()
                     delete in;
                     throw std::runtime_error("Cannot open " +tmp +" for reading");
                 }
-                this->input = in;
+                inputs.push_back(in);
             }
         }
         else
@@ -85,22 +91,16 @@ bool Params::read()
             input->write(tmp.c_str(), sizeof(char) * tmp.size());
         }
     }
-    if (!this->input)
-        this->input = input;
     return true;
 }
 
-Params::~Params()
+std::list<std::basic_istream<char>*> Params::getInputs()
 {
-    if (input)
-        delete input;
-}
-
-std::basic_istream<char> &Params::getInput() const
-{
-    if (input != nullptr)
-        return *input;
-    return std::cin;
+    if (!inputs.empty())
+        return inputs;
+    std::list<std::basic_istream<char>*> result;
+    result.push_back(&std::cin);
+    return result;
 }
 
 void Params::usage() const noexcept

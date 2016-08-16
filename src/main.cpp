@@ -20,37 +20,41 @@ void displayException(const Params *params, const std::string &type, const JsonE
 
 void run(Params *params)
 {
-    StreamConsumer stream(StreamConsumer(params->getInput()));
-    stream.withConfig(params);
-    CurseOutput *out;
-    JSonElement *root;
+    std::list<std::basic_istream<char>*> inputs = params->getInputs();
+    CurseOutput *out = new CurseOutput(*params);
 
-    if (!params->isIgnoringUnicode())
-        setlocale(LC_ALL, "");
-    try
+    for (std::basic_istream<char>* input : inputs)
     {
-        root = stream.read()->getRoot();
-        if (!root)
-            throw EofException();
+        StreamConsumer stream(*input);
+        stream.withConfig(params);
+        JSonElement *root;
+
+        if (!params->isIgnoringUnicode())
+            setlocale(LC_ALL, "");
+        try
+        {
+            root = stream.read()->getRoot();
+            if (!root)
+                throw EofException();
+        }
+        catch (EofException &e)
+        {
+            std::cerr << params->getProgName() << ": " << Warning::getType(e) << " ("  << e.what() << ") error while reading" << std::endl;
+            return;
+        }
+        catch (JsonException &e)
+        {
+            std::cerr << "Error: ";
+            displayException(params, Warning::getType(e), e);
+            return;
+        }
+        for (Warning w : stream.getMessages())
+        {
+            std::cerr << "Warning: ";
+            displayException(params, w.getType(), w());
+        }
+        out->run(root);
     }
-    catch (EofException &e)
-    {
-        std::cerr << params->getProgName() << ": " << Warning::getType(e) << " ("  << e.what() << ") error while reading" << std::endl;
-        return;
-    }
-    catch (JsonException &e)
-    {
-        std::cerr << "Error: ";
-        displayException(params, Warning::getType(e), e);
-        return;
-    }
-    for (Warning w : stream.getMessages())
-    {
-        std::cerr << "Warning: ";
-        displayException(params, w.getType(), w());
-    }
-    out = new CurseOutput(root, *params);
-    out->run();
     delete out;
 }
 

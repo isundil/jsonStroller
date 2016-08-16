@@ -42,7 +42,7 @@ class Params: public AParams
          * retun input
          * can be file stream (-f), stringstream ( -- INPUT), or std::cin (none)
         **/
-        std::basic_istream<char> &getInput() const;
+        std::list<std::basic_istream<char>*> getInputs();
 
         /**
          * false if invalid argument is passed
@@ -78,7 +78,7 @@ class Params: public AParams
          * input stream
          * can be null for stdin
         **/
-        std::basic_istream<char> *input;
+        std::list<std::basic_istream<char>*> inputs;
 
         const std::string progName;
         std::list<std::string> params;

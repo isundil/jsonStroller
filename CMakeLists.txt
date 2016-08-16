@@ -6,6 +6,12 @@ SET (DOC_OUTPUT doc/)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -Wextra")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
 
+# Add ncurses
+SET(CURSES_NEED_NCURSES TRUE)
+find_package(Curses)
+include_directories(include ${CURSES_INCLUDE_DIRS})
+
+# jsonstroll
 add_executable(jsonstroll
     src/main.cpp
     src/warning.cpp
@@ -26,14 +32,8 @@ add_executable(jsonstroll
     src/jsonException.cpp
     src/except.cpp
     )
-
 set_property(TARGET jsonstroll PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CUSTOM_BINARY_OUTPUT_DIR})
-
-# Add ncurses
-SET(CURSES_NEED_NCURSES TRUE)
-find_package(Curses)
 target_link_libraries(jsonstroll ${ncurses++_LIBRARIES} ${CURSES_LIBRARIES})
-include_directories(include ${CURSES_INCLUDE_DIRS})
 
 # Add tests
 enable_testing()

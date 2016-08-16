@@ -23,13 +23,13 @@ class SearchPattern;
 class CurseOutput
 {
     public:
-        CurseOutput(JSonElement *rootData, const Params &);
+        CurseOutput(const Params &);
         virtual ~CurseOutput();
 
         /**
          * Display data, and shutdown ncurses at the end
         **/
-        void run();
+        void run(JSonElement *);
         /**
          * Called on SIG* while displaying data
          * Do not use (private).
@@ -152,7 +152,7 @@ class CurseOutput
         /**
          * Root item
         **/
-        JSonElement * const data;
+        JSonElement *data;
 
         /**
          * selected item
