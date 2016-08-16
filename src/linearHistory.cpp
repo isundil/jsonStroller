@@ -23,7 +23,7 @@ void LinearHistory::put(char item)
         line++;
         willReset = false;
     }
-    if (item == '\n')
+    if (item == L'\n' || item == L'\r')
         willReset = true;
     else
         WrappedBuffer<char, ERROR_HISTORY_LEN>::put(item);

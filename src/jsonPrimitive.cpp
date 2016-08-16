@@ -9,6 +9,7 @@
 AJSonPrimitive::~AJSonPrimitive()
 {}
 
+template<> JSonPrimitive<Null>::~JSonPrimitive() {}
 template<> JSonPrimitive<double>::~JSonPrimitive() {}
 template<> JSonPrimitive<bool>::~JSonPrimitive() {}
 template<> JSonPrimitive<int>::~JSonPrimitive() {}
@@ -17,6 +18,9 @@ template<> JSonPrimitive<std::string>::~JSonPrimitive() {}
 
 template<> std::string JSonPrimitive<std::string>::toString() const
 { return value; }
+
+template<> std::string JSonPrimitive<Null>::toString() const
+{ return "null"; }
 
 template<> std::string JSonPrimitive<double>::toString() const
 {

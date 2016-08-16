@@ -9,6 +9,7 @@
 #include <string>
 
 class JSonContainer;
+class SearchPattern;
 
 class JSonElement
 {
@@ -46,7 +47,7 @@ class JSonElement
         /**
          * check if this element match SearchQuery
         **/
-        virtual bool match(const std::string &) const;
+        virtual bool match(const SearchPattern &) const;
 
     private:
         JSonElement();

@@ -20,7 +20,6 @@ void displayException(const Params *params, const std::string &type, const JsonE
 
 void run(Params *params)
 {
-
     StreamConsumer stream(StreamConsumer(params->getInput()));
     stream.withConfig(params);
     CurseOutput *out;

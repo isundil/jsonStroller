@@ -12,11 +12,13 @@
 #include <signal.h>
 #include <string.h>
 
+#include "searchPattern.hh"
 #include "curseOutput.hh"
 #include "jsonPrimitive.hh"
 #include "jsonObject.hh"
 #include "jsonArray.hh"
 #include "except.hh"
+#include "streamConsumer.hh"
 
 static CurseOutput *runningInst = nullptr;
 class SelectionOutOfRange { };
@@ -360,6 +362,8 @@ const OutputFlag CurseOutput::getFlag(const JSonElement *item) const
         res.type(OutputFlag::TYPE_STRING);
     else if (dynamic_cast<const JSonPrimitive<bool> *>(i))
         res.type(OutputFlag::TYPE_BOOL);
+    else if (dynamic_cast<const JSonPrimitive<Null> *>(i))
+        res.type(OutputFlag::TYPE_NULL);
     else if (dynamic_cast<const AJSonPrimitive *>(i))
         res.type(OutputFlag::TYPE_NUMBER);
     else if (dynamic_cast<const JSonObject*>(i))
@@ -504,18 +508,14 @@ bool CurseOutput::readInput()
 
             case '/':
             {
-                std::string search_pattern;
-                try {
-                    search_pattern = inputSearch();
-                }
-                catch (interruptedException &e)
-                {
+                const SearchPattern *search_pattern = inputSearch();
+                if (!search_pattern)
                     return true;
-                }
                 search_result.clear();
-                if (search_pattern.empty())
+                if (search_pattern->isEmpty())
                     return true;
-                search(search_pattern, data);
+                search(*search_pattern, data);
+                delete search_pattern;
             }
 
             case 'n':
@@ -530,7 +530,7 @@ bool CurseOutput::readInput()
     return false;
 }
 
-unsigned int CurseOutput::search(const std::string &search_pattern, const JSonElement *current)
+unsigned int CurseOutput::search(const SearchPattern &search_pattern, const JSonElement *current)
 {
     const JSonContainer *container = dynamic_cast<const JSonContainer *> (current);
     const JSonObjectEntry *objEntry = dynamic_cast<const JSonObjectEntry *> (current);
@@ -615,24 +615,23 @@ void CurseOutput::unfold(const JSonElement *item)
     }
 }
 
-const std::string CurseOutput::inputSearch()
+const SearchPattern *CurseOutput::inputSearch()
 {
-    std::string buffer;
+    std::wstring buffer;
     bool abort = false;
 
     curs_set(true);
-    keypad(stdscr, false);
     wtimeout(stdscr, -1);
     while (!abort)
     {
         int c;
 
-        writeBottomLine('/' +buffer, OutputFlag::SPECIAL_SEARCH);
+        writeBottomLine(L'/' +buffer, OutputFlag::SPECIAL_SEARCH);
         refresh();
-        c = getch();
-        if (c == '\n')
+        c = getwchar();
+        if (c == L'\r')
             break;
-        else if (c == '\b' || c == 127)
+        else if (c == L'\b' || c == 127)
         {
             if (!buffer.empty())
                 buffer.pop_back();
@@ -643,21 +642,42 @@ const std::string CurseOutput::inputSearch()
             buffer += c;
     }
     wtimeout(stdscr, 150);
-    keypad(stdscr, true);
     curs_set(false);
 
-    if (abort)
-        throw interruptedException();
-    return buffer;
+    {
+        const size_t size = buffer.size();
+        char bytesString[size * sizeof(wchar_t)];
+        wcstombs(&bytesString[0], buffer.c_str(), sizeof(bytesString));
+        std::string str;
+        if (params.isIgnoringUnicode())
+            str = bytesString;
+        else
+            str = StreamConsumer::extractUnicode(bytesString);
+        return abort ? nullptr : new SearchPattern(str);
+    }
 }
 
 void CurseOutput::writeBottomLine(const std::string &buffer, short color) const
 {
     const std::pair<unsigned int, unsigned int> screenSize = getScreenSize();
-    size_t bufsize = buffer.size();
+    const size_t bufsize = buffer.size();
+
     if (params.colorEnabled())
         attron(COLOR_PAIR(color));
     mvprintw(screenSize.second -1, 0, "%s%*c", buffer.c_str(), screenSize.first - bufsize, ' ');
+    move(screenSize.second -1, bufsize);
+    if (params.colorEnabled())
+        attroff(COLOR_PAIR(color));
+}
+
+void CurseOutput::writeBottomLine(const std::wstring &buffer, short color) const
+{
+    const std::pair<unsigned int, unsigned int> screenSize = getScreenSize();
+    const size_t bufsize = buffer.size();
+
+    if (params.colorEnabled())
+        attron(COLOR_PAIR(color));
+    mvprintw(screenSize.second -1, 0, "%S%*c", buffer.c_str(), screenSize.first - bufsize, ' ');
     move(screenSize.second -1, bufsize);
     if (params.colorEnabled())
         attroff(COLOR_PAIR(color));
@@ -688,6 +708,7 @@ void CurseOutput::init()
         start_color();
         init_pair(OutputFlag::TYPE_NUMBER, COLOR_GREEN, COLOR_BLACK);
         init_pair(OutputFlag::TYPE_BOOL, COLOR_RED, COLOR_BLACK);
+        init_pair(OutputFlag::TYPE_NULL, COLOR_RED, COLOR_BLACK);
         init_pair(OutputFlag::TYPE_STRING, COLOR_CYAN, COLOR_BLACK);
         init_pair(OutputFlag::TYPE_OBJKEY, COLOR_CYAN, COLOR_BLACK);
         init_pair(OutputFlag::SPECIAL_SEARCH, COLOR_WHITE, COLOR_BLUE);
@@ -696,6 +717,7 @@ void CurseOutput::init()
         colors.insert(OutputFlag::TYPE_BOOL);
         colors.insert(OutputFlag::TYPE_STRING);
         colors.insert(OutputFlag::TYPE_OBJKEY);
+        colors.insert(OutputFlag::TYPE_NULL);
     }
 
     signal(SIGWINCH, _resizeFnc);

@@ -7,6 +7,7 @@
 #include "jsonElement.hh"
 #include "jsonContainer.hh"
 #include "jsonObjectEntry.hh"
+#include "searchPattern.hh"
 
 JSonElement::JSonElement(JSonElement *p): parent(p)
 { }
@@ -77,9 +78,8 @@ const JSonElement* JSonElement::findNext() const
     return parent->findNext();
 }
 
-bool JSonElement::match(const std::string &search_pattern) const
+bool JSonElement::match(const SearchPattern &searchPattern) const
 {
-    const std::string str = stringify();
-    return str.find(search_pattern) != str.npos;
+    return searchPattern.match(stringify(), this);
 }
 

@@ -34,8 +34,9 @@ StreamConsumer *StreamConsumer::read()
 
 JSonElement *StreamConsumer::readNext(JSonContainer *parent)
 {
-    std::string buf;
-    JSonElement *root = consumeToken(parent, buf);
+    std::stringstream sbuf;
+    JSonElement *root = consumeToken(parent, sbuf);
+    const std::string buf = sbuf.str();
 
     if (root == nullptr)
     {
@@ -63,17 +64,17 @@ JSonObject *StreamConsumer::readObject(JSonContainer *parent)
 {
     JSonElement *keyObj;
     JSonObject *result = nullptr;
-    std::string buf;
+    std::stringstream buf;
 
     do
     {
         keyObj = consumeToken(result, buf);
-        if (result == nullptr && keyObj == nullptr && buf == "}")
+        if (result == nullptr && keyObj == nullptr && buf.str() == "}")
             return new JSonObject(parent);
         JSonPrimitive<std::string> *key = dynamic_cast<JSonPrimitive<std::string> *>(keyObj);
         if (key == nullptr)
             throw JSonObject::NotAKeyException(stream.tellg(), history);
-        if (consumeToken(parent, buf) != nullptr || buf != ":")
+        if (consumeToken(parent, buf) != nullptr || buf.str() != ":")
             throw JsonUnexpectedException(':', stream.tellg(), history);
         if (result == nullptr)
             result = new JSonObject(parent);
@@ -91,15 +92,16 @@ JSonObject *StreamConsumer::readObject(JSonContainer *parent)
         result->push(key->getValue(), child);
         delete keyObj;
         keyObj = consumeToken(result, buf);
-    } while (!keyObj && buf != "}");
+    } while (!keyObj && buf.str() != "}");
     return result;
 }
 
 JSonArray *StreamConsumer::readArray(JSonContainer *parent)
 {
     JSonArray *result = nullptr;
-    std::string buf;
-    JSonElement *child = consumeToken(parent, buf);
+    std::stringstream sbuf;
+    JSonElement *child = consumeToken(parent, sbuf);
+    std::string buf = sbuf.str();
 
     if (child == nullptr && buf == "]")
         return new JSonArray(parent); //Empty object
@@ -115,159 +117,221 @@ JSonArray *StreamConsumer::readArray(JSonContainer *parent)
             result = new JSonArray(parent);
         child->setParent(result);
         result->push_back(child);
-        child = consumeToken(result, buf);
+        child = consumeToken(result, sbuf);
+        buf = sbuf.str();
         if (child != nullptr)
             throw JsonUnexpectedException(']', stream.tellg(), history);
         else if (buf == "]")
             break;
         else if (buf != ",")
             throw JsonUnexpectedException(']', stream.tellg(), history);
-        child = consumeToken(result, buf);
+        child = consumeToken(result, sbuf);
+        buf = sbuf.str();
     } while (true);
     return result;
 }
 
-JSonElement *StreamConsumer::consumeToken(JSonContainer *parent, std::string &buf)
+JSonElement *StreamConsumer::consumeString(JSonContainer *parent, std::stringstream &buf)
 {
     bool escaped = false;
-    bool inString = false;
-    bool inBool = false;
-    bool inNumber = false;
-    bool numberIsDouble = false;
+
+    buf.str("");
+    buf.clear();
 
     while (stream.good())
     {
         char c = stream.get();
         history.put(c);
 
-        if (inString)
+        if (!escaped)
         {
-            if (!escaped)
-            {
-                if (c == '"')
-                    return new JSonPrimitive<std::string>(parent, buf);
-                else if (c == '\\')
-                    escaped = true;
-                else
-                    buf += c;
-            }
+            if (c == '"')
+                return new JSonPrimitive<std::string>(parent, buf.str());
+            else if (c == '\\')
+                escaped = true;
             else
-            {
-                if (c == '\\' || c == '"')
-                {
-                    buf += c;
-                    escaped = false;
-                }
-                else if (c == 'u')
-                {
-                    if (params && params->isIgnoringUnicode())
-                    {
-                        buf += "\\u";
-                        escaped = false;
-                    }
-                    else
-                    {
-                        char unicodeBuf[4];
-                        stream.read(unicodeBuf, 4);
-                        std::streamsize gcount = stream.gcount();
-                        history.put(unicodeBuf, gcount);
-                        if (gcount != 4)
-                            break;
-                        try {
-                            appendUnicode(unicodeBuf, buf);
-                        }
-                        catch (std::invalid_argument &e)
-                        {
-                            throw JsonHexvalueException(e.what(), stream.tellg(), history);
-                        }
-                        escaped = false;
-                    }
-                }
-                else
-                    throw JsonEscapedException(c, stream.tellg(), history);
-            }
-        }
-        else if (inBool)
-        {
-            if (c == 'a' || c == 'e' || c == 'l' || c == 'r' || c == 's' || c == 'u')
-                buf += c;
-            else if (buf == "true")
-            {
-                history.pop_back();
-                stream.unget();
-                return new JSonPrimitive<bool>(parent, true);
-            }
-            else if (buf == "false")
-            {
-                history.pop_back();
-                stream.unget();
-                return new JSonPrimitive<bool>(parent, false);
-            }
-            else if (ignoreChar(c))
-                ;
-            else
-                throw JsonFormatException(stream.tellg(), history);
-        }
-        else if (inNumber)
-        {
-            if (c >= '0' && c <= '9')
-                buf += c;
-            else if (c == '.' && !numberIsDouble)
-            {
-                numberIsDouble = true;
-                buf += c;
-            }
-            else
-            {
-                history.pop_back();
-                stream.unget();
-                if (numberIsDouble)
-                {
-                    try {
-                        return new JSonPrimitive<double>(parent, atof(buf.c_str()));
-                    } catch (std::runtime_error &e)
-                    {
-                        throw JsonFormatException(stream.tellg(), history);
-                    }
-                }
-                try
-                {
-                    return new JSonPrimitive<int>(parent, std::stoi(buf));
-                }
-                catch(std::out_of_range e)
-                {
-                    return new JSonPrimitive<long long>(parent, std::stol(buf));
-                }
-            }
+                buf.write(&c, 1);
         }
         else
         {
-            //!InString, !inbool
-            if (c == '"')
+            if (c == '\\' || c == '"')
+                buf.write("\"", 1);
+            else if (c == 'u')
             {
-                buf = "";
-                inString = true;
+                if (params && params->isIgnoringUnicode())
+                    buf.write("\\u", 2);
+                else
+                {
+                    char unicodeBuf[4];
+                    stream.read(unicodeBuf, 4);
+                    std::streamsize gcount = stream.gcount();
+                    history.put(unicodeBuf, gcount);
+                    if (gcount != 4)
+                        break;
+                    try {
+                        appendUnicode(unicodeBuf, buf);
+                    }
+                    catch (std::invalid_argument &e)
+                    {
+                        throw JsonHexvalueException(e.what(), stream.tellg(), history);
+                    }
+                }
             }
-            else if (c == 't' || c == 'f')
+            else if (params->isStrict())
+                throw JsonEscapedException(c, stream.tellg(), history);
+            else
             {
-                buf = c;
-                inBool = true;
+                buf.write("\\", 1).write(&c, 1);
+                warnings.push_back(Warning(JsonEscapedException(c, stream.tellg(), history)));
             }
-            else if (c == '{' || c == '[' || c == '}' || c == ']' || c == ':' || c == ',')
-            {
-                buf = c;
-                return nullptr;
-            }
-            else if ((c >= '0' && c <= '9') || c == '.' || c == '-')
-            {
-                buf = c;
-                inNumber = true;
-            }
-            else if (!ignoreChar(c))
-                throw JsonFormatException(stream.tellg(), history);
+            escaped = false;
         }
     }
-    buf = "";
+    buf.str("");
+    buf.clear();
+    return nullptr;
+}
+
+JSonElement *StreamConsumer::consumeBool(JSonContainer *parent, std::stringstream &buf, char firstChar)
+{
+    size_t read =1;
+
+    buf.str("");
+    buf.clear();
+    buf.write(&firstChar, 1);
+
+    //TODO batch-get 3 char, then do that
+    while (stream.good())
+    {
+        char c = stream.get();
+        history.put(c);
+
+        if (c == 'a' || c == 'e' || c == 'l' || c == 'r' || c == 's' || c == 'u')
+        {
+            if ((read >= 5 && firstChar == 'f') || (read >= 4 && firstChar == 't'))
+                throw JsonFormatException(stream.tellg(), history);
+            buf.write(&c, 1);
+            read++;
+        }
+        else if (buf.str() == "true")
+        {
+            history.pop_back();
+            stream.unget();
+            return new JSonPrimitive<bool>(parent, true);
+        }
+        else if (buf.str() == "false")
+        {
+            history.pop_back();
+            stream.unget();
+            return new JSonPrimitive<bool>(parent, false);
+        }
+        else if (ignoreChar(c))
+            ;
+        else
+            throw JsonFormatException(stream.tellg(), history);
+    }
+    buf.str("");
+    buf.clear();
+    return nullptr;
+}
+
+JSonElement *StreamConsumer::consumeNumber(JSonContainer *parent, std::stringstream &buf, char firstChar)
+{
+    bool numberIsDouble = false;
+
+    buf.str("");
+    buf.clear();
+    buf.write(&firstChar, 1);
+
+    while (stream.good())
+    {
+        char c = stream.get();
+        history.put(c);
+
+        if (c >= '0' && c <= '9')
+            buf.write(&c, 1);
+        else if (c == '.' && !numberIsDouble)
+        {
+            numberIsDouble = true;
+            buf.write(&c, 1);
+        }
+        else
+        {
+            history.pop_back();
+            stream.unget();
+            if (numberIsDouble)
+            {
+                try {
+                    return new JSonPrimitive<double>(parent, atof(buf.str().c_str()));
+                } catch (std::runtime_error &e)
+                {
+                    throw JsonFormatException(stream.tellg(), history);
+                }
+            }
+            try
+            {
+                return new JSonPrimitive<int>(parent, std::stoi(buf.str()));
+            }
+            catch(std::out_of_range e)
+            {
+                return new JSonPrimitive<long long>(parent, std::stol(buf.str()));
+            }
+        }
+    }
+    buf.str("");
+    buf.clear();
+    return nullptr;
+}
+
+JSonElement *StreamConsumer::consumeNull(JSonContainer *parent, std::stringstream &buf)
+{
+    char _buf[5] = { 'n', '\0', '\0', '\0', '\0' };
+
+    buf.str("");
+    buf.clear();
+
+    stream.read(&_buf[1], 3);
+    buf.write(_buf, 4);
+    history.put(&_buf[1], 3);
+    if (!stream.good())
+    {
+        buf.str("");
+        buf.clear();
+        return nullptr;
+    }
+    if (std::string("null") == _buf)
+        return new JSonPrimitive<Null>(parent, Null());
+    throw JsonFormatException(stream.tellg(), history);
+}
+
+JSonElement *StreamConsumer::consumeToken(JSonContainer *parent, std::stringstream &buf)
+{
+    while (stream.good())
+    {
+        char c = stream.get();
+        history.put(c);
+
+        //!InString, !inbool
+        if (c == '"')
+            return consumeString(parent, buf);
+        else if (c == 't' || c == 'f')
+            return consumeBool(parent, buf, c);
+        else if (c == 'n')
+            return consumeNull(parent, buf);
+        else if ((c >= '0' && c <= '9') || c == '.' || c == '-')
+            return consumeNumber(parent, buf, c);
+        else if (c == '{' || c == '[' || c == '}' || c == ']' || c == ':' || c == ',')
+        {
+            buf.str("");
+            buf.clear();
+            buf.write(&c, 1);
+            return nullptr;
+        }
+        else if (!ignoreChar(c))
+            throw JsonFormatException(stream.tellg(), history);
+    }
+    buf.str("");
+    buf.clear();
     return nullptr;
 }
 
@@ -291,13 +355,35 @@ static T hexbyte(const char str[], unsigned int len)
     return result;
 }
 
-void StreamConsumer::appendUnicode(const char unicode[4], std::string &buf)
+void StreamConsumer::appendUnicode(const char unicode[4], std::stringstream &buf)
 {
     unsigned short uni = hexbyte<unsigned short>(unicode, 4);
     char test[5];
     bzero(test, sizeof(*test) *5);
     snprintf(test, 4, "%lc", uni);
-    buf += test;
+    buf.write(test, 4);
+}
+
+std::string StreamConsumer::extractUnicode(const char *buf)
+{
+    std::stringstream result;
+
+    for (; *buf; buf++)
+    {
+        if (*buf == '\\' && buf[1] == 'u' && buf[2] && buf[3] && buf[4] && buf[5])
+        {
+            appendUnicode(buf +2, result);
+            buf += 6;
+        }
+        else
+            result.write(buf, 1);
+    }
+    return result.str();
+}
+
+std::string StreamConsumer::extractUnicode(const std::string &buf)
+{
+    return extractUnicode(buf.c_str());
 }
 
 bool StreamConsumer::ignoreChar(char c) const noexcept

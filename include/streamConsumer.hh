@@ -45,16 +45,26 @@ class StreamConsumer
         **/
         StreamConsumer *withConfig(const AParams *);
 
+        /**
+         * find \uXXXX in buffer and replace them
+        **/
+        static std::string extractUnicode(const char *);
+        static std::string extractUnicode(const std::string &);
+
     private:
         /**
          * @return non-null on successfully read JSonElement, or null if token (',', '[', ...)
         **/
-        JSonElement *consumeToken(JSonContainer *parent, std::string &buf);
+        JSonElement *consumeToken(JSonContainer *parent, std::stringstream &buf);
+        JSonElement *consumeString(JSonContainer *parent, std::stringstream &buf);
+        JSonElement *consumeBool(JSonContainer *parent, std::stringstream &buf, char c);
+        JSonElement *consumeNumber(JSonContainer *parent, std::stringstream &buf, char c);
+        JSonElement *consumeNull(JSonContainer *parent, std::stringstream &buf);
+
         /**
          * read next item, fill object or array if found
         **/
         JSonElement *readNext(JSonContainer *parent);
-
         /**
          * fill object
         **/
@@ -63,14 +73,16 @@ class StreamConsumer
          * fill array
         **/
         JSonArray *readArray(JSonContainer *parent);
+
         /**
          * out of token, should we ignore that char ?
         **/
         bool ignoreChar(char c) const noexcept;
+
         /**
          * compute unicode value and append it to buffer
         **/
-        static void appendUnicode(const char [4], std::string &);
+        static void appendUnicode(const char [4], std::stringstream &);
 
         /**
          * input stream

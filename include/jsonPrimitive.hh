@@ -8,6 +8,8 @@
 
 #include "jsonElement.hh"
 
+class Null {}; //Null primitive
+
 class AJSonPrimitive
 {
     public:
