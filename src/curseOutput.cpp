@@ -641,7 +641,7 @@ const SearchPattern *CurseOutput::inputSearch()
     wtimeout(stdscr, 150);
     curs_set(false);
 
-    return abort ? nullptr : new SearchPattern(buffer.c_str());
+    return abort ? nullptr : new SearchPattern(buffer);
 }
 
 void CurseOutput::writeBottomLine(const std::string &buffer, short color) const

@@ -5,25 +5,42 @@
 #include "jsonObjectEntry.hh"
 #include "jsonPrimitive.hh"
 
-SearchPattern::SearchPattern(const wchar_t *input): flags(0)
+SearchPattern::SearchPattern(const char *input): flags(0)
+{
+    init(input);
+}
+
+SearchPattern::SearchPattern(const std::wstring &buffer)
+{
+    const size_t size = buffer.size();
+    char bytesString[size * sizeof(wchar_t)];
+    wcstombs(&bytesString[0], buffer.c_str(), sizeof(bytesString));
+    init(bytesString);
+}
+
+SearchPattern::~SearchPattern()
+{ }
+
+void SearchPattern::init(const char *input)
 {
     size_t pos = 0;
     bool escaped = false;
-    std::wstringstream ss;
+    std::stringstream ss;
 
-    for (pos =0; input[pos]; ++pos)
+    for (pos =0; input[pos] && (input[pos] == ' ' || input[pos] == '\t'); ++pos); //trim leading characters
+    for (; input[pos]; ++pos)
     {
         if (escaped)
         {
-            if (input[pos] == L'/')
+            if (input[pos] == '/')
                 ss.put(input[pos]);
             else
-                ss.put(L'\\').put(input[pos]);
+                ss.put('\\').put(input[pos]);
             escaped = false;
         }
-        else if (input[pos] == L'\\')
+        else if (input[pos] == '\\')
             escaped = true;
-        else if (input[pos] == L'/')
+        else if (input[pos] == '/')
         {
             pattern = ss.str();
             evalFlags(&input[pos +1]);
@@ -35,29 +52,26 @@ SearchPattern::SearchPattern(const wchar_t *input): flags(0)
     pattern = ss.str();
 }
 
-SearchPattern::~SearchPattern()
-{ }
-
-void SearchPattern::evalFlags(const wchar_t *s)
+void SearchPattern::evalFlags(const char *s)
 {
     while (*s)
     {
-        if (*s == L'i')
+        if (*s == 'i')
         {
             flags |= SearchPattern::FLAG_CASE;
             std::transform(pattern.begin(), pattern.end(), pattern.begin(), ::tolower);
         }
-        else if (*s == L'b')
+        else if (*s == 'b')
             typeFlag = SearchPattern::TYPE_BOOL;
-        else if (*s == L'n')
+        else if (*s == 'n')
             typeFlag = SearchPattern::TYPE_NUMBER;
-        else if (*s == L's')
+        else if (*s == 's')
             typeFlag = SearchPattern::TYPE_STRING;
-        else if (*s == L'o')
+        else if (*s == 'o')
             typeFlag = SearchPattern::TYPE_OBJKEY;
-        else if (*s == L'w')
+        else if (*s == 'w')
             flags |= SearchPattern::FLAG_WHOLEWORD;
-        else if (*s == L'f')
+        else if (*s == 'f')
             flags |= SearchPattern::FLAG_WHOLESTR;
         s++;
     }
@@ -66,10 +80,10 @@ void SearchPattern::evalFlags(const wchar_t *s)
 bool SearchPattern::isEmpty() const
 { return pattern.empty(); }
 
-bool SearchPattern::operator()(wchar_t a, wchar_t b)
+bool SearchPattern::operator()(char a, char b)
 {
-    if (a == L'\t')
-        a = L' ';
+    if (a == '\t')
+        a = ' ';
     if (flags & SearchPattern::FLAG_CASE)
         return std::tolower(a) == b;
     return a == b;
@@ -77,12 +91,6 @@ bool SearchPattern::operator()(wchar_t a, wchar_t b)
 
 bool SearchPattern::match(const std::string &str, const JSonElement *type) const
 {
-    // Init str
-    const size_t size = str.size();
-    wchar_t tmpBuf[size];
-    mbstowcs(&tmpBuf[0], str.c_str(), size);
-    std::wstring wstr = std::wstring(tmpBuf, size);
-
     if (typeFlag)
     {
         if (typeFlag == SearchPattern::TYPE_BOOL && !(dynamic_cast<const JSonPrimitive<bool> *>(type)))
@@ -97,15 +105,15 @@ bool SearchPattern::match(const std::string &str, const JSonElement *type) const
                 !(dynamic_cast<const JSonPrimitive<long long> *>(type)))
             return false;
     }
-    if ((flags & FLAG_WHOLESTR && wstr.length() != pattern.length())
-            || pattern.length() > wstr.length())
+    if ((flags & FLAG_WHOLESTR && str.length() != pattern.length())
+            || pattern.length() > str.length())
         return false;
-    if (flags & FLAG_WHOLEWORD && wstr.length() > pattern.length())
+    if (flags & FLAG_WHOLEWORD && str.length() > pattern.length())
     {
-        std::wstring pattern = L' ' +this->pattern +L' ';
-        return std::search(wstr.begin(), wstr.end(), pattern.begin(), pattern.end(), *this) != wstr.end();
+        std::string pattern = " " +this->pattern +' ';
+        return std::search(str.begin(), str.end(), pattern.begin(), pattern.end(), *this) != str.end();
     }
-    return std::search(wstr.begin(), wstr.end(), pattern.begin(), pattern.end(), *this) != wstr.end();
+    return std::search(str.begin(), str.end(), pattern.begin(), pattern.end(), *this) != str.end();
 }
 
 const short SearchPattern::FLAG_CASE        = 1;
