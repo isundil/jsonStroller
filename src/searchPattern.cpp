@@ -1,11 +1,12 @@
 #include <algorithm>
 #include <sstream>
-#include "searchPattern.hh"
+#include <regex>
 
+#include "searchPattern.hh"
 #include "jsonObjectEntry.hh"
 #include "jsonPrimitive.hh"
 
-SearchPattern::SearchPattern(const std::string &input): flags(0)
+SearchPattern::SearchPattern(const std::string &input): regex(nullptr), flags(0)
 {
     size_t pos = 0;
     bool escaped = false;
@@ -37,7 +38,10 @@ SearchPattern::SearchPattern(const std::string &input): flags(0)
 }
 
 SearchPattern::~SearchPattern()
-{ }
+{
+    if (regex)
+        delete regex;
+}
 
 void SearchPattern::evalFlags(const char *s)
 {
@@ -48,6 +52,12 @@ void SearchPattern::evalFlags(const char *s)
             flags |= SearchPattern::FLAG_CASE;
             std::transform(pattern.begin(), pattern.end(), pattern.begin(), ::tolower);
         }
+        else if (*s == 'w')
+            flags |= SearchPattern::FLAG_WHOLEWORD;
+        else if (*s == 'f')
+            flags |= SearchPattern::FLAG_WHOLESTR;
+        else if (*s == 'e')
+            flags |= SearchPattern::FLAG_REGEX;
         else if (*s == 'b')
             typeFlag = SearchPattern::TYPE_BOOL;
         else if (*s == 'n')
@@ -56,11 +66,14 @@ void SearchPattern::evalFlags(const char *s)
             typeFlag = SearchPattern::TYPE_STRING;
         else if (*s == 'o')
             typeFlag = SearchPattern::TYPE_OBJKEY;
-        else if (*s == 'w')
-            flags |= SearchPattern::FLAG_WHOLEWORD;
-        else if (*s == 'f')
-            flags |= SearchPattern::FLAG_WHOLESTR;
         s++;
+    }
+    if (!regex && flags & SearchPattern::FLAG_REGEX)
+    {
+        std::regex_constants::syntax_option_type opts = std::regex_constants::ECMAScript;
+        if (flags & FLAG_CASE)
+            opts |= std::regex_constants::icase;
+        regex = new std::regex(pattern, opts);
     }
 }
 
@@ -92,6 +105,8 @@ bool SearchPattern::match(const std::string &str, const JSonElement *type) const
                 !(dynamic_cast<const JSonPrimitive<long long> *>(type)))
             return false;
     }
+    if (flags & FLAG_REGEX)
+        return regex_search(str, *regex);
     if ((flags & FLAG_WHOLESTR && str.length() != pattern.length())
             || pattern.length() > str.length())
         return false;
@@ -106,6 +121,7 @@ bool SearchPattern::match(const std::string &str, const JSonElement *type) const
 const short SearchPattern::FLAG_CASE        = 1;
 const short SearchPattern::FLAG_WHOLEWORD   = 2;
 const short SearchPattern::FLAG_WHOLESTR    = 4;
+const short SearchPattern::FLAG_REGEX       = 8;
 
 const short SearchPattern::TYPE_BOOL        = 1;
 const short SearchPattern::TYPE_NUMBER      = 2;

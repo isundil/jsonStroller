@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <regex>
 
 class JSonElement;
 
@@ -22,12 +23,14 @@ class SearchPattern
         void evalFlags(const char *);
 
         std::string pattern;
+        std::regex *regex;
         short flags;
         short typeFlag;
 
         static const short FLAG_CASE;
         static const short FLAG_WHOLEWORD;
         static const short FLAG_WHOLESTR;
+        static const short FLAG_REGEX;
 
         static const short TYPE_BOOL;
         static const short TYPE_NUMBER;
