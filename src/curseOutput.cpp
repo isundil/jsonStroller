@@ -41,6 +41,10 @@ void CurseOutput::run(JSonElement *root)
     loop();
 }
 
+void CurseOutput::run(std::list<JSonElement*> roots)
+{
+}
+
 void CurseOutput::loop()
 {
     breakLoop = false;

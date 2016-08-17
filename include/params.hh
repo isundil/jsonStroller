@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <map>
 #include <list>
 #include <string>
 #include <istream>
@@ -42,7 +43,7 @@ class Params: public AParams
          * retun input
          * can be file stream (-f), stringstream ( -- INPUT), or std::cin (none)
         **/
-        std::list<std::basic_istream<char>*> getInputs();
+        std::map<std::string, std::basic_istream<char>*> getInputs() const;
 
         /**
          * false if invalid argument is passed
@@ -72,13 +73,14 @@ class Params: public AParams
         bool isStrict() const;
         bool colorEnabled() const;
         bool isIgnoringUnicode() const;
+        bool isDiff() const;
 
     private:
         /**
          * input stream
          * can be null for stdin
         **/
-        std::list<std::basic_istream<char>*> inputs;
+        std::map<std::string, std::basic_istream<char>*> inputs;
 
         const std::string progName;
         std::list<std::string> params;
@@ -86,5 +88,6 @@ class Params: public AParams
         bool ignoreUnicode;
         bool colorMode;
         bool strict;
+        bool diffMode;
 };
 

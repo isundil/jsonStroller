@@ -11,49 +11,90 @@
 #include "params.hh"
 #include "jsonException.hh"
 
-void displayException(const Params *params, const std::string &type, const JsonException &e)
+void displayException(const std::string &filename, const Params &params, const std::string &type, const JsonException &e)
 {
     std::string buffer = e.getHistory();
-    std::cerr << params->getProgName() << ": [" << type << "] at line " << e.currentLine() << ", " << e.currentCol() << " ("  << e.what() << ") while reading" << std::endl;
+    std::cerr << params.getProgName() << ": " << filename << " [" << type << "] at line " << e.currentLine() << ", " << e.currentCol() << " ("  << e.what() << ") while reading" << std::endl;
     std::cerr << buffer << std::endl << std::string(buffer.size() -1, '~') << '^' << std::endl;
 }
 
-void run(Params *params)
+StreamConsumer *readFile(std::pair<std::string, std::basic_istream<char>*> input, const Params &params)
 {
-    std::list<std::basic_istream<char>*> inputs = params->getInputs();
-    CurseOutput *out = new CurseOutput(*params);
+    StreamConsumer *stream = new StreamConsumer(*(input.second));
+    stream->withConfig(&params);
+    bool success = true;
 
-    for (std::basic_istream<char>* input : inputs)
+    try
     {
-        StreamConsumer stream(*input);
-        stream.withConfig(params);
-        JSonElement *root;
+        stream->read();
+        if (!stream->getRoot())
+            throw EofException();
+    }
+    catch (EofException &e)
+    {
+        std::cerr << params.getProgName() << ": " << input.first << " " << Warning::getType(e) << " ("  << e.what() << ") error while reading" << std::endl;
+        delete stream;
+        return nullptr;
+    }
+    catch (JsonException &e)
+    {
+        std::cerr << "Error: ";
+        displayException(input.first, params, Warning::getType(e), e);
+        delete stream;
+        return nullptr;
+    }
+    for (Warning w : stream->getMessages())
+    {
+        std::cerr << "Warning: ";
+        displayException(input.first, params, w.getType(), w());
+    }
+    return stream;
+}
 
-        if (!params->isIgnoringUnicode())
-            setlocale(LC_ALL, "");
-        try
+void runDiff(const Params &params)
+{
+    const std::map<std::string, std::basic_istream<char>*> inputs = params.getInputs();
+    std::set<StreamConsumer *> streams;
+    std::list<JSonElement *> roots;
+    bool success = true;
+
+    if (!params.isIgnoringUnicode())
+        setlocale(LC_ALL, "");
+    for (std::pair<std::string, std::basic_istream<char>*> input : inputs)
+    {
+        StreamConsumer *stream = readFile(input, params);
+        if (!stream)
         {
-            root = stream.read()->getRoot();
-            if (!root)
-                throw EofException();
+            success = false;
+            break;
         }
-        catch (EofException &e)
+        roots.push_back(stream->getRoot());
+        streams.insert(stream);
+    }
+    if (success)
+    {
+        CurseOutput out(params);
+        out.run(roots);
+    }
+    for (StreamConsumer *stream: streams)
+        delete stream;
+}
+
+void run(const Params &params)
+{
+    std::map<std::string, std::basic_istream<char>*> inputs = params.getInputs();
+    CurseOutput *out = new CurseOutput(params);
+
+    if (!params.isIgnoringUnicode())
+        setlocale(LC_ALL, "");
+    for (std::pair<std::string, std::basic_istream<char>*> input : inputs)
+    {
+        StreamConsumer *stream = readFile(input, params);
+        if (stream)
         {
-            std::cerr << params->getProgName() << ": " << Warning::getType(e) << " ("  << e.what() << ") error while reading" << std::endl;
-            return;
+            out->run(stream->getRoot());
+            delete stream;
         }
-        catch (JsonException &e)
-        {
-            std::cerr << "Error: ";
-            displayException(params, Warning::getType(e), e);
-            return;
-        }
-        for (Warning w : stream.getMessages())
-        {
-            std::cerr << "Warning: ";
-            displayException(params, w.getType(), w());
-        }
-        out->run(root);
     }
     delete out;
 }
@@ -76,7 +117,12 @@ int main(int ac, char **av)
     }
 
     if (_run)
-        run(params);
+    {
+        if (params->isDiff())
+            runDiff(*params);
+        else
+            run(*params);
+    }
     delete params;
     return 0;
 }

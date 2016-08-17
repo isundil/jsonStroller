@@ -13,7 +13,7 @@
 
 #include "config.h"
 
-Params::Params(char **av): progName(*av), strict(true)
+Params::Params(char **av): progName(*av), strict(true), diffMode(false)
 {
     av++;
     while (*av)
@@ -25,8 +25,8 @@ Params::Params(char **av): progName(*av), strict(true)
 
 Params::~Params()
 {
-    for (std::basic_istream<char> *in : inputs)
-        delete in;
+    for (std::pair<std::string, std::basic_istream<char>*> in : inputs)
+        delete in.second;
 }
 
 bool Params::read()
@@ -42,13 +42,15 @@ bool Params::read()
         if (!input)
         {
             if (tmp == "--")
-                inputs.push_back(input = new std::stringstream());
+                inputs["ARGS"] = input = new std::stringstream();
             else if (tmp == "-W")
                 strict = false;
             else if (tmp == "--ascii")
                 ignoreUnicode = true;
             else if (tmp == "--color")
                 colorMode = true;
+            else if (tmp == "--diff")
+                diffMode = true;
             else if (tmp == "--help" || tmp == "-h")
             {
                 usage();
@@ -79,7 +81,13 @@ bool Params::read()
                     delete in;
                     throw std::runtime_error("Cannot open " +tmp +" for reading");
                 }
-                inputs.push_back(in);
+                if (inputs.find(tmp) != inputs.cend())
+                {
+                    delete in;
+                    throw std::runtime_error("Cannot compare " +tmp +" and " +tmp +" files (path are identical)");
+                }
+                else
+                    inputs[tmp] = in;
             }
         }
         else
@@ -91,15 +99,30 @@ bool Params::read()
             input->write(tmp.c_str(), sizeof(char) * tmp.size());
         }
     }
+    if (diffMode)
+    {
+        if (inputs.size() > 3)
+        {
+            std::cerr << progName << ": more than 3 files to compare" << std::endl;
+            usage();
+            return false;
+        }
+        if (inputs.size() < 2)
+        {
+            std::cerr << progName << ": not enough files to compare" << std::endl;
+            usage();
+            return false;
+        }
+    }
     return true;
 }
 
-std::list<std::basic_istream<char>*> Params::getInputs()
+std::map<std::string, std::basic_istream<char>*> Params::getInputs() const
 {
     if (!inputs.empty())
         return inputs;
-    std::list<std::basic_istream<char>*> result;
-    result.push_back(&std::cin);
+    std::map<std::string, std::basic_istream<char>*> result;
+    result["STDIN"] = &std::cin;
     return result;
 }
 
@@ -109,6 +132,7 @@ void Params::usage() const noexcept
     << progName << " [OPTIONS]" << std::endl
     << "or: " << progName << " [OPTIONS] FILENAME" << std::endl
     << "or: " << progName << " [OPTIONS] -- INPUT" << std::endl
+    << "or: " << progName << " --diff [OPTIONS] FILENAME FILENAME [FILENAME]" << std::endl
     << "Read json input and print it using ncurse" << std::endl << std::endl
     << "if not INPUT nor FILENAME, use standard input" << std::endl << std::endl
 
@@ -121,7 +145,8 @@ void Params::usage() const noexcept
     << "  -h, --helph\t\tshow this message and exit" << std::endl << std::endl
 
     << "Examples:" << std::endl
-    << STROLL_PROGNAME << " -f f.json\tOutput f.json's content" << std::endl << std::endl
+    << STROLL_PROGNAME << " f.json\tOutput f.json's content" << std::endl << std::endl
+    << STROLL_PROGNAME << " --diff fileA.json fileB.json\tcompare fileA.json and fileB.json" << std::endl << std::endl
 
     << "Report bugs to <isundill@gmail.com>" << std::endl;
 }
@@ -137,7 +162,6 @@ void Params::version() const noexcept
     << "There is NO WARRANTY, to the extent permitted by law." << std::endl << std::endl
 
     << "Written by isundil <isundill@gmail.com>." << std::endl;
-
 }
 
 bool Params::isStrict() const
@@ -151,4 +175,7 @@ bool Params::isIgnoringUnicode() const
 
 const std::string &Params::getProgName() const
 { return progName; }
+
+bool Params::isDiff() const
+{ return diffMode; }
 

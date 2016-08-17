@@ -29,6 +29,7 @@ class StreamConsumer
          * @return current instance
         **/
         StreamConsumer *read();
+
         /**
          * get root node
         **/

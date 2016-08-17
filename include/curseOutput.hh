@@ -30,6 +30,8 @@ class CurseOutput
          * Display data, and shutdown ncurses at the end
         **/
         void run(JSonElement *);
+        void run(std::list<JSonElement *>);
+
         /**
          * Called on SIG* while displaying data
          * Do not use (private).
