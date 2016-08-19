@@ -25,12 +25,10 @@ static CurseOutput *runningInst = nullptr;
 CurseOutput::CurseOutput(const Params &p): data(nullptr), params(p)
 {
     runningInst = this;
-    init();
 }
 
 CurseOutput::~CurseOutput()
 {
-    shutdown();
     runningInst = nullptr;
 }
 
@@ -69,7 +67,7 @@ bool CurseOutput::onsig(int signo)
     return true;
 }
 
-static void _resizeFnc(int signo)
+void _resizeFnc(int signo)
 {
     if (!runningInst)
         return;
@@ -644,61 +642,5 @@ void CurseOutput::writeBottomLine(const std::wstring &buffer, short color) const
     move(screenSize.second -1, bufsize);
     if (params.colorEnabled())
         attroff(COLOR_PAIR(color));
-}
-
-void CurseOutput::init()
-{
-    if (!isatty(fileno(stdin)) || !isatty(fileno(stdout)))
-    {
-        screen_fd = fopen("/dev/tty", "r+");
-        setbuf(screen_fd, nullptr);
-        screen = newterm(nullptr, screen_fd, screen_fd);
-    }
-    else
-    {
-        screen = newterm(nullptr, stdout, stdin);
-        screen_fd = nullptr;
-    }
-    wtimeout(stdscr, 150);
-    cbreak();
-    clear();
-    noecho();
-    curs_set(false);
-    keypad(stdscr, true);
-
-    if (params.colorEnabled())
-    {
-        start_color();
-        init_pair(OutputFlag::TYPE_NUMBER, COLOR_GREEN, COLOR_BLACK);
-        init_pair(OutputFlag::TYPE_BOOL, COLOR_RED, COLOR_BLACK);
-        init_pair(OutputFlag::TYPE_NULL, COLOR_RED, COLOR_BLACK);
-        init_pair(OutputFlag::TYPE_STRING, COLOR_CYAN, COLOR_BLACK);
-        init_pair(OutputFlag::TYPE_OBJKEY, COLOR_CYAN, COLOR_BLACK);
-        init_pair(OutputFlag::SPECIAL_SEARCH, COLOR_WHITE, COLOR_BLUE);
-        init_pair(OutputFlag::SPECIAL_ERROR, COLOR_WHITE, COLOR_RED);
-        colors.insert(OutputFlag::TYPE_NUMBER);
-        colors.insert(OutputFlag::TYPE_BOOL);
-        colors.insert(OutputFlag::TYPE_STRING);
-        colors.insert(OutputFlag::TYPE_OBJKEY);
-        colors.insert(OutputFlag::TYPE_NULL);
-    }
-
-    signal(SIGWINCH, _resizeFnc);
-    signal(SIGINT, _resizeFnc);
-    signal(SIGTERM, _resizeFnc);
-    signal(SIGKILL, _resizeFnc);
-    scrollTop = 0;
-}
-
-void CurseOutput::shutdown()
-{
-    endwin();
-    delscreen(screen);
-    if (screen_fd)
-    {
-        fclose(screen_fd);
-        screen_fd = nullptr;
-    }
-    screen = nullptr;
 }
 

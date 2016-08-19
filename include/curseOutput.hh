@@ -41,12 +41,12 @@ class CurseOutput
         /**
          * Initialize ncurses
         **/
-        void init();
+        virtual void init() =0;
 
         /**
          * Release ncurses
         **/
-        void shutdown();
+        virtual void shutdown() =0;
 
         /**
          * return false if bottom of screen is touched
@@ -71,7 +71,7 @@ class CurseOutput
         /**
          * get the screen size
         **/
-        const std::pair<unsigned int, unsigned int> getScreenSize() const;
+        virtual const std::pair<unsigned int, unsigned int> getScreenSize() const;
 
         /**
          * set the select_up and select_down pointers, scroll to selection if it is above view port
@@ -198,4 +198,6 @@ class CurseOutput
 
         class SelectionOutOfRange { };
 };
+
+void _resizeFnc(int signo);
 

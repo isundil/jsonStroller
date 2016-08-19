@@ -34,15 +34,19 @@ StreamConsumer *readFile(std::pair<std::string, std::basic_istream<char>*> input
 void runDiff(const Params &params)
 {
     const std::map<std::string, std::basic_istream<char>*> inputs = params.getInputs();
+    const size_t nbInputs = inputs.size();
     std::set<StreamConsumer *> streams;
-    std::list<JSonElement *> roots;
-    std::list<Warning> warns;
+    std::deque<JSonElement *> roots;
+    std::deque<Warning> warns;
+    std::deque<std::string> inputNames;
 
     if (!params.isIgnoringUnicode())
         setlocale(LC_ALL, "");
     for (std::pair<std::string, std::basic_istream<char>*> input : inputs)
     {
         StreamConsumer *stream;
+
+        inputNames.push_back(input.first);
         try
         {
             stream = readFile(input, params);
@@ -68,10 +72,10 @@ void runDiff(const Params &params)
         roots.push_back(stream->getRoot());
         streams.insert(stream);
     }
-    if (streams.size() == inputs.size())
+    if (streams.size() == nbInputs)
     {
         CurseSplitOutput out(params);
-        out.run(roots);
+        out.run(inputNames, roots);
     }
     for (StreamConsumer *stream: streams)
         delete stream;

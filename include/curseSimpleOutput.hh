@@ -25,5 +25,15 @@ class CurseSimpleOutput: public CurseOutput
          * Root item
         **/
         JSonElement *data;
+
+        /**
+         * Initialize ncurses
+        **/
+        void init();
+
+        /**
+         * Release ncurses
+        **/
+        void shutdown();
 };
 
