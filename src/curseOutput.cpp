@@ -21,9 +21,8 @@
 #include "streamConsumer.hh"
 
 static CurseOutput *runningInst = nullptr;
-class SelectionOutOfRange { };
 
-CurseOutput::CurseOutput(const Params &p): data(nullptr), selection(nullptr), params(p)
+CurseOutput::CurseOutput(const Params &p): data(nullptr), params(p)
 {
     runningInst = this;
     init();
@@ -33,16 +32,6 @@ CurseOutput::~CurseOutput()
 {
     shutdown();
     runningInst = nullptr;
-}
-
-void CurseOutput::run(JSonElement *root)
-{
-    selection = data = root;
-    loop();
-}
-
-void CurseOutput::run(std::list<JSonElement*> roots)
-{
 }
 
 void CurseOutput::loop()
@@ -85,49 +74,6 @@ static void _resizeFnc(int signo)
     if (!runningInst)
         return;
     runningInst->onsig(signo);
-}
-
-bool CurseOutput::redraw()
-{
-    const std::pair<unsigned int, unsigned int> screenSize = getScreenSize();
-    std::pair<int, int> cursor(0, 0);
-    /**
-     * Will be true if the json's last item is visible
-    **/
-    bool result;
-
-    select_up = select_down = nullptr;
-    selectFound = selectIsLast = false;
-    clear();
-    try {
-        result = redraw(cursor, screenSize, data);
-    }
-    catch (SelectionOutOfRange &e)
-    {
-        return false;
-    }
-    if (!result && !selectFound)
-    {
-        scrollTop++;
-        return false;
-    }
-    if (!result && !select_down)
-        selectIsLast = true;
-    if (!select_down)
-    {
-        const JSonContainer *pselect = dynamic_cast<const JSonContainer*>(selection);
-        if (pselect && !pselect->empty())
-            select_down = *(pselect->cbegin());
-        else
-        {
-            const JSonElement *next = selection->findNext();
-            select_down = next ? next : selection;
-        }
-    }
-    if (!select_up)
-        select_up = selection;
-    refresh();
-    return true;
 }
 
 bool CurseOutput::redraw(const std::string &errorMsg)

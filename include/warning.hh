@@ -11,6 +11,7 @@
 class Warning
 {
     public:
+        Warning(const Warning &);
         Warning(const JsonException &);
         ~Warning();
 
@@ -28,8 +29,12 @@ class Warning
         **/
         static std::string getType(const std::exception &);
 
+        std::string filename() const;
+        std::string filename(const std::string &filename);
+
     private:
         JsonException what;
         std::string type;
+        std::string _filename;
 };
 

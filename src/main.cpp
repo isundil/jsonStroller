@@ -7,13 +7,15 @@
 #include <iostream>
 #include <locale.h>
 #include "streamConsumer.hh"
-#include "curseOutput.hh"
+#include "curseSplitOutput.hh"
+#include "curseSimpleOutput.hh"
 #include "params.hh"
 #include "jsonException.hh"
 
 void displayException(const std::string &filename, const Params &params, const std::string &type, const JsonException &e)
 {
-    std::string buffer = e.getHistory();
+    const std::string buffer = e.getHistory();
+
     std::cerr << params.getProgName() << ": " << filename << " [" << type << "] at line " << e.currentLine() << ", " << e.currentCol() << " ("  << e.what() << ") while reading" << std::endl;
     std::cerr << buffer << std::endl << std::string(buffer.size() -1, '~') << '^' << std::endl;
 }
@@ -22,32 +24,10 @@ StreamConsumer *readFile(std::pair<std::string, std::basic_istream<char>*> input
 {
     StreamConsumer *stream = new StreamConsumer(*(input.second));
     stream->withConfig(&params);
-    bool success = true;
 
-    try
-    {
-        stream->read();
-        if (!stream->getRoot())
-            throw EofException();
-    }
-    catch (EofException &e)
-    {
-        std::cerr << params.getProgName() << ": " << input.first << " " << Warning::getType(e) << " ("  << e.what() << ") error while reading" << std::endl;
-        delete stream;
-        return nullptr;
-    }
-    catch (JsonException &e)
-    {
-        std::cerr << "Error: ";
-        displayException(input.first, params, Warning::getType(e), e);
-        delete stream;
-        return nullptr;
-    }
-    for (Warning w : stream->getMessages())
-    {
-        std::cerr << "Warning: ";
-        displayException(input.first, params, w.getType(), w());
-    }
+    stream->read();
+    if (!stream->getRoot())
+        throw EofException();
     return stream;
 }
 
@@ -56,47 +36,97 @@ void runDiff(const Params &params)
     const std::map<std::string, std::basic_istream<char>*> inputs = params.getInputs();
     std::set<StreamConsumer *> streams;
     std::list<JSonElement *> roots;
-    bool success = true;
+    std::list<Warning> warns;
 
     if (!params.isIgnoringUnicode())
         setlocale(LC_ALL, "");
     for (std::pair<std::string, std::basic_istream<char>*> input : inputs)
     {
-        StreamConsumer *stream = readFile(input, params);
-        if (!stream)
+        StreamConsumer *stream;
+        try
         {
-            success = false;
-            break;
+            stream = readFile(input, params);
+        }
+        catch (EofException &e)
+        {
+            std::cerr << params.getProgName() << ": " << input.first << " " << Warning::getType(e) << " ("  << e.what() << ") error while reading" << std::endl;
+            delete stream;
+            stream = nullptr;
+        }
+        catch (JsonException &e)
+        {
+            std::cerr << "Error: ";
+            displayException(input.first, params, Warning::getType(e), e);
+            delete stream;
+            stream = nullptr;
+        }
+        for (Warning w : stream->getMessages())
+        {
+            w.filename(input.first);
+            warns.push_back(Warning(w));
         }
         roots.push_back(stream->getRoot());
         streams.insert(stream);
     }
-    if (success)
+    if (streams.size() == inputs.size())
     {
-        CurseOutput out(params);
+        CurseSplitOutput out(params);
         out.run(roots);
     }
     for (StreamConsumer *stream: streams)
         delete stream;
+    for (Warning w : warns)
+    {
+        std::cerr << "Warning: ";
+        displayException(w.filename(), params, w.getType(), w());
+    }
 }
 
 void run(const Params &params)
 {
     std::map<std::string, std::basic_istream<char>*> inputs = params.getInputs();
-    CurseOutput *out = new CurseOutput(params);
+    CurseSimpleOutput *out = new CurseSimpleOutput(params);
+    std::list<Warning> warns;
 
     if (!params.isIgnoringUnicode())
         setlocale(LC_ALL, "");
     for (std::pair<std::string, std::basic_istream<char>*> input : inputs)
     {
-        StreamConsumer *stream = readFile(input, params);
-        if (stream)
+        StreamConsumer *stream;
+        try
         {
-            out->run(stream->getRoot());
-            delete stream;
+            stream = readFile(input, params);
         }
+        catch (EofException &e)
+        {
+            delete out;
+            out = nullptr;
+            std::cerr << params.getProgName() << ": " << input.first << " " << Warning::getType(e) << " ("  << e.what() << ") error while reading" << std::endl;
+            break;
+        }
+        catch (JsonException &e)
+        {
+            delete out;
+            out = nullptr;
+            std::cerr << "Error: ";
+            displayException(input.first, params, Warning::getType(e), e);
+            break;;
+        }
+        for (Warning w : stream->getMessages())
+        {
+            w.filename(input.first);
+            warns.push_back(Warning(w));
+        }
+        out->run(stream->getRoot());
+        delete stream;
     }
-    delete out;
+    if (out)
+        delete out;
+    for (Warning w : warns)
+    {
+        std::cerr << "Warning: ";
+        displayException(w.filename(), params, w.getType(), w());
+    }
 }
 
 int main(int ac, char **av)

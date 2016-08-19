@@ -27,24 +27,17 @@ class CurseOutput
         virtual ~CurseOutput();
 
         /**
-         * Display data, and shutdown ncurses at the end
-        **/
-        void run(JSonElement *);
-        void run(std::list<JSonElement *>);
-
-        /**
          * Called on SIG* while displaying data
          * Do not use (private).
         **/
         bool onsig(int signo);
 
-    private:
+    protected:
         /**
          * until kill-input, display data and read user inputs
         **/
         virtual void loop();
 
-    protected:
         /**
          * Initialize ncurses
         **/
@@ -59,7 +52,7 @@ class CurseOutput
          * return false if bottom of screen is touched
          * redraw all data
         **/
-        bool redraw();
+        virtual bool redraw() =0;
         /**
          * Like redraw, but append a message on the last line
         **/
@@ -157,19 +150,9 @@ class CurseOutput
         JSonElement *data;
 
         /**
-         * selected item
-        **/
-        const JSonElement *selection;
-
-        /**
          * currently searching pattern and its results
         **/
         std::list<const JSonElement*> search_result;
-
-        /**
-         * prev/next items to be selected on up/down keys
-        **/
-        const JSonElement *select_up, *select_down;
 
         /**
          * Program params (ac/av)
@@ -202,5 +185,17 @@ class CurseOutput
          * Used for moving viewport
         **/
         bool selectFound, selectIsLast;
+
+        /**
+         * selected item
+        **/
+        const JSonElement *selection;
+
+        /**
+         * prev/next items to be selected on up/down keys
+        **/
+        const JSonElement *select_up, *select_down;
+
+        class SelectionOutOfRange { };
 };
 
