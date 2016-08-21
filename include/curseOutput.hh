@@ -11,6 +11,7 @@
 #include <list>
 #include <set>
 #include <map>
+#include "optional.hpp"
 #include "outputFlag.hh"
 #include "params.hh"
 
@@ -60,13 +61,14 @@ class CurseOutput
         /**
          * redraw item and children
         **/
-        bool redraw(std::pair<int, int> &, const std::pair<unsigned int, unsigned int> &maxWidth, JSonElement *item);
+        virtual bool redraw(std::pair<int, int> &, const std::pair<unsigned int, unsigned int> &maxWidth, JSonElement *item) =0;
 
         /**
          * Wait for input
          * @return false if ncurses should stop
         **/
         bool readInput();
+        virtual Optional<bool> evalKey(int k) =0;
 
         /**
          * get the screen size
@@ -76,7 +78,7 @@ class CurseOutput
         /**
          * set the select_up and select_down pointers, scroll to selection if it is above view port
         **/
-        void checkSelection(const JSonElement *item, const std::pair<int, int>&);
+        virtual void checkSelection(const JSonElement *item, const std::pair<int, int>&) =0;
 
         /**
          * Return the number of lines written while writting nbChar bytes
@@ -90,7 +92,7 @@ class CurseOutput
          * get flags to be passed to write.
          * Contains indications on who to write item
         **/
-        const OutputFlag getFlag(const JSonElement *item) const;
+        virtual const OutputFlag getFlag(const JSonElement *item) const =0;
 
         /**
          * Write data
@@ -100,20 +102,14 @@ class CurseOutput
         **/
         void write(const std::string &str, const OutputFlag flags) const;
         unsigned int write(const int &x, const int &y, JSonElement *item, unsigned int maxWidth, const OutputFlag);
-        unsigned int write(const int &x, const int &y, const std::string &item, const size_t len, unsigned int maxWidth, const OutputFlag);
-        unsigned int write(const int &x, const int &y, const char item, unsigned int maxWidth, const OutputFlag);
-        bool writeKey(const std::string &key, const size_t keylen, std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxWidth, OutputFlag, unsigned int extraLen =0);
-        bool writeKey(const std::string &key, const size_t keylen, const std::string &after, const size_t afterlen, std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxWidth, OutputFlag);
-        bool writeKey(const std::string &key, const size_t keylen, const std::string &after, std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxWidth, OutputFlag);
-        bool writeContainer(std::pair<int, int> &, const std::pair<unsigned int, unsigned int> &maxSize, const JSonContainer *);
-        bool writeContent(std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, std::list<JSonElement *> * obj);
+        virtual unsigned int write(const int &x, const int &y, const std::string &item, const size_t len, unsigned int maxWidth, const OutputFlag) =0;
+        virtual unsigned int write(const int &x, const int &y, const char item, unsigned int maxWidth, const OutputFlag) =0;
+        virtual bool writeKey(const std::string &key, const size_t keylen, std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxWidth, OutputFlag, unsigned int extraLen =0) =0;
+        virtual bool writeKey(const std::string &key, const size_t keylen, const std::string &after, const size_t afterlen, std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxWidth, OutputFlag) =0;
+        virtual bool writeKey(const std::string &key, const size_t keylen, const std::string &after, std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxWidth, OutputFlag);
 
-        /**
-         * find next search occurence and select it (wich cause viewport to move, eventually)
-         * Have it own redraw because may have to write message
-        **/
-        bool jumpToNextSearch(const JSonElement *initial_selection, bool &);
-        bool jumpToNextSearch();
+        virtual bool writeContainer(std::pair<int, int> &, const std::pair<unsigned int, unsigned int> &maxSize, const JSonContainer *) =0;
+        virtual bool writeContent(std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, std::list<JSonElement *> * obj) =0;
 
         /**
          * prompt for user input, and return it
@@ -124,7 +120,7 @@ class CurseOutput
         /**
          * find occurences of search result and fill this#search_result
         **/
-        unsigned int search(const SearchPattern &, const JSonElement *);
+        virtual unsigned int search(const SearchPattern &, const JSonElement *) =0;
 
         /**
          * Write a message on the last line, using color
@@ -145,16 +141,6 @@ class CurseOutput
         std::set<const JSonContainer *> collapsed;
 
         /**
-         * Root item
-        **/
-        JSonElement *data;
-
-        /**
-         * currently searching pattern and its results
-        **/
-        std::list<const JSonElement*> search_result;
-
-        /**
          * Program params (ac/av)
         **/
         const Params &params;
@@ -171,11 +157,6 @@ class CurseOutput
         bool breakLoop;
 
         /**
-         * Viewport start
-        **/
-        int scrollTop;
-
-        /**
          * initialized colors
         **/
         std::set<char /* OutputFlag::TYPE_SOMETHING */> colors;
@@ -185,16 +166,6 @@ class CurseOutput
          * Used for moving viewport
         **/
         bool selectFound, selectIsLast;
-
-        /**
-         * selected item
-        **/
-        const JSonElement *selection;
-
-        /**
-         * prev/next items to be selected on up/down keys
-        **/
-        const JSonElement *select_up, *select_down;
 
         class SelectionOutOfRange { };
 };

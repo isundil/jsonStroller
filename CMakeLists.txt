@@ -13,7 +13,6 @@ include_directories(include ${CURSES_INCLUDE_DIRS})
 
 # jsonstroll
 add_executable(jsonstroll
-    src/main.cpp
     src/warning.cpp
     src/params.cpp
     src/curseOutput.cpp
@@ -33,6 +32,8 @@ add_executable(jsonstroll
 
     src/jsonException.cpp
     src/except.cpp
+
+    src/main.cpp
     )
 set_property(TARGET jsonstroll PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CUSTOM_BINARY_OUTPUT_DIR})
 target_link_libraries(jsonstroll ${ncurses++_LIBRARIES} ${CURSES_LIBRARIES})
@@ -68,6 +69,15 @@ set_property(
     PROPERTY RUNTIME_OUTPUT_DIRECTORY test
     )
 add_test(wrapped_test test/wrapped_test)
+
+add_executable(optional_test
+    test/src/optional.cpp
+    )
+add_test(optional_test test/optional_test)
+set_property(
+    TARGET optional_test
+    PROPERTY RUNTIME_OUTPUT_DIRECTORY test
+    )
 
 # Add manual page
 find_program (HELP2MAN help2man)

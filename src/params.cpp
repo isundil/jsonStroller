@@ -81,7 +81,7 @@ bool Params::read()
                     delete in;
                     throw std::runtime_error("Cannot open " +tmp +" for reading");
                 }
-                if (inputs.find(tmp) != inputs.cend())
+                if (inputs.contains(tmp))
                 {
                     delete in;
                     throw std::runtime_error("Cannot compare " +tmp +" and " +tmp +" files (path are identical)");
@@ -117,11 +117,11 @@ bool Params::read()
     return true;
 }
 
-std::map<std::string, std::basic_istream<char>*> Params::getInputs() const
+IndexedDeque Params::getInputs() const
 {
     if (!inputs.empty())
         return inputs;
-    std::map<std::string, std::basic_istream<char>*> result;
+    IndexedDeque result;
     result["STDIN"] = &std::cin;
     return result;
 }

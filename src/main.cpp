@@ -33,7 +33,7 @@ StreamConsumer *readFile(std::pair<std::string, std::basic_istream<char>*> input
 
 void runDiff(const Params &params)
 {
-    const std::map<std::string, std::basic_istream<char>*> inputs = params.getInputs();
+    const IndexedDeque inputs = params.getInputs();
     const size_t nbInputs = inputs.size();
     std::set<StreamConsumer *> streams;
     std::deque<JSonElement *> roots;
@@ -88,7 +88,7 @@ void runDiff(const Params &params)
 
 void run(const Params &params)
 {
-    std::map<std::string, std::basic_istream<char>*> inputs = params.getInputs();
+    IndexedDeque inputs = params.getInputs();
     CurseSimpleOutput *out = new CurseSimpleOutput(params);
     std::list<Warning> warns;
 

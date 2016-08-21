@@ -37,6 +37,7 @@
 /bin
 /test/json_test
 /test/wrapped_test
+/test/optional_test
 /cmake_install.cmake
 /Makefile
 .fuse_hidden*

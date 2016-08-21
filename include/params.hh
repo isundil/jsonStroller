@@ -9,7 +9,11 @@
 #include <map>
 #include <list>
 #include <string>
+#include <utility>
 #include <istream>
+#include "fifoMap.hpp"
+
+typedef fifoMap<std::string, std::basic_istream<char> *> IndexedDeque;
 
 class AParams
 {
@@ -43,7 +47,7 @@ class Params: public AParams
          * retun input
          * can be file stream (-f), stringstream ( -- INPUT), or std::cin (none)
         **/
-        std::map<std::string, std::basic_istream<char>*> getInputs() const;
+        IndexedDeque getInputs() const;
 
         /**
          * false if invalid argument is passed
@@ -80,7 +84,7 @@ class Params: public AParams
          * input stream
          * can be null for stdin
         **/
-        std::map<std::string, std::basic_istream<char>*> inputs;
+        IndexedDeque inputs;
 
         const std::string progName;
         std::list<std::string> params;
