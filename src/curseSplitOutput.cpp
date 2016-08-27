@@ -28,11 +28,12 @@ CurseSplitOutput::~CurseSplitOutput()
 void CurseSplitOutput::run(const std::deque<std::string> &inputName, const std::deque<JSonElement*> &roots)
 {
     nbInputs = inputName.size();
-    selectedWin = 0;
+    selectedWin = 2;
     scrollTop.clear();
     select_up.clear();
     select_down.clear();
     selection.clear();
+    search_result.clear();
     for (size_t i =0; i < nbInputs; i++)
     {
         this->roots.push_back(roots.at(i));
@@ -40,6 +41,7 @@ void CurseSplitOutput::run(const std::deque<std::string> &inputName, const std::
         selection.push_back(roots.at(i));
         select_up.push_back(nullptr);
         select_down.push_back(nullptr);
+        search_result.push_back(std::list<const JSonElement *>());
     }
     fileNames = inputName;
     loop();
@@ -56,7 +58,7 @@ Optional<bool> CurseSplitOutput::evalKey(int c)
         case KEY_UP:
         case 'K':
         case 'k':
-            selection = select_up;
+            selection[selectedWin] = select_up[selectedWin];
             return Optional<bool>::of(true);
 
         case KEY_DOWN:
@@ -65,7 +67,7 @@ Optional<bool> CurseSplitOutput::evalKey(int c)
             if (selectIsLast)
                 scrollTop[selectedWin] += 2;
             else if (selection != select_down)
-                selection = select_down;
+                selection[selectedWin] = select_down[selectedWin];
             else
                 break;
             return Optional<bool>::of(true);
@@ -275,13 +277,15 @@ bool CurseSplitOutput::redraw()
 
     destroyAllSubWin();
     clear();
+    refresh();
     for (workingWin =0; workingWin < nbInputs; workingWin++)
     {
-        std::pair<int, int> cursor(workingWin * screenSize.first + (workingWin ? 0 : 1), 0);
+        std::pair<int, int> cursor(workingWin * screenSize.first + (workingWin ? 0 : 1), 1);
         bool result;
 
         currentWin = newwin(screenSize.second, screenSize.first, 0, cursor.first -1);
         box(currentWin, 0, 0);
+        subwindows.push_back(currentWin);
         select_up[workingWin] = select_down[workingWin] = nullptr;
         selectFound = selectIsLast = false;
 
@@ -314,7 +318,6 @@ bool CurseSplitOutput::redraw()
             select_up[workingWin] = selection[workingWin];
         wrefresh(currentWin);
     }
-    refresh();
     return true;
 }
 
@@ -430,7 +433,7 @@ bool CurseSplitOutput::writeKey(const std::string &key, const size_t keylen, std
     flags.type(OutputFlag::TYPE_OBJKEY);
     cursor.second += write(cursor.first, cursor.second, key, keylen, maxSize.first -extraLen -2, flags);
     flags.type(OutputFlag::TYPE_OBJ);
-    CurseOutput::write(": ", flags);
+    write(": ", flags);
     flags.type(oldType);
     return (cursor.second - scrollTop[workingWin] < 0 || (unsigned)(cursor.second - scrollTop[workingWin]) <= maxSize.second);
 }
@@ -446,9 +449,9 @@ bool CurseSplitOutput::writeKey(const std::string &key, const size_t keylen, con
     flags.type(OutputFlag::TYPE_OBJKEY);
     write(cursor.first, cursor.second, key, 0, 1, flags);
     flags.type(OutputFlag::TYPE_OBJ);
-    CurseOutput::write(": ", flags);
+    write(": ", flags);
     flags.type(oldType);
-    CurseOutput::write(after.c_str(), flags);
+    write(after, flags);
     cursor.second += getNbLines(cursor.first +keylen +2 +afterlen, maxSize.first);
     return (cursor.second - scrollTop[workingWin] < 0 || (unsigned)(cursor.second - scrollTop[workingWin]) <= maxSize.second);
 }
@@ -479,18 +482,18 @@ unsigned int CurseSplitOutput::write(const int &x, const int &y, const char item
         return 1;
 
     if (flags.selected())
-        attron(A_REVERSE | A_BOLD);
+        wattron(currentWin, A_REVERSE | A_BOLD);
     if (flags.searched())
         color = OutputFlag::SPECIAL_SEARCH;
     else if (colors.find(flags.type()) != colors.end())
         color = flags.type();
 
     if (color != OutputFlag::SPECIAL_NONE)
-        attron(COLOR_PAIR(color));
-    mvprintw(offsetY, x, "%c", item);
-    attroff(A_REVERSE | A_BOLD);
+        wattron(currentWin, COLOR_PAIR(color));
+    mvwprintw(currentWin, offsetY, x, "%c", item);
+    wattroff(currentWin, A_REVERSE | A_BOLD);
     if (color != OutputFlag::SPECIAL_NONE)
-        attroff(COLOR_PAIR(color));
+        wattroff(currentWin, COLOR_PAIR(color));
     return getNbLines(x +1, maxWidth);
 }
 
@@ -499,9 +502,27 @@ unsigned int CurseSplitOutput::write(const int &x, const int &y, const std::stri
     int offsetY = y - scrollTop[workingWin];
     if (offsetY < 0)
         return 1;
-    move(offsetY, x);
-    CurseOutput::write(str, flags);
+    wmove(currentWin, offsetY, x);
+    write(str, flags);
     return getNbLines(strlen +x, maxWidth);
+}
+
+void CurseSplitOutput::write(const std::string &str, const OutputFlag flags) const
+{
+    char color = OutputFlag::SPECIAL_NONE;
+    if (flags.selected())
+        wattron(currentWin, A_REVERSE | A_BOLD);
+    if (flags.searched())
+        color = OutputFlag::SPECIAL_SEARCH;
+    else if (colors.find(flags.type()) != colors.end())
+        color = flags.type();
+    if (color != OutputFlag::SPECIAL_NONE)
+        wattron(currentWin, COLOR_PAIR(color));
+
+    wprintw(currentWin, "%s", str.c_str());
+    wattroff(currentWin, A_REVERSE | A_BOLD);
+    if (color != OutputFlag::SPECIAL_NONE)
+        wattroff(currentWin, COLOR_PAIR(color));
 }
 
 void CurseSplitOutput::destroyAllSubWin()
@@ -563,7 +584,6 @@ void CurseSplitOutput::init()
     signal(SIGINT, _resizeFnc);
     signal(SIGTERM, _resizeFnc);
     signal(SIGKILL, _resizeFnc);
-    scrollTop[selectedWin] = 0;
 }
 
 void CurseSplitOutput::shutdown()

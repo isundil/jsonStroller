@@ -100,7 +100,7 @@ class CurseOutput
         /**
          * Warning: this one does not check line height, because he's not aware of cursor position
         **/
-        void write(const std::string &str, const OutputFlag flags) const;
+        virtual void write(const std::string &str, const OutputFlag flags) const =0;
         unsigned int write(const int &x, const int &y, JSonElement *item, unsigned int maxWidth, const OutputFlag);
         virtual unsigned int write(const int &x, const int &y, const std::string &item, const size_t len, unsigned int maxWidth, const OutputFlag) =0;
         virtual unsigned int write(const int &x, const int &y, const char item, unsigned int maxWidth, const OutputFlag) =0;

@@ -19,7 +19,6 @@ CurseSimpleOutput::CurseSimpleOutput(const Params &p): CurseOutput(p)
     init();
 }
 
-
 CurseSimpleOutput::~CurseSimpleOutput()
 {
     shutdown();
@@ -320,7 +319,7 @@ bool CurseSimpleOutput::writeKey(const std::string &key, const size_t keylen, st
     flags.type(OutputFlag::TYPE_OBJKEY);
     cursor.second += write(cursor.first, cursor.second, key, keylen, maxSize.first -extraLen -2, flags);
     flags.type(OutputFlag::TYPE_OBJ);
-    CurseOutput::write(": ", flags);
+    write(": ", flags);
     flags.type(oldType);
     return (cursor.second - scrollTop < 0 || (unsigned)(cursor.second - scrollTop) <= maxSize.second);
 }
@@ -336,9 +335,9 @@ bool CurseSimpleOutput::writeKey(const std::string &key, const size_t keylen, co
     flags.type(OutputFlag::TYPE_OBJKEY);
     write(cursor.first, cursor.second, key, 0, 1, flags);
     flags.type(OutputFlag::TYPE_OBJ);
-    CurseOutput::write(": ", flags);
+    write(": ", flags);
     flags.type(oldType);
-    CurseOutput::write(after.c_str(), flags);
+    write(after.c_str(), flags);
     cursor.second += getNbLines(cursor.first +keylen +2 +afterlen, maxSize.first);
     return (cursor.second - scrollTop < 0 || (unsigned)(cursor.second - scrollTop) <= maxSize.second);
 }
@@ -373,8 +372,26 @@ unsigned int CurseSimpleOutput::write(const int &x, const int &y, const std::str
     if (offsetY < 0)
         return 1;
     move(offsetY, x);
-    CurseOutput::write(str, flags);
+    write(str, flags);
     return getNbLines(strlen +x, maxWidth);
+}
+
+void CurseSimpleOutput::write(const std::string &str, const OutputFlag flags) const
+{
+    char color = OutputFlag::SPECIAL_NONE;
+    if (flags.selected())
+        attron(A_REVERSE | A_BOLD);
+    if (flags.searched())
+        color = OutputFlag::SPECIAL_SEARCH;
+    else if (colors.find(flags.type()) != colors.end())
+        color = flags.type();
+    if (color != OutputFlag::SPECIAL_NONE)
+        attron(COLOR_PAIR(color));
+
+    printw("%s", str.c_str());
+    attroff(A_REVERSE | A_BOLD);
+    if (color != OutputFlag::SPECIAL_NONE)
+        attroff(COLOR_PAIR(color));
 }
 
 bool CurseSimpleOutput::jumpToNextSearch(const JSonElement *current, bool &selectFound)

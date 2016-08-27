@@ -26,6 +26,7 @@ class CurseSplitOutput: public CurseOutput
         bool writeKey(const std::string &key, const size_t keylen, const std::string &after, size_t afterlen, std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, OutputFlag flags);
         unsigned int write(const int &x, const int &y, const char item, unsigned int maxWidth, OutputFlag flags);
         unsigned int write(const int &x, const int &y, const std::string &str, const size_t strlen, unsigned int maxWidth, const OutputFlag flags);
+        void write(const std::string &str, const OutputFlag flags) const;
 
         bool jumpToNextSearch(const JSonElement *current, bool &selectFound);
         bool jumpToNextSearch();

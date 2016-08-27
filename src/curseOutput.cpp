@@ -110,24 +110,6 @@ unsigned int CurseOutput::write(const int &x, const int &y, JSonElement *item, u
     return write(x, y, item->stringify(), item->lazystrlen(), maxWidth, flags);
 }
 
-void CurseOutput::write(const std::string &str, const OutputFlag flags) const
-{
-    char color = OutputFlag::SPECIAL_NONE;
-    if (flags.selected())
-        attron(A_REVERSE | A_BOLD);
-    if (flags.searched())
-        color = OutputFlag::SPECIAL_SEARCH;
-    else if (colors.find(flags.type()) != colors.end())
-        color = flags.type();
-    if (color != OutputFlag::SPECIAL_NONE)
-        attron(COLOR_PAIR(color));
-
-    printw("%s", str.c_str());
-    attroff(A_REVERSE | A_BOLD);
-    if (color != OutputFlag::SPECIAL_NONE)
-        attroff(COLOR_PAIR(color));
-}
-
 unsigned int CurseOutput::getNbLines(const size_t nbChar, unsigned int maxWidth)
 {
     double nLine = (double) nbChar / maxWidth;
