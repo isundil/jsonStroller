@@ -17,8 +17,12 @@ class CurseSplitOutput: public CurseOutput
         void checkSelection(const JSonElement *item, const std::pair<int, int> &cursor);
         Optional<bool> evalKey(int k);
 
+        void loop();
+
         bool redraw();
         bool redraw(std::pair<int, int> &, const std::pair<unsigned int, unsigned int> &, JSonElement *);
+        bool redrawCurrent(short);
+        bool redrawCurrent(const std::pair<unsigned int, unsigned int> &screenSize);
 
         bool writeContainer(std::pair<int, int> &, const std::pair<unsigned int, unsigned int> &, const JSonContainer *);
         bool writeContent(std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, std::list<JSonElement*> *_item);
@@ -74,6 +78,6 @@ class CurseSplitOutput: public CurseOutput
         std::deque<int> scrollTop;
 
         WINDOW *currentWin;
-        size_t nbInputs, selectedWin, workingWin;
+        short nbInputs, selectedWin, workingWin;
 };
 

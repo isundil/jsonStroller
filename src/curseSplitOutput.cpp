@@ -28,13 +28,13 @@ CurseSplitOutput::~CurseSplitOutput()
 void CurseSplitOutput::run(const std::deque<std::string> &inputName, const std::deque<JSonElement*> &roots)
 {
     nbInputs = inputName.size();
-    selectedWin = 2;
+    selectedWin = 0;
     scrollTop.clear();
     select_up.clear();
     select_down.clear();
     selection.clear();
     search_result.clear();
-    for (size_t i =0; i < nbInputs; i++)
+    for (short i =0; i < nbInputs; i++)
     {
         this->roots.push_back(roots.at(i));
         scrollTop.push_back(0);
@@ -45,6 +45,17 @@ void CurseSplitOutput::run(const std::deque<std::string> &inputName, const std::
     }
     fileNames = inputName;
     loop();
+}
+
+void CurseSplitOutput::loop()
+{
+    breakLoop = false;
+
+    while (!redraw());
+    while(readInput())
+    {
+        while (!redrawCurrent(selectedWin));
+    }
 }
 
 Optional<bool> CurseSplitOutput::evalKey(int c)
@@ -271,6 +282,56 @@ bool CurseSplitOutput::jumpToNextSearch()
     return true;
 }
 
+bool CurseSplitOutput::redrawCurrent(short selectedWin)
+{
+    const std::pair<unsigned int, unsigned int> screenSize = getScreenSize();
+
+    workingWin = selectedWin = 0;
+    currentWin = subwindows[selectedWin];
+    return redrawCurrent(screenSize);
+}
+
+bool CurseSplitOutput::redrawCurrent(const std::pair<unsigned int, unsigned int> &screenSize)
+{
+    std::pair<int, int> cursor(1, 1);
+    bool result;
+
+    select_up[workingWin] = select_down[workingWin] = nullptr;
+    selectFound = selectIsLast = false;
+
+    wclear(currentWin);
+    box(currentWin, 0, 0);
+    try {
+        result = redraw(cursor, screenSize, roots[workingWin]);
+    }
+    catch (SelectionOutOfRange &e)
+    {
+        return false;
+    }
+    if (!result && !selectFound)
+    {
+        scrollTop[workingWin]++;
+        return false;
+    }
+    if (!result && !select_down[workingWin])
+        selectIsLast = true;
+    if (!select_down[workingWin])
+    {
+        const JSonContainer *pselect = dynamic_cast<const JSonContainer*>(selection[workingWin]);
+        if (pselect && !pselect->empty())
+            select_down[workingWin] = *(pselect->cbegin());
+        else
+        {
+            const JSonElement *next = selection[workingWin]->findNext();
+            select_down[workingWin] = next ? next : selection[workingWin];
+        }
+    }
+    if (!select_up[workingWin])
+        select_up[workingWin] = selection[workingWin];
+    wrefresh(currentWin);
+    return true;
+}
+
 bool CurseSplitOutput::redraw()
 {
     const std::pair<unsigned int, unsigned int> screenSize = getScreenSize();
@@ -280,43 +341,10 @@ bool CurseSplitOutput::redraw()
     refresh();
     for (workingWin =0; workingWin < nbInputs; workingWin++)
     {
-        std::pair<int, int> cursor(workingWin * screenSize.first + (workingWin ? 0 : 1), 1);
-        bool result;
-
-        currentWin = newwin(screenSize.second, screenSize.first, 0, cursor.first -1);
-        box(currentWin, 0, 0);
+        currentWin = newwin(screenSize.second, screenSize.first, 0, workingWin * screenSize.first + (workingWin ? -1 : 0));
         subwindows.push_back(currentWin);
-        select_up[workingWin] = select_down[workingWin] = nullptr;
-        selectFound = selectIsLast = false;
-
-        try {
-            result = redraw(cursor, screenSize, roots[workingWin]);
-        }
-        catch (SelectionOutOfRange &e)
-        {
+        if (!redrawCurrent(screenSize))
             return false;
-        }
-        if (!result && !selectFound)
-        {
-            scrollTop[workingWin]++;
-            return false;
-        }
-        if (!result && !select_down[workingWin])
-            selectIsLast = true;
-        if (!select_down[workingWin])
-        {
-            const JSonContainer *pselect = dynamic_cast<const JSonContainer*>(selection[workingWin]);
-            if (pselect && !pselect->empty())
-                select_down[workingWin] = *(pselect->cbegin());
-            else
-            {
-                const JSonElement *next = selection[workingWin]->findNext();
-                select_down[workingWin] = next ? next : selection[workingWin];
-            }
-        }
-        if (!select_up[workingWin])
-            select_up[workingWin] = selection[workingWin];
-        wrefresh(currentWin);
     }
     return true;
 }
@@ -500,6 +528,7 @@ unsigned int CurseSplitOutput::write(const int &x, const int &y, const char item
 unsigned int CurseSplitOutput::write(const int &x, const int &y, const std::string &str, const size_t strlen, unsigned int maxWidth, const OutputFlag flags)
 {
     int offsetY = y - scrollTop[workingWin];
+
     if (offsetY < 0)
         return 1;
     wmove(currentWin, offsetY, x);
@@ -510,6 +539,7 @@ unsigned int CurseSplitOutput::write(const int &x, const int &y, const std::stri
 void CurseSplitOutput::write(const std::string &str, const OutputFlag flags) const
 {
     char color = OutputFlag::SPECIAL_NONE;
+
     if (flags.selected())
         wattron(currentWin, A_REVERSE | A_BOLD);
     if (flags.searched())
