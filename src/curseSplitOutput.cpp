@@ -286,21 +286,20 @@ bool CurseSplitOutput::redrawCurrent(short selectedWin)
 {
     const std::pair<unsigned int, unsigned int> screenSize = getScreenSize();
 
-    workingWin = selectedWin = 0;
-    currentWin = subwindows[selectedWin];
+    currentWin = subwindows[workingWin = selectedWin];
     return redrawCurrent(screenSize);
 }
 
 bool CurseSplitOutput::redrawCurrent(const std::pair<unsigned int, unsigned int> &screenSize)
 {
-    std::pair<int, int> cursor(1, 1);
+    std::pair<int, int> cursor(0, 0);
     bool result;
 
     select_up[workingWin] = select_down[workingWin] = nullptr;
     selectFound = selectIsLast = false;
 
     wclear(currentWin);
-    box(currentWin, 0, 0);
+    box(outerWin[workingWin], 0, 0);
     try {
         result = redraw(cursor, screenSize, roots[workingWin]);
     }
@@ -328,6 +327,7 @@ bool CurseSplitOutput::redrawCurrent(const std::pair<unsigned int, unsigned int>
     }
     if (!select_up[workingWin])
         select_up[workingWin] = selection[workingWin];
+    wrefresh(outerWin[workingWin]);
     wrefresh(currentWin);
     return true;
 }
@@ -341,7 +341,8 @@ bool CurseSplitOutput::redraw()
     refresh();
     for (workingWin =0; workingWin < nbInputs; workingWin++)
     {
-        currentWin = newwin(screenSize.second, screenSize.first, 0, workingWin * screenSize.first + (workingWin ? -1 : 0));
+        outerWin.push_back(newwin(screenSize.second +2, screenSize.first, 0, workingWin * screenSize.first -workingWin));
+        currentWin = newwin(screenSize.second, screenSize.first -2, 1, workingWin * screenSize.first -workingWin +1);
         subwindows.push_back(currentWin);
         if (!redrawCurrent(screenSize))
             return false;
@@ -452,7 +453,7 @@ bool CurseSplitOutput::writeContent(std::pair<int, int> &cursor, const std::pair
 
 bool CurseSplitOutput::writeKey(const std::string &key, const size_t keylen, std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, OutputFlag flags, unsigned int extraLen)
 {
-    if (cursor.second - scrollTop[workingWin] < 0)
+    if (cursor.second - scrollTop[workingWin] <= 0)
     {
         cursor.second++;
         return true;
@@ -468,7 +469,7 @@ bool CurseSplitOutput::writeKey(const std::string &key, const size_t keylen, std
 
 bool CurseSplitOutput::writeKey(const std::string &key, const size_t keylen, const std::string &after, size_t afterlen, std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, OutputFlag flags)
 {
-    if (cursor.second - scrollTop[workingWin] < 0)
+    if (cursor.second - scrollTop[workingWin] <= 0)
     {
         cursor.second++;
         return true;
@@ -557,19 +558,23 @@ void CurseSplitOutput::write(const std::string &str, const OutputFlag flags) con
 
 void CurseSplitOutput::destroyAllSubWin()
 {
-    for (WINDOW *i: subwindows)
+    for (WINDOW *i: outerWin)
     {
         wborder(i, ' ', ' ', ' ',' ',' ',' ',' ',' ');
         wrefresh(i);
         delwin(i);
     }
+    for (WINDOW *i: subwindows)
+        delwin(i);
     subwindows.clear();
+    outerWin.clear();
 }
 
 const std::pair<unsigned int, unsigned int> CurseSplitOutput::getScreenSize() const
 {
     std::pair<unsigned int, unsigned int> result = CurseOutput::getScreenSize();
     result.first /= nbInputs;
+    result.second -=2 ;
     return result;
 }
 

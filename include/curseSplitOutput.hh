@@ -65,7 +65,7 @@ class CurseSplitOutput: public CurseOutput
         std::deque<std::string> fileNames;
         std::deque<JSonElement *> roots;
         std::deque<const JSonElement *> selection, select_up, select_down;
-        std::deque<WINDOW *> subwindows;
+        std::deque<WINDOW *> subwindows, outerWin;
 
         /**
          * currently searching pattern and its results
