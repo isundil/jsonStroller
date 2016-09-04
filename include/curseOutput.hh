@@ -14,12 +14,20 @@
 #include "optional.hpp"
 #include "outputFlag.hh"
 #include "params.hh"
+#include "inputSequence.hh"
 
 class JSonElement;
 class JSonContainer;
 class JSonArray;
 class JSonObject;
 class SearchPattern;
+
+enum inputResult: char
+{
+    redraw      =0
+    ,quit       =1
+    ,nextInput  =2
+};
 
 class CurseOutput
 {
@@ -68,7 +76,16 @@ class CurseOutput
          * @return false if ncurses should stop
         **/
         bool readInput();
-        virtual Optional<bool> evalKey(int k) =0;
+        inputResult evalKey(const InputSequence &k);
+
+        virtual inputResult selectUp() =0;
+        virtual inputResult selectDown() =0;
+        virtual inputResult selectPUp() =0;
+        virtual inputResult selectPDown() =0;
+        virtual inputResult expandSelection() =0;
+        virtual inputResult collapseSelection() =0;
+        virtual inputResult initSearch() =0;
+        virtual inputResult nextResult() =0;
 
         /**
          * get the screen size

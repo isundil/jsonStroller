@@ -50,11 +50,18 @@ class CurseSimpleOutput: public CurseOutput
         bool writeContainer(std::pair<int, int> &, const std::pair<unsigned int, unsigned int> &maxSize, const JSonContainer *);
         bool writeContent(std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, std::list<JSonElement *> * obj);
         bool redraw(std::pair<int, int> &, const std::pair<unsigned int, unsigned int> &, JSonElement *);
-
-        Optional<bool> evalKey(int k);
         void checkSelection(const JSonElement *item, const std::pair<int, int> &cursor);
 
     protected:
+        inputResult selectUp();
+        inputResult selectDown();
+        inputResult selectPUp();
+        inputResult selectPDown();
+        inputResult expandSelection();
+        inputResult collapseSelection();
+        inputResult initSearch();
+        inputResult nextResult();
+
         /**
          * Root item
         **/

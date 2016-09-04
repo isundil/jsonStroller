@@ -86,11 +86,58 @@ bool CurseOutput::readInput()
 {
     while (!breakLoop)
     {
-        Optional<bool> r = evalKey(getch());
-        if (!r.absent())
-            return *r;
+        inputResult r = evalKey(InputSequence::read());
+        if (r == inputResult::redraw)
+            return true;
+        if (r == inputResult::quit)
+            return false;
+        // else nextInput;
     }
     return false;
+}
+
+inputResult CurseOutput::evalKey(const InputSequence &c)
+{
+    switch (c.key())
+    {
+        case 'q':
+        case 'Q':
+            return inputResult::quit;
+
+        case KEY_UP:
+        case 'K':
+        case 'k':
+            return selectUp();
+
+        case KEY_DOWN:
+        case 'j':
+        case 'J':
+            return selectDown();
+
+        case KEY_PPAGE:
+            return selectPUp();
+
+        case KEY_NPAGE:
+            return selectPDown();
+
+        case 'l':
+        case 'L':
+        case KEY_RIGHT:
+            return expandSelection();
+
+        case 'h':
+        case 'H':
+        case KEY_LEFT:
+            return collapseSelection();
+
+        case '/':
+            return initSearch();
+
+        case 'n':
+        case 'N':
+            return nextResult();
+    }
+    return inputResult::nextInput;
 }
 
 bool CurseOutput::redraw(const std::string &errorMsg)

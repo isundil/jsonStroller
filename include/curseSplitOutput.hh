@@ -15,7 +15,6 @@ class CurseSplitOutput: public CurseOutput
         void run(const std::deque<std::string> &, const std::deque<JSonElement *> &);
 
         void checkSelection(const JSonElement *item, const std::pair<int, int> &cursor);
-        Optional<bool> evalKey(int k);
 
         void loop();
 
@@ -62,6 +61,15 @@ class CurseSplitOutput: public CurseOutput
         const OutputFlag getFlag(const JSonElement *item, const JSonElement *selection) const;
 
     protected:
+        inputResult selectUp();
+        inputResult selectDown();
+        inputResult selectPUp();
+        inputResult selectPDown();
+        inputResult expandSelection();
+        inputResult collapseSelection();
+        inputResult initSearch();
+        inputResult nextResult();
+
         std::deque<std::string> fileNames;
         std::deque<JSonElement *> roots;
         std::deque<const JSonElement *> selection, select_up, select_down;

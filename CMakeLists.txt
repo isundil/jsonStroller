@@ -22,6 +22,7 @@ add_executable(jsonstroll
     src/outputFlag.cpp
     src/streamConsumer.cpp
     src/searchPattern.cpp
+    src/inputSequence.cpp
 
     src/jsonElement.cpp
     src/jsonArray.cpp

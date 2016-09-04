@@ -73,124 +73,115 @@ bool CurseSimpleOutput::redraw()
     return true;
 }
 
-Optional<bool> CurseSimpleOutput::evalKey(int c)
+inputResult CurseSimpleOutput::selectUp()
 {
-    switch (c)
-    {
-        case 'q':
-        case 'Q':
-            return Optional<bool>::of(false);
-
-        case KEY_UP:
-        case 'K':
-        case 'k':
-            selection = select_up;
-            return Optional<bool>::of(true);
-
-        case KEY_DOWN:
-        case 'j':
-        case 'J':
-            if (selectIsLast)
-                scrollTop += 2;
-            else if (selection != select_down)
-                selection = select_down;
-            else
-                break;
-            return Optional<bool>::of(true);
-
-        case KEY_PPAGE:
-        {
-            const JSonElement *brother = selection->findPrev();
-
-            if (brother == nullptr)
-            {
-                const JSonElement *parent = selection->getParent();
-                if (parent && dynamic_cast<const JSonContainer*>(parent))
-                {
-                    selection = parent;
-                    if (selection->getParent() && dynamic_cast<const JSonObjectEntry*> (selection->getParent()))
-                        selection = selection->getParent();
-                }
-                else
-                    break;
-            }
-            else
-                selection = brother;
-            return Optional<bool>::of(true);
-        }
-
-        case KEY_NPAGE:
-        {
-            const JSonElement *brother = selection->findNext();
-
-            if (brother)
-            {
-                selection = brother;
-                return Optional<bool>::of(true);
-            }
-            break;
-        }
-
-        case 'l':
-        case 'L':
-        case KEY_RIGHT:
-        {
-            if (dynamic_cast<const JSonObjectEntry*>(selection))
-                selection = **((const JSonObjectEntry*)selection);
-            if (!dynamic_cast<const JSonContainer*>(selection))
-                return Optional<bool>::empty;
-
-            if (collapsed.erase((const JSonContainer *)selection))
-                return Optional<bool>::of(true);
-            if (!((const JSonContainer*)selection)->size())
-                break;
-            selection = select_down;
-            return Optional<bool>::of(true);
-        }
-
-        case 'h':
-        case 'H':
-        case KEY_LEFT:
-        {
-            if (dynamic_cast<const JSonObjectEntry*>(selection))
-                selection = **((const JSonObjectEntry*)selection);
-            if (selection->getParent() && (!dynamic_cast<const JSonContainer*>(selection)
-                    || collapsed.find((const JSonContainer *)selection) != collapsed.end()
-                    || (dynamic_cast<const JSonContainer*>(selection) && ((const JSonContainer*)selection)->size() == 0)))
-            {
-                selection = selection->getParent();
-                if (selection->getParent() && dynamic_cast<const JSonObjectEntry*>(selection->getParent()))
-                    selection = selection->getParent();
-            }
-            else if (selection)
-                collapsed.insert((const JSonContainer *)selection);
-            else
-                break;
-            return Optional<bool>::of(false);
-        }
-
-        case '/':
-        {
-            const SearchPattern *search_pattern = inputSearch();
-            if (!search_pattern)
-                return Optional<bool>::of(true);
-            search_result.clear();
-            if (search_pattern->isEmpty())
-                return Optional<bool>::of(true);
-            search(*search_pattern, data);
-            delete search_pattern;
-        }
-
-        case 'n':
-        case 'N':
-            if (search_result.empty())
-                CurseOutput::redraw("Pattern not found");
-            else if (jumpToNextSearch())
-                return Optional<bool>::of(true);
-            break;
-    }
-    return Optional<bool>::empty;
+    selection = select_up;
+    return inputResult::redraw;
 }
+
+inputResult CurseSimpleOutput::selectDown()
+{
+    if (selectIsLast)
+        scrollTop += 2;
+    else if (selection != select_down)
+        selection = select_down;
+    else
+        return inputResult::nextInput;
+    return inputResult::redraw;
+}
+
+inputResult CurseSimpleOutput::selectPUp()
+{
+    const JSonElement *_selection = selection;
+    const JSonElement *brother = _selection->findPrev();
+
+    if (brother == nullptr)
+    {
+        const JSonElement *parent = _selection->getParent();
+        if (parent && dynamic_cast<const JSonContainer*>(parent))
+        {
+            selection = _selection = parent;
+            if (_selection->getParent() && dynamic_cast<const JSonObjectEntry*> (_selection->getParent()))
+                selection = _selection->getParent();
+        }
+        else
+            return inputResult::nextInput;
+    }
+    else
+        selection = brother;
+    return inputResult::redraw;
+}
+
+inputResult CurseSimpleOutput::selectPDown()
+{
+    const JSonElement *brother = selection->findNext();
+
+    if (brother)
+    {
+        selection = brother;
+        return inputResult::redraw;
+    }
+    return inputResult::nextInput;
+}
+
+inputResult CurseSimpleOutput::expandSelection()
+{
+    const JSonElement *_selection = selection;
+
+    if (dynamic_cast<const JSonObjectEntry*>(_selection))
+        _selection = **((const JSonObjectEntry*)_selection);
+    if (!dynamic_cast<const JSonContainer*>(_selection))
+        return inputResult::nextInput;
+
+    if (collapsed.erase((const JSonContainer *)_selection))
+        return inputResult::redraw;
+    if (!((const JSonContainer*)_selection)->size())
+        return inputResult::nextInput;
+    selection = select_down;
+    return inputResult::redraw;
+}
+
+inputResult CurseSimpleOutput::collapseSelection()
+{
+    const JSonElement *_selection = selection;
+
+    if (dynamic_cast<const JSonObjectEntry*>(_selection))
+        _selection = **((const JSonObjectEntry*)_selection);
+    if (_selection->getParent() && (!dynamic_cast<const JSonContainer*>(_selection)
+            || collapsed.find((const JSonContainer *)_selection) != collapsed.end()
+            || (dynamic_cast<const JSonContainer*>(_selection) && ((const JSonContainer*)_selection)->size() == 0)))
+    {
+        selection = selection->getParent();
+        if (selection->getParent() && dynamic_cast<const JSonObjectEntry*>(selection->getParent()))
+            selection = selection->getParent();
+    }
+    else
+        collapsed.insert((const JSonContainer *)_selection);
+    return inputResult::redraw;
+}
+
+inputResult CurseSimpleOutput::initSearch()
+{
+    const SearchPattern *search_pattern = inputSearch();
+    if (!search_pattern)
+        return inputResult::redraw;
+    search_result.clear();
+    if (search_pattern->isEmpty())
+        return inputResult::redraw;
+    search(*search_pattern, data);
+    delete search_pattern;
+    return nextResult();
+}
+
+inputResult CurseSimpleOutput::nextResult()
+{
+    if (search_result.empty())
+        CurseOutput::redraw("Pattern not found");
+    else if (jumpToNextSearch())
+        return inputResult::redraw;
+    return inputResult::nextInput;
+}
+
 
 bool CurseSimpleOutput::redraw(std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, JSonElement *item)
 {

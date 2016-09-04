@@ -58,126 +58,113 @@ void CurseSplitOutput::loop()
     }
 }
 
-Optional<bool> CurseSplitOutput::evalKey(int c)
+inputResult CurseSplitOutput::selectUp()
 {
-    switch (c)
+    selection[selectedWin] = select_up[selectedWin];
+    return inputResult::redraw;
+}
+
+inputResult CurseSplitOutput::selectDown()
+{
+    if (selectIsLast)
+        scrollTop[selectedWin] += 2;
+    else if (selection != select_down)
+        selection[selectedWin] = select_down[selectedWin];
+    else
+        return inputResult::nextInput;
+    return inputResult::redraw;
+}
+
+inputResult CurseSplitOutput::selectPUp()
+{
+    const JSonElement *_selection = selection[selectedWin];
+    const JSonElement *brother = _selection->findPrev();
+
+    if (brother == nullptr)
     {
-        case 'q':
-        case 'Q':
-            return Optional<bool>::of(false);
-
-        case KEY_UP:
-        case 'K':
-        case 'k':
-            selection[selectedWin] = select_up[selectedWin];
-            return Optional<bool>::of(true);
-
-        case KEY_DOWN:
-        case 'j':
-        case 'J':
-            if (selectIsLast)
-                scrollTop[selectedWin] += 2;
-            else if (selection != select_down)
-                selection[selectedWin] = select_down[selectedWin];
-            else
-                break;
-            return Optional<bool>::of(true);
-
-        case KEY_PPAGE:
+        const JSonElement *parent = _selection->getParent();
+        if (parent && dynamic_cast<const JSonContainer*>(parent))
         {
-            const JSonElement *_selection = selection[selectedWin];
-            const JSonElement *brother = _selection->findPrev();
-
-            if (brother == nullptr)
-            {
-                const JSonElement *parent = _selection->getParent();
-                if (parent && dynamic_cast<const JSonContainer*>(parent))
-                {
-                    selection[selectedWin] = _selection = parent;
-                    if (_selection->getParent() && dynamic_cast<const JSonObjectEntry*> (_selection->getParent()))
-                        selection[selectedWin] = _selection->getParent();
-                }
-                else
-                    break;
-            }
-            else
-                selection[selectedWin] = brother;
-            return Optional<bool>::of(true);
+            selection[selectedWin] = _selection = parent;
+            if (_selection->getParent() && dynamic_cast<const JSonObjectEntry*> (_selection->getParent()))
+                selection[selectedWin] = _selection->getParent();
         }
-
-        case KEY_NPAGE:
-        {
-            const JSonElement *brother = selection[selectedWin]->findNext();
-
-            if (brother)
-            {
-                selection[selectedWin] = brother;
-                return Optional<bool>::of(true);
-            }
-            break;
-        }
-
-        case 'l':
-        case 'L':
-        case KEY_RIGHT:
-        {
-            const JSonElement *_selection = selection[selectedWin];
-            if (dynamic_cast<const JSonObjectEntry*>(selection[selectedWin]))
-                _selection = **((const JSonObjectEntry*)_selection);
-            if (!dynamic_cast<const JSonContainer*>(_selection))
-                return Optional<bool>::empty;
-
-            if (collapsed.erase((const JSonContainer *)_selection))
-                return Optional<bool>::of(true);
-            if (!((const JSonContainer*)_selection)->size())
-                break;
-            selection[selectedWin] = select_down[selectedWin];
-            return Optional<bool>::of(true);
-        }
-
-        case 'h':
-        case 'H':
-        case KEY_LEFT:
-        {
-            const JSonElement *_selection = selection[selectedWin];
-            if (dynamic_cast<const JSonObjectEntry*>(_selection))
-                _selection = **((const JSonObjectEntry*)_selection);
-            if (_selection->getParent() && (!dynamic_cast<const JSonContainer*>(_selection)
-                    || collapsed.find((const JSonContainer *)_selection) != collapsed.end()
-                    || (dynamic_cast<const JSonContainer*>(_selection) && ((const JSonContainer*)_selection)->size() == 0)))
-            {
-                selection[selectedWin] = _selection = _selection->getParent();
-                if (_selection->getParent() && dynamic_cast<const JSonObjectEntry*>(_selection->getParent()))
-                    selection[selectedWin] = _selection->getParent();
-            }
-            else if (_selection)
-                collapsed.insert((const JSonContainer *)_selection);
-            else
-                break;
-            return Optional<bool>::of(false);
-        }
-
-        case '/':
-        {
-            const SearchPattern *search_pattern = inputSearch();
-            if (!search_pattern)
-                return Optional<bool>::of(true);
-            search_result.clear();
-            if (search_pattern->isEmpty())
-                return Optional<bool>::of(true);
-            search(*search_pattern);
-            delete search_pattern;
-        }
-
-        case 'n':
-        case 'N':
-            if (search_result.empty())
-                CurseOutput::redraw("Pattern not found");
-            else if (jumpToNextSearch())
-                return Optional<bool>::of(true);
-            break;
+        else
+            return inputResult::nextInput;
     }
-    return Optional<bool>::empty;
+    else
+        selection[selectedWin] = brother;
+    return inputResult::redraw;
+}
+
+inputResult CurseSplitOutput::selectPDown()
+{
+    const JSonElement *brother = selection[selectedWin]->findNext();
+
+    if (brother)
+    {
+        selection[selectedWin] = brother;
+        return inputResult::redraw;
+    }
+    return inputResult::nextInput;
+}
+
+inputResult CurseSplitOutput::expandSelection()
+{
+    const JSonElement *_selection = selection[selectedWin];
+
+    if (dynamic_cast<const JSonObjectEntry*>(_selection))
+        _selection = **((const JSonObjectEntry*)_selection);
+    if (!dynamic_cast<const JSonContainer*>(_selection))
+        return inputResult::nextInput;
+
+    if (collapsed.erase((const JSonContainer *)_selection))
+        return inputResult::redraw;
+    if (!((const JSonContainer*)_selection)->size())
+        return inputResult::nextInput;
+    selection[selectedWin] = select_down[selectedWin];
+    return inputResult::redraw;
+}
+
+inputResult CurseSplitOutput::collapseSelection()
+{
+    const JSonElement *_selection = selection[selectedWin];
+
+    if (dynamic_cast<const JSonObjectEntry*>(_selection))
+        _selection = **((const JSonObjectEntry*)_selection);
+    if (_selection->getParent() && (!dynamic_cast<const JSonContainer*>(_selection)
+            || collapsed.find((const JSonContainer *)_selection) != collapsed.end()
+            || (dynamic_cast<const JSonContainer*>(_selection) && ((const JSonContainer*)_selection)->size() == 0)))
+    {
+        selection[selectedWin] = _selection = selection[selectedWin]->getParent();
+        if (_selection->getParent() && dynamic_cast<const JSonObjectEntry*>(_selection->getParent()))
+            selection[selectedWin] = _selection->getParent();
+    }
+    else
+        collapsed.insert((const JSonContainer *)_selection);
+    return inputResult::redraw;
+}
+
+inputResult CurseSplitOutput::initSearch()
+{
+    const SearchPattern *search_pattern = inputSearch();
+    if (!search_pattern)
+        return inputResult::redraw;
+    search_result.clear();
+    if (search_pattern->isEmpty())
+        return inputResult::redraw;
+    search(*search_pattern);
+    delete search_pattern;
+    return nextResult();
+}
+
+inputResult CurseSplitOutput::nextResult()
+{
+    if (search_result.empty())
+        CurseOutput::redraw("Pattern not found");
+    else if (jumpToNextSearch())
+        return inputResult::redraw;
+    return inputResult::nextInput;
 }
 
 void CurseSplitOutput::checkSelection(const JSonElement *item, const std::pair<int, int> &cursor)
