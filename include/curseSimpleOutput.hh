@@ -61,6 +61,7 @@ class CurseSimpleOutput: public CurseOutput
         inputResult collapseSelection();
         inputResult initSearch();
         inputResult nextResult();
+        inputResult changeWindow(char, bool);
 
         /**
          * Root item

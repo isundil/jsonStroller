@@ -52,9 +52,15 @@ void CurseSplitOutput::loop()
     breakLoop = false;
 
     while (!redraw());
-    while(readInput())
+    while(true)
     {
-        while (!redrawCurrent(selectedWin));
+        inputResult read = readInput();
+        if (read == inputResult::quit)
+            break;
+        if (read == inputResult::redraw)
+            while (!redrawCurrent(selectedWin));
+        else if (read == inputResult::redrawAll)
+            while (!redraw());
     }
 }
 
@@ -165,6 +171,14 @@ inputResult CurseSplitOutput::nextResult()
     else if (jumpToNextSearch())
         return inputResult::redraw;
     return inputResult::nextInput;
+}
+
+inputResult CurseSplitOutput::changeWindow(char d, bool c)
+{
+    if ((selectedWin +d < 0 || selectedWin +d >= nbInputs) && !c)
+        return inputResult::nextInput;
+    selectedWin = (selectedWin +d) % nbInputs;
+    return inputResult::redrawAll;
 }
 
 void CurseSplitOutput::checkSelection(const JSonElement *item, const std::pair<int, int> &cursor)

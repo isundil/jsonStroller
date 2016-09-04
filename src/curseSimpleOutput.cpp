@@ -182,6 +182,11 @@ inputResult CurseSimpleOutput::nextResult()
     return inputResult::nextInput;
 }
 
+inputResult CurseSimpleOutput::changeWindow(char, bool)
+{
+    //TODO tab mode ?
+    return inputResult::nextInput;
+}
 
 bool CurseSimpleOutput::redraw(std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, JSonElement *item)
 {

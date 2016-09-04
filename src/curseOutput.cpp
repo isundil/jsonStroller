@@ -82,61 +82,55 @@ void _resizeFnc(int signo)
  * false on:
  *  - exit signal
 **/
-bool CurseOutput::readInput()
+inputResult CurseOutput::readInput()
 {
     while (!breakLoop)
     {
         inputResult r = evalKey(InputSequence::read());
-        if (r == inputResult::redraw)
-            return true;
-        if (r == inputResult::quit)
-            return false;
-        // else nextInput;
+        if (r != inputResult::nextInput)
+            return r;
     }
-    return false;
+    return inputResult::quit;
 }
 
 inputResult CurseOutput::evalKey(const InputSequence &c)
 {
-    switch (c.key())
-    {
-        case 'q':
-        case 'Q':
-            return inputResult::quit;
+    const std::string key = c.key();
 
-        case KEY_UP:
-        case 'K':
-        case 'k':
-            return selectUp();
+    if (key == "Q")
+        return inputResult::quit;
 
-        case KEY_DOWN:
-        case 'j':
-        case 'J':
-            return selectDown();
+    else if (key == "K" || key == "KEY_UP")
+        return selectUp();
 
-        case KEY_PPAGE:
-            return selectPUp();
+    else if (key == "J" || key == "KEY_DOWN")
+        return selectDown();
 
-        case KEY_NPAGE:
-            return selectPDown();
+    else if (key == "KEY_PPAGE")
+        return selectPUp();
 
-        case 'l':
-        case 'L':
-        case KEY_RIGHT:
-            return expandSelection();
+    else if (key == "KEY_NPAGE")
+        return selectPDown();
 
-        case 'h':
-        case 'H':
-        case KEY_LEFT:
-            return collapseSelection();
+    else if (key == "L" || key == "KEY_RIGHT")
+        return expandSelection();
 
-        case '/':
-            return initSearch();
+    else if (key == "H" || key == "KEY_LEFT")
+        return collapseSelection();
 
-        case 'n':
-        case 'N':
-            return nextResult();
-    }
+    else if (key == "/")
+        return initSearch();
+
+    else if (key == "N")
+        return nextResult();
+
+    else if (key == "^W-W")
+        return changeWindow(1, true);
+    else if (key == "^W-KEY_RIGHT" || key == "^W-L")
+        return changeWindow(1, false);
+    else if (key == "^W-KEY_LEFT" || key == "^W-H")
+        return changeWindow(-1, false);
+
     return inputResult::nextInput;
 }
 

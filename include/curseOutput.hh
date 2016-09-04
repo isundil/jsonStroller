@@ -25,8 +25,9 @@ class SearchPattern;
 enum inputResult: char
 {
     redraw      =0
-    ,quit       =1
-    ,nextInput  =2
+    ,redrawAll  =1
+    ,quit       =2
+    ,nextInput  =3
 };
 
 class CurseOutput
@@ -75,7 +76,7 @@ class CurseOutput
          * Wait for input
          * @return false if ncurses should stop
         **/
-        bool readInput();
+        inputResult readInput();
         inputResult evalKey(const InputSequence &k);
 
         virtual inputResult selectUp() =0;
@@ -86,6 +87,7 @@ class CurseOutput
         virtual inputResult collapseSelection() =0;
         virtual inputResult initSearch() =0;
         virtual inputResult nextResult() =0;
+        virtual inputResult changeWindow(char direction, bool cycle) =0;
 
         /**
          * get the screen size

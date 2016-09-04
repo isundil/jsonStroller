@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 class InputSequence
 {
     private:
@@ -11,9 +13,9 @@ class InputSequence
 
         static InputSequence read();
 
-        int key() const;
+        const std::string &key() const;
 
     protected:
-        int _key;
+        std::string seq;
 };
 

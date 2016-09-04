@@ -69,6 +69,7 @@ class CurseSplitOutput: public CurseOutput
         inputResult collapseSelection();
         inputResult initSearch();
         inputResult nextResult();
+        inputResult changeWindow(char, bool);
 
         std::deque<std::string> fileNames;
         std::deque<JSonElement *> roots;
