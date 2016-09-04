@@ -31,6 +31,8 @@ class CurseSplitOutput: public CurseOutput
         unsigned int write(const int &x, const int &y, const std::string &str, const size_t strlen, unsigned int maxWidth, const OutputFlag flags);
         void write(const std::string &str, const OutputFlag flags) const;
 
+        void writeTopLine(const std::string &currentBuffer, short color) const;
+
         bool jumpToNextSearch(const JSonElement *current, bool &selectFound);
         bool jumpToNextSearch();
         unsigned int search(const SearchPattern &search_pattern);
@@ -40,11 +42,6 @@ class CurseSplitOutput: public CurseOutput
          * get the screen size
         **/
         const std::pair<unsigned int, unsigned int> getScreenSize() const;
-
-        /**
-         * Initialize ncurses
-        **/
-        void init();
 
         /**
          * Release ncurses

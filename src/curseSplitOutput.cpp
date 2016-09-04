@@ -293,7 +293,7 @@ bool CurseSplitOutput::redrawCurrent(short selectedWin)
 
 bool CurseSplitOutput::redrawCurrent(const std::pair<unsigned int, unsigned int> &screenSize)
 {
-    std::pair<int, int> cursor(0, 0);
+    std::pair<int, int> cursor(0, 1);
     bool result;
 
     select_up[workingWin] = select_down[workingWin] = nullptr;
@@ -301,6 +301,7 @@ bool CurseSplitOutput::redrawCurrent(const std::pair<unsigned int, unsigned int>
 
     wclear(currentWin);
     box(outerWin[workingWin], 0, 0);
+    writeTopLine(fileNames[workingWin], workingWin == selectedWin ? OutputFlag::SPECIAL_ACTIVEINPUTNAME : OutputFlag::SPECIAL_INPUTNAME); //TODO
     try {
         result = redraw(cursor, screenSize, roots[workingWin]);
     }
@@ -508,7 +509,7 @@ unsigned int CurseSplitOutput::write(const int &x, const int &y, const char item
     int offsetY = y - scrollTop[workingWin];
     char color = OutputFlag::SPECIAL_NONE;
 
-    if (offsetY < 0)
+    if (offsetY <= 0)
         return 1;
 
     if (flags.selected())
@@ -531,7 +532,7 @@ unsigned int CurseSplitOutput::write(const int &x, const int &y, const std::stri
 {
     int offsetY = y - scrollTop[workingWin];
 
-    if (offsetY < 0)
+    if (offsetY <= 0)
         return 1;
     wmove(currentWin, offsetY, x);
     write(str, flags);
@@ -571,55 +572,24 @@ void CurseSplitOutput::destroyAllSubWin()
     outerWin.clear();
 }
 
+void CurseSplitOutput::writeTopLine(const std::string &buffer, short color) const
+{
+    const std::pair<unsigned int, unsigned int> screenSize = getScreenSize();
+    const size_t bufsize = buffer.size();
+
+    if (params.colorEnabled())
+        wattron(currentWin, COLOR_PAIR(color));
+    mvwprintw(currentWin, 0, 0, "%s%*c", buffer.c_str(), screenSize.first - bufsize -2, ' ');
+    if (params.colorEnabled())
+        wattroff(currentWin, COLOR_PAIR(color));
+}
+
 const std::pair<unsigned int, unsigned int> CurseSplitOutput::getScreenSize() const
 {
     std::pair<unsigned int, unsigned int> result = CurseOutput::getScreenSize();
     result.first /= nbInputs;
     result.second -=2 ;
     return result;
-}
-
-void CurseSplitOutput::init()
-{
-    if (!isatty(fileno(stdin)) || !isatty(fileno(stdout)))
-    {
-        screen_fd = fopen("/dev/tty", "r+");
-        setbuf(screen_fd, nullptr);
-        screen = newterm(nullptr, screen_fd, screen_fd);
-    }
-    else
-    {
-        screen = newterm(nullptr, stdout, stdin);
-        screen_fd = nullptr;
-    }
-    wtimeout(stdscr, 150);
-    cbreak();
-    clear();
-    noecho();
-    curs_set(false);
-    keypad(stdscr, true);
-
-    if (params.colorEnabled())
-    {
-        start_color();
-        init_pair(OutputFlag::TYPE_NUMBER, COLOR_GREEN, COLOR_BLACK);
-        init_pair(OutputFlag::TYPE_BOOL, COLOR_RED, COLOR_BLACK);
-        init_pair(OutputFlag::TYPE_NULL, COLOR_RED, COLOR_BLACK);
-        init_pair(OutputFlag::TYPE_STRING, COLOR_CYAN, COLOR_BLACK);
-        init_pair(OutputFlag::TYPE_OBJKEY, COLOR_CYAN, COLOR_BLACK);
-        init_pair(OutputFlag::SPECIAL_SEARCH, COLOR_WHITE, COLOR_BLUE);
-        init_pair(OutputFlag::SPECIAL_ERROR, COLOR_WHITE, COLOR_RED);
-        colors.insert(OutputFlag::TYPE_NUMBER);
-        colors.insert(OutputFlag::TYPE_BOOL);
-        colors.insert(OutputFlag::TYPE_STRING);
-        colors.insert(OutputFlag::TYPE_OBJKEY);
-        colors.insert(OutputFlag::TYPE_NULL);
-    }
-
-    signal(SIGWINCH, _resizeFnc);
-    signal(SIGINT, _resizeFnc);
-    signal(SIGTERM, _resizeFnc);
-    signal(SIGKILL, _resizeFnc);
 }
 
 void CurseSplitOutput::shutdown()

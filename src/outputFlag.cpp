@@ -15,9 +15,11 @@ const char OutputFlag::TYPE_OBJKEY  =5;
 const char OutputFlag::TYPE_ARR     =6;
 const char OutputFlag::TYPE_NULL    =7;
 
-const char OutputFlag::SPECIAL_NONE     =50;
-const char OutputFlag::SPECIAL_SEARCH   =51;
-const char OutputFlag::SPECIAL_ERROR    =52;
+const char OutputFlag::SPECIAL_NONE             =50;
+const char OutputFlag::SPECIAL_SEARCH           =51;
+const char OutputFlag::SPECIAL_ERROR            =52;
+const char OutputFlag::SPECIAL_INPUTNAME        =53;
+const char OutputFlag::SPECIAL_ACTIVEINPUTNAME  =54;
 
 OutputFlag::OutputFlag(short m): mode(m)
 { }

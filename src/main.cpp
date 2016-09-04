@@ -121,7 +121,7 @@ void run(const Params &params)
             w.filename(input.first);
             warns.push_back(Warning(w));
         }
-        out->run(stream->getRoot());
+        out->run(stream->getRoot(), input.first);
         delete stream;
     }
     if (out)

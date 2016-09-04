@@ -51,7 +51,7 @@ class CurseOutput
         /**
          * Initialize ncurses
         **/
-        virtual void init() =0;
+        virtual void init();
 
         /**
          * Release ncurses
@@ -144,8 +144,9 @@ class CurseOutput
         /**
          * Write a message on the last line, using color
         **/
-        void writeBottomLine(const std::string &currentBuffer, short color) const;
-        void writeBottomLine(const std::wstring &currentBuffer, short color) const;
+        virtual void writeTopLine(const std::string &currentBuffer, short color) const;
+        virtual void writeBottomLine(const std::string &currentBuffer, short color) const;
+        virtual void writeBottomLine(const std::wstring &currentBuffer, short color) const;
 
         /**
          * unfold all item's parents

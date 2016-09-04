@@ -56,5 +56,7 @@ class OutputFlag
         static const char SPECIAL_NONE;
         static const char SPECIAL_SEARCH;
         static const char SPECIAL_ERROR;
+        static const char SPECIAL_INPUTNAME;
+        static const char SPECIAL_ACTIVEINPUTNAME;
 };
 

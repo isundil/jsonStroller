@@ -19,16 +19,11 @@ class CurseSimpleOutput: public CurseOutput
         /**
          * Display data, and shutdown ncurses at the end
         **/
-        void run(JSonElement *);
+        void run(JSonElement *, const std::string &inputName);
 
         bool jumpToNextSearch(const JSonElement *current, bool &selectFound);
         bool jumpToNextSearch();
         unsigned int search(const SearchPattern &search_pattern, const JSonElement *current);
-
-        /**
-         * Initialize ncurses
-        **/
-        void init();
 
         /**
          * Release ncurses
@@ -83,5 +78,10 @@ class CurseSimpleOutput: public CurseOutput
          * prev/next items to be selected on up/down keys
         **/
         const JSonElement *select_up, *select_down;
+
+        /**
+         * input name
+        **/
+        std::string inputName;
 };
 

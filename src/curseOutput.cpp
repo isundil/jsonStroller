@@ -34,12 +34,14 @@ CurseOutput::~CurseOutput()
 
 void CurseOutput::loop()
 {
+    inputResult read;
+
     breakLoop = false;
     do
     {
-        while (!redraw()) //TODO opti going down
-            ;
-    } while(readInput());
+        while (!redraw());
+        read = readInput();
+    } while (read != inputResult::quit);
 }
 
 bool CurseOutput::onsig(int signo)
@@ -221,6 +223,18 @@ const SearchPattern *CurseOutput::inputSearch()
     }
 }
 
+void CurseOutput::writeTopLine(const std::string &buffer, short color) const
+{
+    const std::pair<unsigned int, unsigned int> screenSize = getScreenSize();
+    const size_t bufsize = buffer.size();
+
+    if (params.colorEnabled())
+        attron(COLOR_PAIR(color));
+    mvprintw(0, 0, "%s%*c", buffer.c_str(), screenSize.first - bufsize, ' ');
+    if (params.colorEnabled())
+        attroff(COLOR_PAIR(color));
+}
+
 void CurseOutput::writeBottomLine(const std::string &buffer, short color) const
 {
     const std::pair<unsigned int, unsigned int> screenSize = getScreenSize();
@@ -245,5 +259,50 @@ void CurseOutput::writeBottomLine(const std::wstring &buffer, short color) const
     move(screenSize.second -1, bufsize);
     if (params.colorEnabled())
         attroff(COLOR_PAIR(color));
+}
+
+void CurseOutput::init()
+{
+    if (!isatty(fileno(stdin)) || !isatty(fileno(stdout)))
+    {
+        screen_fd = fopen("/dev/tty", "r+");
+        setbuf(screen_fd, nullptr);
+        screen = newterm(nullptr, screen_fd, screen_fd);
+    }
+    else
+    {
+        screen = newterm(nullptr, stdout, stdin);
+        screen_fd = nullptr;
+    }
+    wtimeout(stdscr, 150);
+    cbreak();
+    clear();
+    noecho();
+    curs_set(false);
+    keypad(stdscr, true);
+
+    if (params.colorEnabled())
+    {
+        start_color();
+        init_pair(OutputFlag::TYPE_NUMBER, COLOR_GREEN, COLOR_BLACK);
+        init_pair(OutputFlag::TYPE_BOOL, COLOR_RED, COLOR_BLACK);
+        init_pair(OutputFlag::TYPE_NULL, COLOR_RED, COLOR_BLACK);
+        init_pair(OutputFlag::TYPE_STRING, COLOR_CYAN, COLOR_BLACK);
+        init_pair(OutputFlag::TYPE_OBJKEY, COLOR_CYAN, COLOR_BLACK);
+        init_pair(OutputFlag::SPECIAL_SEARCH, COLOR_WHITE, COLOR_BLUE);
+        init_pair(OutputFlag::SPECIAL_ERROR, COLOR_WHITE, COLOR_RED);
+        init_pair(OutputFlag::SPECIAL_ACTIVEINPUTNAME, COLOR_WHITE, COLOR_GREEN);
+        init_pair(OutputFlag::SPECIAL_INPUTNAME, COLOR_BLACK, COLOR_WHITE);
+        colors.insert(OutputFlag::TYPE_NUMBER);
+        colors.insert(OutputFlag::TYPE_BOOL);
+        colors.insert(OutputFlag::TYPE_STRING);
+        colors.insert(OutputFlag::TYPE_OBJKEY);
+        colors.insert(OutputFlag::TYPE_NULL);
+    }
+
+    signal(SIGWINCH, _resizeFnc);
+    signal(SIGINT, _resizeFnc);
+    signal(SIGTERM, _resizeFnc);
+    signal(SIGKILL, _resizeFnc);
 }
 

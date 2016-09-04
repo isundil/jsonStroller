@@ -24,16 +24,18 @@ CurseSimpleOutput::~CurseSimpleOutput()
     shutdown();
 }
 
-void CurseSimpleOutput::run(JSonElement *root)
+void CurseSimpleOutput::run(JSonElement *root, const std::string &i)
 {
+    scrollTop = 0;
     selection = data = root;
+    inputName = i;
     loop();
 }
 
 bool CurseSimpleOutput::redraw()
 {
     const std::pair<unsigned int, unsigned int> screenSize = getScreenSize();
-    std::pair<int, int> cursor(0, 0);
+    std::pair<int, int> cursor(0, 1);
     /**
      * Will be true if the json's last item is visible
     **/
@@ -42,6 +44,7 @@ bool CurseSimpleOutput::redraw()
     select_up = select_down = nullptr;
     selectFound = selectIsLast = false;
     clear();
+    writeTopLine(inputName, OutputFlag::SPECIAL_ACTIVEINPUTNAME);
     try {
         result = redraw(cursor, screenSize, data);
     }
@@ -306,7 +309,7 @@ bool CurseSimpleOutput::writeContent(std::pair<int, int> &cursor, const std::pai
 
 bool CurseSimpleOutput::writeKey(const std::string &key, const size_t keylen, std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, OutputFlag flags, unsigned int extraLen)
 {
-    if (cursor.second - scrollTop < 0)
+    if (cursor.second - scrollTop <= 0)
     {
         cursor.second++;
         return true;
@@ -322,7 +325,7 @@ bool CurseSimpleOutput::writeKey(const std::string &key, const size_t keylen, st
 
 bool CurseSimpleOutput::writeKey(const std::string &key, const size_t keylen, const std::string &after, size_t afterlen, std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, OutputFlag flags)
 {
-    if (cursor.second - scrollTop < 0)
+    if (cursor.second - scrollTop <= 0)
     {
         cursor.second++;
         return true;
@@ -343,7 +346,7 @@ unsigned int CurseSimpleOutput::write(const int &x, const int &y, const char ite
     int offsetY = y - scrollTop;
     char color = OutputFlag::SPECIAL_NONE;
 
-    if (offsetY < 0)
+    if (offsetY <= 0)
         return 1;
 
     if (flags.selected())
@@ -365,7 +368,7 @@ unsigned int CurseSimpleOutput::write(const int &x, const int &y, const char ite
 unsigned int CurseSimpleOutput::write(const int &x, const int &y, const std::string &str, const size_t strlen, unsigned int maxWidth, const OutputFlag flags)
 {
     int offsetY = y - scrollTop;
-    if (offsetY < 0)
+    if (offsetY <= 0)
         return 1;
     move(offsetY, x);
     write(str, flags);
@@ -511,50 +514,6 @@ void CurseSimpleOutput::checkSelection(const JSonElement *item, const std::pair<
         if (!parent || !dynamic_cast<const JSonObjectEntry*>(parent))
             select_down = item;
     }
-}
-
-void CurseSimpleOutput::init()
-{
-    if (!isatty(fileno(stdin)) || !isatty(fileno(stdout)))
-    {
-        screen_fd = fopen("/dev/tty", "r+");
-        setbuf(screen_fd, nullptr);
-        screen = newterm(nullptr, screen_fd, screen_fd);
-    }
-    else
-    {
-        screen = newterm(nullptr, stdout, stdin);
-        screen_fd = nullptr;
-    }
-    wtimeout(stdscr, 150);
-    cbreak();
-    clear();
-    noecho();
-    curs_set(false);
-    keypad(stdscr, true);
-
-    if (params.colorEnabled())
-    {
-        start_color();
-        init_pair(OutputFlag::TYPE_NUMBER, COLOR_GREEN, COLOR_BLACK);
-        init_pair(OutputFlag::TYPE_BOOL, COLOR_RED, COLOR_BLACK);
-        init_pair(OutputFlag::TYPE_NULL, COLOR_RED, COLOR_BLACK);
-        init_pair(OutputFlag::TYPE_STRING, COLOR_CYAN, COLOR_BLACK);
-        init_pair(OutputFlag::TYPE_OBJKEY, COLOR_CYAN, COLOR_BLACK);
-        init_pair(OutputFlag::SPECIAL_SEARCH, COLOR_WHITE, COLOR_BLUE);
-        init_pair(OutputFlag::SPECIAL_ERROR, COLOR_WHITE, COLOR_RED);
-        colors.insert(OutputFlag::TYPE_NUMBER);
-        colors.insert(OutputFlag::TYPE_BOOL);
-        colors.insert(OutputFlag::TYPE_STRING);
-        colors.insert(OutputFlag::TYPE_OBJKEY);
-        colors.insert(OutputFlag::TYPE_NULL);
-    }
-
-    signal(SIGWINCH, _resizeFnc);
-    signal(SIGINT, _resizeFnc);
-    signal(SIGTERM, _resizeFnc);
-    signal(SIGKILL, _resizeFnc);
-    scrollTop = 0;
 }
 
 void CurseSimpleOutput::shutdown()
