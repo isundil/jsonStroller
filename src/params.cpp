@@ -34,7 +34,7 @@ bool Params::read()
     bool written = false;
     std::stringstream *input = nullptr;
     ignoreUnicode = false;
-    colorMode = true;
+    colorMode = sorted = true;
 
     for (std::list<std::string>::const_iterator i = params.cbegin(); i != params.cend(); i++)
     {
@@ -61,6 +61,8 @@ bool Params::read()
                 version();
                 return false;
             }
+            else if (tmp == "--keep-order")
+                sorted = false;
             else if (tmp.find("--color=") == 0)
             {
                 std::string mode = tmp.substr(8);
@@ -140,6 +142,7 @@ void Params::usage() const noexcept
     << "  INPUT\t\t\tuse this as input instead of stdin" << std::endl
     << "  -W \t\t\tconsider continuing on non-blocking errors" << std::endl
     << "  --ascii\t\tignore unicode values" << std::endl
+    << "  --keep-order\t\tdo not sort objects by key" << std::endl
     << "  --color[=MODE]\tcolorize output, MODE can be never or always (default when ommited)" << std::endl
     << "  -v, -version\t\tdisplay version information" << std::endl
     << "  -h, --helph\t\tshow this message and exit" << std::endl << std::endl
@@ -169,6 +172,9 @@ bool Params::isStrict() const
 
 bool Params::colorEnabled() const
 { return colorMode; }
+
+bool Params::sortObjects() const
+{ return sorted; }
 
 bool Params::isIgnoringUnicode() const
 { return ignoreUnicode; }

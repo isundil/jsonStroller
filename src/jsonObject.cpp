@@ -9,6 +9,9 @@
 JSonObject::JSonObject(JSonContainer *p): JSonContainer(p)
 { }
 
+JSonSortedObject::JSonSortedObject(JSonContainer *p): JSonObject(p)
+{ }
+
 JSonObject::~JSonObject()
 {
     for (JSonElement *i : *this)
@@ -18,6 +21,15 @@ JSonObject::~JSonObject()
 void JSonObject::push(const std::string &key, JSonElement *child)
 {
     this->push_back(new JSonObjectEntry(this, key, child));
+}
+
+void JSonSortedObject::push(const std::string &key, JSonElement *child)
+{
+    JSonObject::iterator pos = begin();
+    JSonObjectEntry *ent = new JSonObjectEntry(this, key, child);
+
+    for (pos = begin(); (pos != end() && *ent < *pos); pos++);
+    this->insert(pos, ent);
 }
 
 JSonObject::const_iterator JSonObject::find(const std::string &key) const

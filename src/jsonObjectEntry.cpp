@@ -37,3 +37,15 @@ std::string JSonObjectEntry::stringify() const
     return key;
 }
 
+bool JSonObjectEntry::operator<(const JSonElement *e) const
+{
+    if (dynamic_cast<const JSonObjectEntry*>(e))
+    {
+        return ((const JSonObjectEntry*)e)->key < key;
+    }
+    return false;
+}
+
+bool JSonObjectEntry::operator<(const JSonElement &e) const
+{ return (*this < &e); }
+

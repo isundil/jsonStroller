@@ -19,6 +19,8 @@ class JSonObjectEntry: public JSonElement
         std::string stringify() const;
 
         bool operator==(const std::string &) const;
+        bool operator<(const JSonElement *) const;
+        bool operator<(const JSonElement &) const;
         /**
          * Get associated value
         **/

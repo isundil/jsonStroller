@@ -77,10 +77,10 @@ JSonObject *StreamConsumer::readObject(JSonContainer *parent)
         if (consumeToken(parent, buf) != nullptr || buf.str() != ":")
             throw JsonUnexpectedException(':', stream.tellg(), history);
         if (result == nullptr)
-            result = new JSonObject(parent);
+            result = (!params || params->sortObjects()) ? new JSonSortedObject(parent) : new JSonObject(parent);
         else if (result->contains(key->getValue()))
         {
-            if (params->isStrict())
+            if (!params || params->isStrict())
                 throw JSonObject::DoubleKeyException(stream.tellg(), key->getValue(), history);
             else // add Warning, new key erase previous one
             {
@@ -177,7 +177,7 @@ JSonElement *StreamConsumer::consumeString(JSonContainer *parent, std::stringstr
                     }
                 }
             }
-            else if (params->isStrict())
+            else if (params && params->isStrict())
                 throw JsonEscapedException(c, stream.tellg(), history);
             else
             {

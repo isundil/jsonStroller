@@ -30,6 +30,11 @@ class AParams
          * true if --color match conditions
         **/
         virtual bool colorEnabled() const =0;
+
+        /**
+         * true if need sorted object
+        **/
+        virtual bool sortObjects() const =0;
 };
 
 class Params: public AParams
@@ -78,6 +83,7 @@ class Params: public AParams
         bool colorEnabled() const;
         bool isIgnoringUnicode() const;
         bool isDiff() const;
+        bool sortObjects() const;
 
     private:
         /**
@@ -93,5 +99,6 @@ class Params: public AParams
         bool colorMode;
         bool strict;
         bool diffMode;
+        bool sorted;
 };
 

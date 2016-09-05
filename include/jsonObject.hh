@@ -20,7 +20,7 @@ class JSonObject: public JSonContainer
         /**
          * Add entry
         **/
-        void push(const std::string &key, JSonElement *child);
+        virtual void push(const std::string &key, JSonElement *child);
 
         /**
          * find object by key
@@ -62,5 +62,13 @@ class JSonObject: public JSonContainer
         public:
             NotAKeyException(unsigned long long offset, LinearHistory &buf);
     };
+};
+
+class JSonSortedObject: public JSonObject
+{
+    public:
+        JSonSortedObject(JSonContainer *parent);
+
+        void push(const std::string &key, JSonElement *child);
 };
 
