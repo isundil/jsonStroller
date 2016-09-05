@@ -93,6 +93,7 @@ class CurseOutput
          * get the screen size
         **/
         virtual const std::pair<unsigned int, unsigned int> getScreenSize() const;
+        const std::pair<unsigned int, unsigned int> getScreenSizeUnsafe() const;
 
         /**
          * set the select_up and select_down pointers, scroll to selection if it is above view port

@@ -586,7 +586,7 @@ void CurseSplitOutput::writeTopLine(const std::string &buffer, short color) cons
 
 const std::pair<unsigned int, unsigned int> CurseSplitOutput::getScreenSize() const
 {
-    std::pair<unsigned int, unsigned int> result = CurseOutput::getScreenSize();
+    std::pair<unsigned int, unsigned int> result = getScreenSizeUnsafe();
     result.first /= nbInputs;
     result.second -=2 ;
     return result;

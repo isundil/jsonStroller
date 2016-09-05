@@ -163,6 +163,11 @@ unsigned int CurseOutput::getNbLines(const size_t nbChar, unsigned int maxWidth)
 
 const std::pair<unsigned int, unsigned int> CurseOutput::getScreenSize() const
 {
+    return getScreenSizeUnsafe();
+}
+
+const std::pair<unsigned int, unsigned int> CurseOutput::getScreenSizeUnsafe() const
+{
     std::pair<int, int> bs;
     std::pair<int, int> sc;
     getmaxyx(stdscr, sc.second, sc.first);
@@ -237,7 +242,7 @@ void CurseOutput::writeTopLine(const std::string &buffer, short color) const
 
 void CurseOutput::writeBottomLine(const std::string &buffer, short color) const
 {
-    const std::pair<unsigned int, unsigned int> screenSize = getScreenSize();
+    const std::pair<unsigned int, unsigned int> screenSize = getScreenSizeUnsafe();
     const size_t bufsize = buffer.size();
 
     if (params.colorEnabled())
@@ -250,7 +255,7 @@ void CurseOutput::writeBottomLine(const std::string &buffer, short color) const
 
 void CurseOutput::writeBottomLine(const std::wstring &buffer, short color) const
 {
-    const std::pair<unsigned int, unsigned int> screenSize = getScreenSize();
+    const std::pair<unsigned int, unsigned int> screenSize = getScreenSizeUnsafe();
     const size_t bufsize = buffer.size();
 
     if (params.colorEnabled())
