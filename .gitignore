@@ -38,6 +38,7 @@
 /test/json_test
 /test/wrapped_test
 /test/optional_test
+/test/levenshtein_test
 /cmake_install.cmake
 /Makefile
 .fuse_hidden*

@@ -8,6 +8,7 @@
 #include "jsonContainer.hh"
 #include "jsonObjectEntry.hh"
 #include "searchPattern.hh"
+#include "levenshtein.hh"
 
 JSonElement::JSonElement(JSonElement *p): parent(p), _strlen(0)
 { }
@@ -105,5 +106,10 @@ const JSonElement* JSonElement::findNext() const
 bool JSonElement::match(const SearchPattern &searchPattern) const
 {
     return searchPattern.match(stringify(), this);
+}
+
+float JSonElement::diff(const JSonElement &o) const
+{
+    return levenshteinPercent(stringify(), o.stringify());
 }
 

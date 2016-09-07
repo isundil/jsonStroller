@@ -23,6 +23,7 @@ add_executable(jsonstroll
     src/streamConsumer.cpp
     src/searchPattern.cpp
     src/inputSequence.cpp
+    src/levenshtein.cpp
 
     src/jsonElement.cpp
     src/jsonArray.cpp
@@ -48,6 +49,7 @@ add_executable(json_test
     src/warning.cpp
     src/linearHistory.cpp
     src/searchPattern.cpp
+    src/levenshtein.cpp
     src/streamConsumer.cpp
     src/jsonArray.cpp
     src/jsonObjectEntry.cpp
@@ -77,6 +79,17 @@ add_executable(optional_test
 add_test(optional_test test/optional_test)
 set_property(
     TARGET optional_test
+    PROPERTY RUNTIME_OUTPUT_DIRECTORY test
+    )
+
+add_executable(levenshtein_test
+    src/levenshtein.cpp
+
+    test/src/levenshtein_test.cpp
+    )
+add_test(levenshtein_test test/levenshtein_test)
+set_property(
+    TARGET levenshtein_test
     PROPERTY RUNTIME_OUTPUT_DIRECTORY test
     )
 
