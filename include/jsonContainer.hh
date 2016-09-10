@@ -15,6 +15,8 @@ class JSonContainer: public JSonElement, public std::list<JSonElement*>
         JSonContainer(JSonContainer *parent);
         virtual ~JSonContainer();
 
+        virtual float diff(const JSonElement *) const;
+
         /**
          * Get the first item of this container
         **/

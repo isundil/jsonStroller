@@ -15,9 +15,11 @@
 #include "jsonArray.hh"
 #include "jsonPrimitive.hh"
 
+#include "levenshtein.hh"
+
 CurseSplitOutput::CurseSplitOutput(const Params &p): CurseOutput(p)
 {
-    init();
+    //init();
 }
 
 CurseSplitOutput::~CurseSplitOutput()
@@ -27,6 +29,14 @@ CurseSplitOutput::~CurseSplitOutput()
 
 void CurseSplitOutput::run(const std::deque<std::string> &inputName, const std::deque<JSonElement*> &roots)
 {
+    const JSonArray *a = (const JSonArray*)roots.at(0);
+    const JSonArray *b = (const JSonArray*)roots.at(1);
+    levenshteinShortestPath<JSonElement>(a, b);
+    return;
+
+
+
+
     nbInputs = inputName.size();
     selectedWin = 0;
     scrollTop.clear();
@@ -34,6 +44,7 @@ void CurseSplitOutput::run(const std::deque<std::string> &inputName, const std::
     select_down.clear();
     selection.clear();
     search_result.clear();
+
     for (short i =0; i < nbInputs; i++)
     {
         this->roots.push_back(roots.at(i));

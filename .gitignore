@@ -28,6 +28,7 @@
 *.out
 *.app
 *.swp
+vgcore.*
 
 # CMakeLists
 /CMakeCache.txt

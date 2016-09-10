@@ -108,8 +108,9 @@ bool JSonElement::match(const SearchPattern &searchPattern) const
     return searchPattern.match(stringify(), this);
 }
 
-float JSonElement::diff(const JSonElement &o) const
+float JSonElement::diff(const JSonElement *o) const
 {
-    return levenshteinPercent(stringify(), o.stringify());
+    // TODO check if o is a container
+    return levenshteinPercent(stringify(), o->stringify());
 }
 

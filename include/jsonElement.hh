@@ -22,7 +22,7 @@ class JSonElement
         **/
         virtual std::string stringify() const =0;
 
-        virtual float diff(const JSonElement &) const;
+        virtual float diff(const JSonElement *) const;
 
         /**
          * get the number of col string will output
