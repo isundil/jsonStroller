@@ -16,6 +16,7 @@ class JSonContainer: public JSonElement, public std::list<JSonElement*>
         virtual ~JSonContainer();
 
         virtual float diff(const JSonElement *) const;
+        virtual bool operator==(const JSonElement *) const;
 
         /**
          * Get the first item of this container

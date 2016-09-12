@@ -114,3 +114,8 @@ float JSonElement::diff(const JSonElement *o) const
     return levenshteinPercent(stringify(), o->stringify());
 }
 
+bool JSonElement::operator==(const JSonElement *o) const
+{
+    return stringify() == o->stringify();
+}
+

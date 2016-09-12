@@ -22,6 +22,13 @@ bool JSonObjectEntry::operator==(const std::string &k) const
     return key == k;
 }
 
+bool JSonObjectEntry::operator==(const JSonElement *o) const
+{
+    if (!dynamic_cast<const JSonObjectEntry*>(o))
+        return false;
+    return key == ((const JSonObjectEntry*)o)->key && value == ((const JSonObjectEntry*)o)->value;
+}
+
 JSonElement *JSonObjectEntry::operator*()
 {
     return value;

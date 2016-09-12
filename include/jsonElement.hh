@@ -57,6 +57,7 @@ class JSonElement
          * check if this element match SearchQuery
         **/
         virtual bool match(const SearchPattern &) const;
+        virtual bool operator==(const JSonElement *other) const;
 
     private:
         JSonElement();
