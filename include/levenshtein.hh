@@ -53,7 +53,7 @@ template<typename SIZE, typename ITERATOR, class SUBTYPE>
 static float _levenshteinPercent(ITERATOR aBegin, ITERATOR aEnd, ITERATOR bBegin, ITERATOR bEnd, size_t lenA, size_t lenB)
 {
     const size_t maxSize = std::max(lenA, lenB);
-    while (aBegin != aEnd && bBegin != bEnd && levenshteinStrictCompare(*aBegin, *bBegin))
+    while (aBegin != aEnd && bBegin != bEnd && levenshteinCompare(*aBegin, *bBegin))
     {
         aBegin++;
         bBegin++;
@@ -102,7 +102,7 @@ static std::list<ePath> _levenshteinShortestPath(ITERATOR aBegin, ITERATOR aEnd,
 {
     std::list<ePath> result(std::max(lenA, lenB));
 
-    while (aBegin != aEnd && bBegin != bEnd && levenshteinStrictCompare(*aBegin, *bBegin))
+    while (aBegin != aEnd && bBegin != bEnd && levenshteinCompare(*aBegin, *bBegin))
     {
         aBegin++;
         bBegin++;
