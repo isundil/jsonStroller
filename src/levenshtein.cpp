@@ -1,11 +1,11 @@
-#include <iostream>
-#include "levenshtein.hh"
+#include "levenshtein.hpp"
 
 float levenshteinPercent(const std::string &a, const std::string &b)
 {
     const size_t lenA = a.size();
     const size_t lenB = b.size();
 
+    if (a == b) return 1.f;
     if (lenA < UCHAR_MAX && lenB < UCHAR_MAX)
         return _levenshteinPercent<unsigned char, std::string::const_iterator, char>(a.begin(), a.end(), b.begin(), b.end(), lenA, lenB);
     if (lenA < USHRT_MAX && lenB < USHRT_MAX)

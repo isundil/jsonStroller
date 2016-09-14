@@ -15,11 +15,9 @@
 #include "jsonArray.hh"
 #include "jsonPrimitive.hh"
 
-#include "levenshtein.hh"
-
 CurseSplitOutput::CurseSplitOutput(const Params &p): CurseOutput(p)
 {
-    //init();
+    init();
 }
 
 CurseSplitOutput::~CurseSplitOutput()
@@ -31,11 +29,8 @@ void CurseSplitOutput::run(const std::deque<std::string> &inputName, const std::
 {
     const JSonArray *a = (const JSonArray*)roots.at(0);
     const JSonArray *b = (const JSonArray*)roots.at(1);
-    levenshteinShortestPath<JSonElement>(a, b);
-    return;
 
-
-
+    levenshteinShortestPath<JSonElement>(diffResult, a, b); // FIXME Will fail if 3 inputs
 
     nbInputs = inputName.size();
     selectedWin = 0;

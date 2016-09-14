@@ -8,7 +8,7 @@
 #include "jsonContainer.hh"
 #include "jsonObjectEntry.hh"
 #include "searchPattern.hh"
-#include "levenshtein.hh"
+#include "levenshtein.hpp"
 
 JSonElement::JSonElement(JSonElement *p): parent(p), _strlen(0)
 { }
@@ -110,7 +110,9 @@ bool JSonElement::match(const SearchPattern &searchPattern) const
 
 float JSonElement::diff(const JSonElement *o) const
 {
-    // TODO check if o is a container
+    if (dynamic_cast<const JSonContainer*>(o) ||
+            dynamic_cast<const JSonObjectEntry*>(o))
+        return 0.f;
     return levenshteinPercent(stringify(), o->stringify());
 }
 

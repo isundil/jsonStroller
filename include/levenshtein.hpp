@@ -5,8 +5,6 @@
 #include <limits.h>
 #include "jsonElement.hh"
 
-#include <iostream>
-
 #define LEVENSHTEIN_SENSIBILITY (0.7f)
 
 float levenshteinPercent(const std::string &a, const std::string &b);
@@ -37,14 +35,6 @@ static SIZE **_levenshteinMatrice(const ITERATOR &aBegin, const ITERATOR &aEnd, 
                     matrice[i -1][j] +1,
                     matrice[i][j -1] +1),
                     matrice[i -1][j -1] + ((levenshteinCompare(*a, *b) > LEVENSHTEIN_SENSIBILITY) ? 0 : 1));
-    }
-
-    std::cerr << "<------" << std::endl;
-    for (size_t i=0; i <= lenA; ++i)
-    {
-        for (size_t j=0; j <= lenB; ++j)
-            std::cerr << (size_t) matrice[i][j] << "\t";
-        std::cerr << std::endl;
     }
     return matrice;
 };
@@ -98,9 +88,11 @@ enum ePath: char
 };
 
 template<typename SIZE, class ITERATOR, class SUBTYPE>
-static std::list<ePath> _levenshteinShortestPath(ITERATOR aBegin, ITERATOR aEnd, ITERATOR bBegin, ITERATOR bEnd, size_t lenA, size_t lenB)
+static size_t _levenshteinShortestPath(std::list<ePath> &result, ITERATOR aBegin, ITERATOR aEnd, ITERATOR bBegin, ITERATOR bEnd, size_t lenA, size_t lenB)
 {
-    std::list<ePath> result(std::max(lenA, lenB));
+    const size_t initLenA = lenA;
+    const size_t initLenB = lenB;
+    result.clear();
 
     while (aBegin != aEnd && bBegin != bEnd && levenshteinCompare(*aBegin, *bBegin))
     {
@@ -110,36 +102,84 @@ static std::list<ePath> _levenshteinShortestPath(ITERATOR aBegin, ITERATOR aEnd,
         lenB--;
     }
     if (!lenA && !lenB)
-        ; //TODO create deque<ePath>(std::max(lenA, lenB) populated with '='
+    {
+        for (size_t i=0; i < initLenA; ++i)
+            result.push_back(ePath::equ);
+        return 0;
+    }
     else if (!lenA)
-        ; //TODO create deque<ePath>(std::max(lenA, lenB) populated with '=' then '-' and return it
+    {
+        size_t i;
+        for (i=0; i < initLenB - lenB; ++i)
+            result.push_back(ePath::equ);
+        for (; i < initLenB; ++i)
+            result.push_back(ePath::rem);
+        return lenB;
+    }
     else if (!lenB)
-        ; //TODO create deque<ePath>(std::max(lenA, lenB) populated with '=' then '+' and return it
+    {
+        size_t i;
+        for (i=0; i < initLenA - lenA; ++i)
+            result.push_back(ePath::equ);
+        for (; i < initLenA; ++i)
+            result.push_back(ePath::add);
+        return lenA;
+    }
     SIZE **matrice = _levenshteinMatrice<SIZE, ITERATOR, SUBTYPE>(aBegin, aEnd, bBegin, bEnd, lenA, lenB);
-    size_t i;
+    size_t i = lenA;
+    size_t j = lenB;
+    const size_t levenDist = matrice[i][j];
 
-    //TODO find shortest path
-    // - goto bottom right
-    // - go back to top left going decrement ONLY (or =, if not possible)
+    while (i || j)
+    {
+        if (i && (!j || matrice[i][j] > matrice[i-1][j]))
+        {
+            result.push_front(ePath::add);
+            --i;
+        }
+        else if (j && (!i || matrice[i][j] > matrice[i][j -1]))
+        {
+            result.push_front(ePath::rem);
+            --j;
+        }
+        else if (i && j)
+        {
+            result.push_front(matrice[i][j] == matrice[i-1][j-1] ? ePath::equ : ePath::mod);
+            --i;
+            --j;
+        }
+        else if (i)
+        {
+            result.push_front(ePath::add);
+            --i;
+        }
+        else if (j)
+        {
+            result.push_front(ePath::rem);
+            --j;
+        }
+    }
 
+    for (i = initLenA - lenA; i; --i)
+        result.push_front(ePath::equ);
 
     // Clean matrice
-    for (i=0; i < lenA; ++i)
+    for (i=0; i < lenA +1; ++i)
         delete[] matrice[i];
     delete[] matrice;
-    return result;
+    return levenDist;
 };
 
 template<class T>
-std::list<ePath> levenshteinShortestPath(const std::list<T*> *a, const std::list<T *> *b)
+size_t levenshteinShortestPath(std::list<ePath> &result, const std::list<T*> *a, const std::list<T *> *b)
 {
     const size_t lenA = a->size();
     const size_t lenB = b->size();
 
     if (lenA < UCHAR_MAX && lenB < UCHAR_MAX)
-        return _levenshteinShortestPath<unsigned char, typename std::list<T *>::const_iterator, T *>(a->cbegin(), a->cend(), b->cbegin(), b->cend(), lenA, lenB);
+        return _levenshteinShortestPath<unsigned char, typename std::list<T *>::const_iterator, T *>(result, a->cbegin(), a->cend(), b->cbegin(), b->cend(), lenA, lenB);
     if (lenA < USHRT_MAX && lenB < USHRT_MAX)
-        return _levenshteinShortestPath<unsigned short, typename std::list<T *>::const_iterator, T *>(a->cbegin(), a->cend(), b->cbegin(), b->cend(), lenA, lenB);
-    return _levenshteinShortestPath<unsigned int, typename std::list<T *>::const_iterator, T *>(a->cbegin(), a->cend(), b->cbegin(), b->cend(), lenA, lenB);
+        return _levenshteinShortestPath<unsigned short, typename std::list<T *>::const_iterator, T *>(result, a->cbegin(), a->cend(), b->cbegin(), b->cend(), lenA, lenB);
+    return _levenshteinShortestPath<unsigned int, typename std::list<T *>::const_iterator, T *>(result, a->cbegin(), a->cend(), b->cbegin(), b->cend(), lenA, lenB);
 }
 

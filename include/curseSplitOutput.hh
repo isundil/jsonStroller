@@ -2,6 +2,7 @@
 
 #include <deque>
 #include "curseOutput.hh"
+#include "levenshtein.hpp"
 
 class CurseSplitOutput: public CurseOutput
 {
@@ -77,6 +78,7 @@ class CurseSplitOutput: public CurseOutput
          * currently searching pattern and its results
         **/
         std::deque<std::list<const JSonElement*> > search_result;
+        std::list<ePath> diffResult;
 
         /**
          * Viewport start

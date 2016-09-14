@@ -5,7 +5,7 @@
 **/
 
 #include "jsonContainer.hh"
-#include "levenshtein.hh"
+#include "levenshtein.hpp"
 
 JSonContainer::JSonContainer(JSonContainer *p):JSonElement(p)
 { }
