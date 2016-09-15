@@ -27,10 +27,6 @@ CurseSplitOutput::~CurseSplitOutput()
 
 void CurseSplitOutput::run(const std::deque<std::string> &inputName, const std::deque<JSonElement*> &roots)
 {
-    const JSonArray *a = (const JSonArray*)roots.at(0);
-    const JSonArray *b = (const JSonArray*)roots.at(1);
-
-    levenshteinShortestPath<JSonElement>(diffResult, a, b); // FIXME Will fail if 3 inputs
 
     nbInputs = inputName.size();
     selectedWin = 0;
@@ -50,6 +46,7 @@ void CurseSplitOutput::run(const std::deque<std::string> &inputName, const std::
         search_result.push_back(std::list<const JSonElement *>());
     }
     fileNames = inputName;
+    computeDiff();
     loop();
 }
 
@@ -67,6 +64,50 @@ void CurseSplitOutput::loop()
             while (!redrawCurrent(selectedWin));
         else if (read == inputResult::redrawAll)
             while (!redraw());
+    }
+}
+
+// FIXME Will fail if 3 inputs
+void CurseSplitOutput::computeDiff()
+{
+    const JSonContainer *a = dynamic_cast<const JSonContainer*>(roots.at(0));
+    const JSonContainer *b = dynamic_cast<const JSonContainer*>(roots.at(1));
+
+    if (!a && !b)
+    {
+        //TODO diff primitives
+    }
+    else if (!a)
+    {
+    }
+    else if (!b)
+    {
+    }
+    else
+    {
+        std::list<ePath> diffList;
+        levenshteinShortestPath<JSonElement>(diffList, a, b);
+
+        JSonContainer::const_iterator it = a->cbegin();
+        for (ePath i : diffList)
+            if (it != a->cend() &&
+                    (i == ePath::equ ||
+                    i == ePath::mod ||
+                    i == ePath::add))
+            {
+                diffResult[*it] = i;
+                it++;
+            }
+        it = b->cbegin();
+        for (ePath i : diffList)
+            if (it != b->cend() &&
+                    (i == ePath::equ ||
+                    i == ePath::mod ||
+                    i == ePath::rem))
+            {
+                diffResult[*it] = i == ePath::rem ? ePath::add : i;
+                it++;
+            }
     }
 }
 
@@ -622,6 +663,16 @@ const OutputFlag CurseSplitOutput::getFlag(const JSonElement *item, const JSonEl
 
     res.selected(item == selection);
     res.searched(std::find(search_result[selectedWin].cbegin(), search_result[selectedWin].cend(), item) != search_result[selectedWin].cend());
+
+    try {
+        ePath dr = diffResult.at(item);
+        if (dr == ePath::add)
+            res.type(OutputFlag::TYPE_STRING);
+        else if (dr == ePath::mod)
+            res.type(OutputFlag::TYPE_NUMBER);
+    }
+    catch (std::out_of_range &e) {}
+    /*
     if (dynamic_cast<const JSonPrimitive<std::string> *>(i))
         res.type(OutputFlag::TYPE_STRING);
     else if (dynamic_cast<const JSonPrimitive<bool> *>(i))
@@ -634,6 +685,7 @@ const OutputFlag CurseSplitOutput::getFlag(const JSonElement *item, const JSonEl
         res.type(OutputFlag::TYPE_OBJ);
     else if (dynamic_cast<const JSonArray*>(i))
         res.type(OutputFlag::TYPE_ARR);
+    */
     return res;
 }
 

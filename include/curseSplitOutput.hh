@@ -69,6 +69,8 @@ class CurseSplitOutput: public CurseOutput
         inputResult nextResult();
         inputResult changeWindow(char, bool);
 
+        void computeDiff();
+
         std::deque<std::string> fileNames;
         std::deque<JSonElement *> roots;
         std::deque<const JSonElement *> selection, select_up, select_down;
@@ -78,7 +80,7 @@ class CurseSplitOutput: public CurseOutput
          * currently searching pattern and its results
         **/
         std::deque<std::list<const JSonElement*> > search_result;
-        std::list<ePath> diffResult;
+        std::map<const JSonElement *, ePath> diffResult;
 
         /**
          * Viewport start

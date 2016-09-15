@@ -7,6 +7,14 @@
 
 #define LEVENSHTEIN_SENSIBILITY (0.7f)
 
+enum ePath: char
+{
+    add = '+',
+    rem = '-',
+    mod = '!',
+    equ = '='
+};
+
 float levenshteinPercent(const std::string &a, const std::string &b);
 template<class T> float levenshteinPercent(const std::list<T *> *a, const std::list<T *> *b);
 bool levenshteinStrictCompare(const char &a, const char &b);
@@ -78,14 +86,6 @@ template<class T> float levenshteinPercent(const std::list<T *> *a, const std::l
         return _levenshteinPercent<unsigned short, typename std::list<T *>::const_iterator, T *>(aBegin, aEnd, bBegin, bEnd, lenA, lenB);
     return _levenshteinPercent<unsigned int, typename std::list<T *>::const_iterator, T *>(aBegin, aEnd, bBegin, bEnd, lenA, lenB);
 }
-
-enum ePath: char
-{
-    add = '+',
-    rem = '-',
-    mod = '!',
-    equ = '='
-};
 
 template<typename SIZE, class ITERATOR, class SUBTYPE>
 static size_t _levenshteinShortestPath(std::list<ePath> &result, ITERATOR aBegin, ITERATOR aEnd, ITERATOR bBegin, ITERATOR bEnd, size_t lenA, size_t lenB)
