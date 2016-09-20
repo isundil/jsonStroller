@@ -4,16 +4,9 @@
 #include <list>
 #include <limits.h>
 #include "jsonElement.hh"
+#include "levenshteinCache.hh"
 
 #define LEVENSHTEIN_SENSIBILITY (0.7f)
-
-enum ePath: char
-{
-    add = '+',
-    rem = '-',
-    mod = '!',
-    equ = '='
-};
 
 float levenshteinPercent(const std::string &a, const std::string &b);
 template<class T> float levenshteinPercent(const std::list<T *> *a, const std::list<T *> *b);
@@ -88,7 +81,7 @@ template<class T> float levenshteinPercent(const std::list<T *> *a, const std::l
 }
 
 template<typename SIZE, class ITERATOR, class SUBTYPE>
-static size_t _levenshteinShortestPath(std::list<ePath> &result, ITERATOR aBegin, ITERATOR aEnd, ITERATOR bBegin, ITERATOR bEnd, size_t lenA, size_t lenB)
+static size_t _levenshteinShortestPath(std::list<eLevenshteinOperator> &result, ITERATOR aBegin, ITERATOR aEnd, ITERATOR bBegin, ITERATOR bEnd, size_t lenA, size_t lenB)
 {
     const size_t initLenA = lenA;
     const size_t initLenB = lenB;
@@ -104,25 +97,25 @@ static size_t _levenshteinShortestPath(std::list<ePath> &result, ITERATOR aBegin
     if (!lenA && !lenB)
     {
         for (size_t i=0; i < initLenA; ++i)
-            result.push_back(ePath::equ);
+            result.push_back(eLevenshteinOperator::equ);
         return 0;
     }
     else if (!lenA)
     {
         size_t i;
         for (i=0; i < initLenB - lenB; ++i)
-            result.push_back(ePath::equ);
+            result.push_back(eLevenshteinOperator::equ);
         for (; i < initLenB; ++i)
-            result.push_back(ePath::rem);
+            result.push_back(eLevenshteinOperator::rem);
         return lenB;
     }
     else if (!lenB)
     {
         size_t i;
         for (i=0; i < initLenA - lenA; ++i)
-            result.push_back(ePath::equ);
+            result.push_back(eLevenshteinOperator::equ);
         for (; i < initLenA; ++i)
-            result.push_back(ePath::add);
+            result.push_back(eLevenshteinOperator::add);
         return lenA;
     }
     SIZE **matrice = _levenshteinMatrice<SIZE, ITERATOR, SUBTYPE>(aBegin, aEnd, bBegin, bEnd, lenA, lenB);
@@ -134,34 +127,37 @@ static size_t _levenshteinShortestPath(std::list<ePath> &result, ITERATOR aBegin
     {
         if (i && (!j || matrice[i][j] > matrice[i-1][j]))
         {
-            result.push_front(ePath::add);
+            result.push_front(eLevenshteinOperator::add);
             --i;
         }
         else if (j && (!i || matrice[i][j] > matrice[i][j -1]))
         {
-            result.push_front(ePath::rem);
+            result.push_front(eLevenshteinOperator::rem);
             --j;
         }
         else if (i && j)
         {
-            result.push_front(matrice[i][j] == matrice[i-1][j-1] ? ePath::equ : ePath::mod);
+            result.push_front(matrice[i][j] == matrice[i-1][j-1] ? eLevenshteinOperator::equ : eLevenshteinOperator::mod);
             --i;
             --j;
         }
         else if (i)
         {
-            result.push_front(ePath::add);
+            result.push_front(eLevenshteinOperator::add);
             --i;
         }
         else if (j)
         {
-            result.push_front(ePath::rem);
+            result.push_front(eLevenshteinOperator::rem);
             --j;
         }
     }
 
     for (i = initLenA - lenA; i; --i)
-        result.push_front(ePath::equ);
+        result.push_front(eLevenshteinOperator::equ);
+
+    //TODO
+    LevenshteinCache<JSonElement *>::instance();
 
     // Clean matrice
     for (i=0; i < lenA +1; ++i)
@@ -171,7 +167,7 @@ static size_t _levenshteinShortestPath(std::list<ePath> &result, ITERATOR aBegin
 };
 
 template<class T>
-size_t levenshteinShortestPath(std::list<ePath> &result, const std::list<T*> *a, const std::list<T *> *b)
+size_t levenshteinShortestPath(std::list<eLevenshteinOperator> &result, const std::list<T*> *a, const std::list<T *> *b)
 {
     const size_t lenA = a->size();
     const size_t lenB = b->size();

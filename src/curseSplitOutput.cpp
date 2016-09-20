@@ -85,27 +85,27 @@ void CurseSplitOutput::computeDiff()
     }
     else
     {
-        std::list<ePath> diffList;
+        std::list<eLevenshteinOperator> diffList;
         levenshteinShortestPath<JSonElement>(diffList, a, b);
 
         JSonContainer::const_iterator it = a->cbegin();
-        for (ePath i : diffList)
+        for (eLevenshteinOperator i : diffList)
             if (it != a->cend() &&
-                    (i == ePath::equ ||
-                    i == ePath::mod ||
-                    i == ePath::add))
+                    (i == eLevenshteinOperator::equ ||
+                    i == eLevenshteinOperator::mod ||
+                    i == eLevenshteinOperator::add))
             {
                 diffResult[*it] = i;
                 it++;
             }
         it = b->cbegin();
-        for (ePath i : diffList)
+        for (eLevenshteinOperator i : diffList)
             if (it != b->cend() &&
-                    (i == ePath::equ ||
-                    i == ePath::mod ||
-                    i == ePath::rem))
+                    (i == eLevenshteinOperator::equ ||
+                    i == eLevenshteinOperator::mod ||
+                    i == eLevenshteinOperator::rem))
             {
-                diffResult[*it] = i == ePath::rem ? ePath::add : i;
+                diffResult[*it] = i == eLevenshteinOperator::rem ? eLevenshteinOperator::add : i;
                 it++;
             }
     }
@@ -665,10 +665,10 @@ const OutputFlag CurseSplitOutput::getFlag(const JSonElement *item, const JSonEl
     res.searched(std::find(search_result[selectedWin].cbegin(), search_result[selectedWin].cend(), item) != search_result[selectedWin].cend());
 
     try {
-        ePath dr = diffResult.at(item);
-        if (dr == ePath::add)
+        eLevenshteinOperator dr = diffResult.at(item);
+        if (dr == eLevenshteinOperator::add)
             res.type(OutputFlag::TYPE_STRING);
-        else if (dr == ePath::mod)
+        else if (dr == eLevenshteinOperator::mod)
             res.type(OutputFlag::TYPE_NUMBER);
     }
     catch (std::out_of_range &e) {}

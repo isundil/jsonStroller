@@ -80,7 +80,7 @@ class CurseSplitOutput: public CurseOutput
          * currently searching pattern and its results
         **/
         std::deque<std::list<const JSonElement*> > search_result;
-        std::map<const JSonElement *, ePath> diffResult;
+        std::map<const JSonElement *, eLevenshteinOperator> diffResult;
 
         /**
          * Viewport start
