@@ -17,12 +17,18 @@
 
 CurseSplitOutput::CurseSplitOutput(const Params &p): CurseOutput(p)
 {
+    diffMatrice = nullptr;
     init();
 }
 
 CurseSplitOutput::~CurseSplitOutput()
 {
     shutdown();
+    if (diffMatrice)
+    {
+        delete diffMatrice;
+        diffMatrice = nullptr;
+    }
 }
 
 void CurseSplitOutput::run(const std::deque<std::string> &inputName, const std::deque<JSonElement*> &roots)
@@ -85,29 +91,7 @@ void CurseSplitOutput::computeDiff()
     }
     else
     {
-        std::list<eLevenshteinOperator> diffList;
-        levenshteinShortestPath<JSonElement>(diffList, a, b);
-
-        JSonContainer::const_iterator it = a->cbegin();
-        for (eLevenshteinOperator i : diffList)
-            if (it != a->cend() &&
-                    (i == eLevenshteinOperator::equ ||
-                    i == eLevenshteinOperator::mod ||
-                    i == eLevenshteinOperator::add))
-            {
-                diffResult[*it] = i;
-                it++;
-            }
-        it = b->cbegin();
-        for (eLevenshteinOperator i : diffList)
-            if (it != b->cend() &&
-                    (i == eLevenshteinOperator::equ ||
-                    i == eLevenshteinOperator::mod ||
-                    i == eLevenshteinOperator::rem))
-            {
-                diffResult[*it] = i == eLevenshteinOperator::rem ? eLevenshteinOperator::add : i;
-                it++;
-            }
+        diffMatrice = levenshteinShortestPath<JSonElement>(a, b);
     }
 }
 
@@ -665,11 +649,13 @@ const OutputFlag CurseSplitOutput::getFlag(const JSonElement *item, const JSonEl
     res.searched(std::find(search_result[selectedWin].cbegin(), search_result[selectedWin].cend(), item) != search_result[selectedWin].cend());
 
     try {
-        eLevenshteinOperator dr = diffResult.at(item);
+        /*
+        eLevenshteinOperator dr = LevenshteinCache<JSonElement>::instance()->get(item);
         if (dr == eLevenshteinOperator::add)
             res.type(OutputFlag::TYPE_STRING);
         else if (dr == eLevenshteinOperator::mod)
             res.type(OutputFlag::TYPE_NUMBER);
+        */
     }
     catch (std::out_of_range &e) {}
     /*

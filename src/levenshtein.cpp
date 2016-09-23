@@ -33,6 +33,3 @@ bool levenshteinStrictCompare(const JSonElement *a, const JSonElement *b)
     return *a == b;
 }
 
-template<>
-LevenshteinCache<JSonElement *> *LevenshteinCache<JSonElement *>::_instance = nullptr;
-
