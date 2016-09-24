@@ -14,6 +14,7 @@ class LevenshteinMatrice_base
 {
     public:
         virtual ~LevenshteinMatrice_base() {}
+        virtual void prune() =0;
 };
 
 template<typename T>
