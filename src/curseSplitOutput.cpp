@@ -74,28 +74,14 @@ void CurseSplitOutput::loop()
     }
 }
 
-// FIXME Will fail if 3 inputs
 void CurseSplitOutput::computeDiff()
 {
-    const JSonContainer *a = dynamic_cast<const JSonContainer*>(roots.at(0));
-    const JSonContainer *b = dynamic_cast<const JSonContainer*>(roots.at(1));
-
-    if (!a && !b)
-    {
-        //TODO diff primitives
-    }
-    else if (!a)
-    {
-    }
-    else if (!b)
-    {
-    }
-    else
-    {
-        LevenshteinMatrice_base::Builder builder;
+    LevenshteinMatrice_base::Builder builder;
+    if (roots.size() == 2)
         diffMatrice = builder.build(roots.at(0), roots.at(1));
-        diffMatrice->debug(std::cout);
-    }
+    else if (roots.size() == 3)
+        throw std::runtime_error("3-input diff not implemented"); //TODO
+    diffMatrice->debug(std::cout);
 }
 
 inputResult CurseSplitOutput::selectUp()

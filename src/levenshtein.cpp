@@ -1,5 +1,6 @@
 #include <climits>
 #include "levenshteinMatrice.hpp"
+#include "jsonObjectEntry.hh"
 
 size_t levenshtein(const std::string &a, const std::string &b)
 {
@@ -15,7 +16,7 @@ size_t levenshtein(const std::string &a, const std::string &b)
             matrice[i][j] = std::min(std::min(
                     matrice[i -1][j] +1,
                     matrice[i][j -1] +1),
-                    matrice[i -1][j -1] + (a[i] == b[j] ? 0 : 1));
+                    matrice[i -1][j -1] + (a[i -1] == b[j -1] ? 0 : 1));
     }
 
     const size_t result = matrice[a.size()][b.size()];
@@ -41,7 +42,7 @@ LevenshteinMatrice_base::Builder::Builder()
 LevenshteinMatrice_base::Builder::~Builder()
 { }
 
-const LevenshteinMatrice_base *LevenshteinMatrice_base::Builder::build(const JSonElement *a, const JSonElement *b) const
+LevenshteinMatrice_base *LevenshteinMatrice_base::Builder::build(const JSonElement *a, const JSonElement *b) const
 {
     const bool aIsContainer = ((dynamic_cast<const JSonContainer*>(a)) != nullptr);
     const bool bIsContainer = ((dynamic_cast<const JSonContainer*>(b)) != nullptr);
@@ -78,7 +79,14 @@ const LevenshteinMatrice_base *LevenshteinMatrice_base::Builder::build(const JSo
     }
     else
     {
-        // TODO a and b are both (primitive or objectEntries)
+        const bool aIsObject = ((dynamic_cast<const JSonObjectEntry*>(a)) != nullptr);
+        const bool bIsObject = ((dynamic_cast<const JSonObjectEntry*>(b)) != nullptr);
+        float result = levenshteinPercent(a->stringify(), b->stringify());
+
+        if (aIsObject && bIsObject) {
+            result *= levenshteinPercent((*(const JSonObjectEntry&)(*a))->stringify(), (*(const JSonObjectEntry&)(*b))->stringify());
+        }
+        return new LevenshteinMatriceWithScore(result);
     }
 }
 
@@ -97,6 +105,34 @@ void LevenshteinMatrice_manual::debug(std::ostream &out) const
 }
 
 size_t LevenshteinMatrice_manual::result() const
+{
+    return _result;
+}
+
+bool LevenshteinMatrice_manual::areSimilar() const
+{
+    return false;
+}
+
+/**
+ * Score matrice
+**/
+LevenshteinMatriceWithScore::LevenshteinMatriceWithScore(float s)
+{
+    _result = s > LEVENSHTEIN_SENSIBILITY;
+}
+
+void LevenshteinMatriceWithScore::debug(std::ostream &out) const
+{
+    out << "Comparing two raw types gave " << (_result ? "=" : "!=") << std::endl;
+}
+
+size_t LevenshteinMatriceWithScore::result() const
+{
+    return _result ? 0 : 1;
+}
+
+bool LevenshteinMatriceWithScore::areSimilar() const
 {
     return _result;
 }

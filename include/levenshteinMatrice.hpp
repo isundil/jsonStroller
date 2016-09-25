@@ -20,6 +20,7 @@ class LevenshteinMatrice_base
 
         const std::map<const JSonElement*, eLevenshteinOperator> path() const;
         virtual size_t result() const =0;
+        virtual bool areSimilar() const =0;
 
         virtual void debug(std::ostream &out) const =0;
 
@@ -30,7 +31,7 @@ class LevenshteinMatrice_base
                 Builder();
                 ~Builder();
 
-                const LevenshteinMatrice_base *build(const JSonElement *a, const JSonElement *b) const;
+                LevenshteinMatrice_base *build(const JSonElement *a, const JSonElement *b) const;
         };
 
     protected:
@@ -42,11 +43,25 @@ class LevenshteinMatrice_manual: public LevenshteinMatrice_base
     public:
         LevenshteinMatrice_manual *add(const JSonElement*, eLevenshteinOperator);
         size_t result() const;
+        bool areSimilar() const;
 
         void debug(std::ostream &out) const;
 
     public:
         size_t _result;
+};
+
+class LevenshteinMatriceWithScore: public LevenshteinMatrice_base
+{
+    public:
+        LevenshteinMatriceWithScore(float score);
+
+        size_t result() const;
+        void debug(std::ostream &out) const;
+        bool areSimilar() const;
+
+    private:
+        bool _result;
 };
 
 template<typename T>
@@ -60,6 +75,7 @@ class LevenshteinMatrice: public LevenshteinMatrice_base
             size_t i, j;
             JSonContainer::const_iterator a = aBegin;
             JSonContainer::const_iterator b;
+            LevenshteinMatrice_base::Builder matriceBuilder;
 
             this->n = n;
             this->m = m;
@@ -83,21 +99,25 @@ class LevenshteinMatrice: public LevenshteinMatrice_base
                     subMatrice[i][j] = nullptr;
             }
 
-            for (i =1; a != aEnd; ++i, ++a)
+            for (i =0; a != aEnd; ++i, ++a)
             {
                 b = bBegin;
-                for (j =1; b != bEnd; ++j, ++b)
+                for (j =0; b != bEnd; ++j, ++b)
                 {
-                    //TODO compute submatrice
-                    /*
-                    matrice[i][j] = std::min(std::min(
-                        get(i -1, j) +1,
-                        get(i, j -1) +1),
-                        get(i -1, j -1) + ((levenshteinCompare(*a, *b) > LEVENSHTEIN_SENSIBILITY) ? 0 : 1)); // TODO set submatrice
-                    */
-                    matrice[i][j] = std::min(
-                        get(i -1, j) +1,
-                        get(i, j -1) +1);
+                    LevenshteinMatrice_base *subMatrice = matriceBuilder.build(*a, *b);
+                    if (subMatrice != nullptr)
+                    {
+                        const T chCost = get(i, j) + (subMatrice->areSimilar() ? 0 : 1);
+
+                        if (chCost <= get(i, j +1) +1 && chCost <= get(i +1, j))
+                        {
+                            matrice[i +1][j +1] = chCost;
+                            this->subMatrice[i +1][j +1] = subMatrice;
+                            continue;
+                        }
+                        delete subMatrice;
+                    } // Change is not worth or subMatrice is null (eg. a and b has different types)
+                    matrice[i +1][j +1] = std::min(get(i, j +1), get(i +1, j)) +1;
                 }
             }
         };
@@ -179,6 +199,12 @@ class LevenshteinMatrice: public LevenshteinMatrice_base
         {
             return (size_t) matrice[n][m];
         };
+
+        bool areSimilar() const
+        {
+            float levenRelativeDist = 1 -(result() / std::max(n, m));
+            return levenRelativeDist > LEVENSHTEIN_SENSIBILITY;
+        }
 
     private:
         T **matrice;
