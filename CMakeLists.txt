@@ -84,6 +84,11 @@ set_property(
 
 add_executable(levenshtein_test
     src/levenshtein.cpp
+    src/jsonContainer.cpp
+    src/jsonElement.cpp
+    src/jsonPrimitive.cpp
+    src/jsonObjectEntry.cpp
+    src/searchPattern.cpp
 
     test/src/levenshtein_test.cpp
     )

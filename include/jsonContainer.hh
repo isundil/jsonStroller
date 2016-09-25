@@ -15,7 +15,6 @@ class JSonContainer: public JSonElement, public std::list<JSonElement*>
         JSonContainer(JSonContainer *parent);
         virtual ~JSonContainer();
 
-        virtual float diff(const JSonElement *) const;
         virtual bool operator==(const JSonElement *) const;
 
         /**

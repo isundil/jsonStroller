@@ -14,6 +14,7 @@
 #include "jsonObject.hh"
 #include "jsonArray.hh"
 #include "jsonPrimitive.hh"
+#include "levenshteinMatrice.hpp"
 
 CurseSplitOutput::CurseSplitOutput(const Params &p): CurseOutput(p)
 {
@@ -91,7 +92,9 @@ void CurseSplitOutput::computeDiff()
     }
     else
     {
-        diffMatrice = levenshteinShortestPath<JSonElement>(a, b);
+        LevenshteinMatrice_base::Builder builder;
+        diffMatrice = builder.build(roots.at(0), roots.at(1));
+        diffMatrice->debug(std::cout);
     }
 }
 

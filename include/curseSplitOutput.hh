@@ -4,6 +4,8 @@
 #include "curseOutput.hh"
 #include "levenshtein.hpp"
 
+class LevenshteinMatrice_base;
+
 class CurseSplitOutput: public CurseOutput
 {
     public:
@@ -80,7 +82,7 @@ class CurseSplitOutput: public CurseOutput
          * currently searching pattern and its results
         **/
         std::deque<std::list<const JSonElement*> > search_result;
-        LevenshteinMatrice_base *diffMatrice;
+        const LevenshteinMatrice_base *diffMatrice;
 
         /**
          * Viewport start

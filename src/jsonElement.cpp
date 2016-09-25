@@ -108,14 +108,6 @@ bool JSonElement::match(const SearchPattern &searchPattern) const
     return searchPattern.match(stringify(), this);
 }
 
-float JSonElement::diff(const JSonElement *o) const
-{
-    if (dynamic_cast<const JSonContainer*>(o) ||
-            dynamic_cast<const JSonObjectEntry*>(o))
-        return 0.f;
-    return levenshteinPercent(stringify(), o->stringify());
-}
-
 bool JSonElement::operator==(const JSonElement *o) const
 {
     return stringify() == o->stringify();

@@ -1,5 +1,8 @@
 #pragma once
 
+#include <iostream>
+#include <map>
+#include "jsonContainer.hh"
 #include "levenshtein.hpp"
 
 enum eLevenshteinOperator: char
@@ -14,35 +17,88 @@ class LevenshteinMatrice_base
 {
     public:
         virtual ~LevenshteinMatrice_base() {}
-        virtual void prune() =0;
+
+        const std::map<const JSonElement*, eLevenshteinOperator> path() const;
+        virtual size_t result() const =0;
+
+        virtual void debug(std::ostream &out) const =0;
+
+    public:
+        class Builder
+        {
+            public:
+                Builder();
+                ~Builder();
+
+                const LevenshteinMatrice_base *build(const JSonElement *a, const JSonElement *b) const;
+        };
+
+    protected:
+        std::map<const JSonElement*, eLevenshteinOperator> operations;
+};
+
+class LevenshteinMatrice_manual: public LevenshteinMatrice_base
+{
+    public:
+        LevenshteinMatrice_manual *add(const JSonElement*, eLevenshteinOperator);
+        size_t result() const;
+
+        void debug(std::ostream &out) const;
+
+    public:
+        size_t _result;
 };
 
 template<typename T>
 class LevenshteinMatrice: public LevenshteinMatrice_base
 {
     public:
-        LevenshteinMatrice(size_t n, size_t m)
+        LevenshteinMatrice(const JSonContainer::const_iterator aBegin, const JSonContainer::const_iterator aEnd,
+                const JSonContainer::const_iterator bBegin, const JSonContainer::const_iterator bEnd,
+                size_t n, size_t m)
         {
+            size_t i, j;
+            JSonContainer::const_iterator a = aBegin;
+            JSonContainer::const_iterator b;
+
             this->n = n;
             this->m = m;
             this->matrice = new T*[n +1]();
             this->subMatrice = new LevenshteinMatrice_base**[n +1]();
 
             matrice[0] = new T[m +1];
-            for (size_t i =1; i <= m; ++i)
+            for (i =1; i <= m; ++i)
                 matrice[0][i] = i;
 
-            for (size_t i=1; i <= n; ++i)
+            for (i=1; i <= n; ++i)
             {
                 matrice[i] = new T[m +1];
                 matrice[i][0] = i;
             }
 
-            for (size_t i=0; i <= n; ++i)
+            for (i=0; i <= n; ++i)
             {
                 subMatrice[i] = new LevenshteinMatrice_base*[m +1];
                 for (size_t j=0; j <= m; ++j)
                     subMatrice[i][j] = nullptr;
+            }
+
+            for (i =1; a != aEnd; ++i, ++a)
+            {
+                b = bBegin;
+                for (j =1; b != bEnd; ++j, ++b)
+                {
+                    //TODO compute submatrice
+                    /*
+                    matrice[i][j] = std::min(std::min(
+                        get(i -1, j) +1,
+                        get(i, j -1) +1),
+                        get(i -1, j -1) + ((levenshteinCompare(*a, *b) > LEVENSHTEIN_SENSIBILITY) ? 0 : 1)); // TODO set submatrice
+                    */
+                    matrice[i][j] = std::min(
+                        get(i -1, j) +1,
+                        get(i, j -1) +1);
+                }
             }
         };
 
@@ -68,12 +124,6 @@ class LevenshteinMatrice: public LevenshteinMatrice_base
         T get(size_t a, size_t b) const
         {
             return matrice[a][b];
-        };
-
-        void set(size_t a, size_t b, T value, LevenshteinMatrice_base *subMatrice =nullptr)
-        {
-            matrice[a][b] = value;
-            this->subMatrice[a][b] = subMatrice;
         };
 
         std::list<eLevenshteinOperator> shortestPath() const
@@ -115,13 +165,26 @@ class LevenshteinMatrice: public LevenshteinMatrice_base
             return result;
         }
 
-        T result() const
+        void debug(std::ostream &o) const
         {
-            return matrice[n][m];
+            for (size_t i =0; i <= n; ++i)
+            {
+                for (size_t j=0; j <= m; ++j)
+                    o << (int) (matrice[n][m]) << '\t';
+                o << std::endl;
+            }
+        }
+
+        size_t result() const
+        {
+            return (size_t) matrice[n][m];
         };
 
     private:
         T **matrice;
+        /**
+         * Usefull only on `modify' operation
+        **/
         LevenshteinMatrice_base ***subMatrice;
 
         size_t n;
