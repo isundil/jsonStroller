@@ -18,11 +18,11 @@ class LevenshteinMatrice_base
     public:
         virtual ~LevenshteinMatrice_base() {}
 
-        const std::map<const JSonElement*, eLevenshteinOperator> path() const;
+        virtual const std::map<const JSonElement*, eLevenshteinOperator> path() const;
         virtual size_t result() const =0;
         virtual bool areSimilar() const =0;
 
-        virtual void debug(std::ostream &out) const =0;
+        eLevenshteinOperator get(const JSonElement *) const;
 
     public:
         class Builder
@@ -45,8 +45,6 @@ class LevenshteinMatrice_manual: public LevenshteinMatrice_base
         size_t result() const;
         bool areSimilar() const;
 
-        void debug(std::ostream &out) const;
-
     public:
         size_t _result;
 };
@@ -57,163 +55,146 @@ class LevenshteinMatriceWithScore: public LevenshteinMatrice_base
         LevenshteinMatriceWithScore(float score);
 
         size_t result() const;
-        void debug(std::ostream &out) const;
         bool areSimilar() const;
 
     private:
         bool _result;
 };
 
-template<typename T>
 class LevenshteinMatrice: public LevenshteinMatrice_base
 {
     public:
-        LevenshteinMatrice(const JSonContainer::const_iterator aBegin, const JSonContainer::const_iterator aEnd,
-                const JSonContainer::const_iterator bBegin, const JSonContainer::const_iterator bEnd,
-                size_t n, size_t m)
+        template<typename T>
+        static LevenshteinMatrice *build(const JSonContainer::const_iterator aBegin, const JSonContainer::const_iterator bBegin,
+                const size_t n, const size_t m)
         {
+            LevenshteinMatrice *result = new LevenshteinMatrice();
             size_t i, j;
             JSonContainer::const_iterator a = aBegin;
             JSonContainer::const_iterator b;
             LevenshteinMatrice_base::Builder matriceBuilder;
 
-            this->n = n;
-            this->m = m;
-            this->matrice = new T*[n +1]();
-            this->subMatrice = new LevenshteinMatrice_base**[n +1]();
+            T **matrice = new T*[n +1]();
+            LevenshteinMatrice_base ***subMatrice = new LevenshteinMatrice_base**[n]();
 
             matrice[0] = new T[m +1];
-            for (i =1; i <= m; ++i)
+            for (i =0; i <= m; ++i)
                 matrice[0][i] = i;
 
             for (i=1; i <= n; ++i)
             {
                 matrice[i] = new T[m +1];
                 matrice[i][0] = i;
+                subMatrice[i -1] = new LevenshteinMatrice_base*[m];
+                for (size_t j=0; j < m; ++j)
+                    subMatrice[i -1][j] = nullptr;
             }
 
-            for (i=0; i <= n; ++i)
-            {
-                subMatrice[i] = new LevenshteinMatrice_base*[m +1];
-                for (size_t j=0; j <= m; ++j)
-                    subMatrice[i][j] = nullptr;
-            }
-
-            for (i =0; a != aEnd; ++i, ++a)
+            for (i =1; i <= n; ++i, ++a)
             {
                 b = bBegin;
-                for (j =0; b != bEnd; ++j, ++b)
+                for (j =1; j <= m; ++j, ++b)
                 {
-                    LevenshteinMatrice_base *subMatrice = matriceBuilder.build(*a, *b);
-                    if (subMatrice != nullptr)
+                    LevenshteinMatrice_base *_subMatrice = matriceBuilder.build(*a, *b);
+                    if (_subMatrice != nullptr)
                     {
-                        const T chCost = get(i, j) + (subMatrice->areSimilar() ? 0 : 1);
+                        const T chCost = matrice[i -1][j -1] + (_subMatrice->areSimilar() ? 0 : 1);
 
-                        if (chCost <= get(i, j +1) +1 && chCost <= get(i +1, j))
+                        if (chCost <= matrice[i -1][j] +1 &&
+                                chCost <= matrice[i][j -1] +1)
                         {
-                            matrice[i +1][j +1] = chCost;
-                            this->subMatrice[i +1][j +1] = subMatrice;
+                            matrice[i][j] = chCost;
+                            subMatrice[i -1][j -1] = _subMatrice;
                             continue;
                         }
-                        delete subMatrice;
+                        delete _subMatrice;
                     } // Change is not worth or subMatrice is null (eg. a and b has different types)
-                    matrice[i +1][j +1] = std::min(get(i, j +1), get(i +1, j)) +1;
+                    matrice[i][j] = std::min(matrice[i -1][j], matrice[i][j -1]) +1;
                 }
             }
+
+            result->levenDist = matrice[n][m];
+            result->levenRelativeDist = 1 -(matrice[n][m] / std::max(n, m));
+            result->shortestPath<T>(matrice, subMatrice, n, m, --a, --b);
+            cleanMatrice(matrice, subMatrice, n, m);
+            return result;
         };
 
-        ~LevenshteinMatrice()
+        template<typename T>
+        static void cleanMatrice(T **matrice, LevenshteinMatrice_base ***subMatrice, const size_t &n, const size_t &m)
         {
             for (size_t i=0; i <= n; ++i)
             {
                 delete []matrice[i];
-                for (size_t j=0; j <= m; ++j)
-                    if (subMatrice[i][j])
-                        delete subMatrice[i][j];
-                delete []subMatrice[i];
+                if (i != n)
+                {
+                    for (size_t j=0; j < m; ++j)
+                        if (subMatrice[i][j])
+                            delete subMatrice[i][j];
+                    delete []subMatrice[i];
+                }
             }
             delete []matrice;
             delete []subMatrice;
         };
 
-        void prune()
-        {
-            //TODO
-        }
-
-        T get(size_t a, size_t b) const
-        {
-            return matrice[a][b];
-        };
-
-        std::list<eLevenshteinOperator> shortestPath() const
-        {
-            std::list<eLevenshteinOperator> result;
-
-            size_t i = n;
-            size_t j = m;
-
-            while (i || j)
-            {
-                if (i && (!j || matrice[i][j] > matrice[i-1][j]))
-                {
-                    result.push_front(eLevenshteinOperator::add);
-                    --i;
-                }
-                else if (j && (!i || matrice[i][j] > matrice[i][j -1]))
-                {
-                    result.push_front(eLevenshteinOperator::rem);
-                    --j;
-                }
-                else if (i && j)
-                {
-                    result.push_front(matrice[i][j] == matrice[i-1][j-1] ? eLevenshteinOperator::equ : eLevenshteinOperator::mod);
-                    --i;
-                    --j;
-                }
-                else if (i)
-                {
-                    result.push_front(eLevenshteinOperator::add);
-                    --i;
-                }
-                else if (j)
-                {
-                    result.push_front(eLevenshteinOperator::rem);
-                    --j;
-                }
-            }
-            return result;
-        }
-
-        void debug(std::ostream &o) const
-        {
-            for (size_t i =0; i <= n; ++i)
-            {
-                for (size_t j=0; j <= m; ++j)
-                    o << (int) (matrice[n][m]) << '\t';
-                o << std::endl;
-            }
-        }
-
-        size_t result() const
-        {
-            return (size_t) matrice[n][m];
-        };
-
-        bool areSimilar() const
-        {
-            float levenRelativeDist = 1 -(result() / std::max(n, m));
-            return levenRelativeDist > LEVENSHTEIN_SENSIBILITY;
-        }
+        size_t result() const;
+        bool areSimilar() const;
 
     private:
-        T **matrice;
-        /**
-         * Usefull only on `modify' operation
-        **/
-        LevenshteinMatrice_base ***subMatrice;
+        template<typename T>
+        void shortestPath(T **matrice,
+                LevenshteinMatrice_base ***subMatrice,
+                size_t _i, size_t _j,
+                JSonContainer::const_iterator i, JSonContainer::const_iterator j)
+        {
+            while (_i || _j)
+            {
+                if (_i && (!_j || matrice[_i][_j] > matrice[_i-1][_j]))
+                {
+                    operations[*i] = eLevenshteinOperator::add;
+                    --i;
+                    --_i;
+                }
+                else if (_j && (!_i || matrice[_i][_j] > matrice[_i][_j -1]))
+                {
+                    operations[*j] = eLevenshteinOperator::add;
+                    --j;
+                    --_j;
+                }
+                else if (_i && _j)
+                {
+                    eLevenshteinOperator op =
+                        matrice[_i][_j] == matrice[_i -1][_j -1] ?
+                        eLevenshteinOperator::equ :
+                        eLevenshteinOperator::mod;
+                    operations[*i] = operations[*j] = op;
+                    for (std::pair<const JSonElement *, eLevenshteinOperator> e : subMatrice[_i -1][_j -1]->path())
+                        operations[e.first] = e.second;
+                    --i;
+                    --j;
+                    --_i;
+                    --_j;
+                }
+                else if (_i)
+                {
+                    operations[*i] = eLevenshteinOperator::add;
+                    --i;
+                    --_i;
+                }
+                else if (_j)
+                {
+                    operations[*j] = eLevenshteinOperator::add;
+                    --j;
+                    --_j;
+                }
+            }
+        }
 
-        size_t n;
-        size_t m;
+
+    private:
+        LevenshteinMatrice();
+        size_t levenDist;
+        float levenRelativeDist;
 };
 

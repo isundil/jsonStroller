@@ -81,7 +81,6 @@ void CurseSplitOutput::computeDiff()
         diffMatrice = builder.build(roots.at(0), roots.at(1));
     else if (roots.size() == 3)
         throw std::runtime_error("3-input diff not implemented"); //TODO
-    diffMatrice->debug(std::cout);
 }
 
 inputResult CurseSplitOutput::selectUp()
@@ -638,13 +637,13 @@ const OutputFlag CurseSplitOutput::getFlag(const JSonElement *item, const JSonEl
     res.searched(std::find(search_result[selectedWin].cbegin(), search_result[selectedWin].cend(), item) != search_result[selectedWin].cend());
 
     try {
-        /*
-        eLevenshteinOperator dr = LevenshteinCache<JSonElement>::instance()->get(item);
+        eLevenshteinOperator dr = diffMatrice->get(item);
         if (dr == eLevenshteinOperator::add)
-            res.type(OutputFlag::TYPE_STRING);
-        else if (dr == eLevenshteinOperator::mod)
             res.type(OutputFlag::TYPE_NUMBER);
-        */
+        else if (dr == eLevenshteinOperator::rem)
+            res.type(OutputFlag::TYPE_BOOL);
+        else if (dr == eLevenshteinOperator::mod)
+            res.type(OutputFlag::TYPE_STRING);
     }
     catch (std::out_of_range &e) {}
     /*

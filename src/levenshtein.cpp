@@ -53,27 +53,25 @@ LevenshteinMatrice_base *LevenshteinMatrice_base::Builder::build(const JSonEleme
         const size_t lenB = ((const JSonContainer*) b)->size();
 
         const JSonContainer::const_iterator aBegin = ((const JSonContainer*)a)->cbegin();
-        const JSonContainer::const_iterator aEnd = ((const JSonContainer*)a)->cend();
         const JSonContainer::const_iterator bBegin = ((const JSonContainer*)b)->cbegin();
-        const JSonContainer::const_iterator bEnd = ((const JSonContainer*)b)->cend();
 
         if (lenA < UCHAR_MAX && lenB < UCHAR_MAX)
-            return new LevenshteinMatrice<unsigned char>(aBegin, aEnd, bBegin, bEnd, lenA, lenB);
+            return LevenshteinMatrice::build<unsigned char>(aBegin, bBegin, lenA, lenB);
         if (lenA < USHRT_MAX && lenB < USHRT_MAX)
-            return new LevenshteinMatrice<unsigned short>(aBegin, aEnd, bBegin, bEnd, lenA, lenB);
-        return new LevenshteinMatrice<unsigned int>(aBegin, aEnd, bBegin, bEnd, lenA, lenB);
+            return LevenshteinMatrice::build<unsigned short>(aBegin, bBegin, lenA, lenB);
+        return LevenshteinMatrice::build<unsigned int>(aBegin, bBegin, lenA, lenB);
     }
     else if (aIsContainer)
     {
         LevenshteinMatrice_manual *result = new LevenshteinMatrice_manual();
-        result->_result = 2;
+        result->_result = ((JSonContainer*)a)->size() +1; //TODO recursive number of all descendants
         return result->add(a, eLevenshteinOperator::rem)
             ->add(b, eLevenshteinOperator::add);
     }
     else if (bIsContainer)
     {
         LevenshteinMatrice_manual *result = new LevenshteinMatrice_manual();
-        result->_result = 2;
+        result->_result = ((JSonContainer*)b)->size() +1; //TODO recursive number of all descendants
         return result->add(b, eLevenshteinOperator::rem)
             ->add(a, eLevenshteinOperator::add);
     }
@@ -90,6 +88,29 @@ LevenshteinMatrice_base *LevenshteinMatrice_base::Builder::build(const JSonEleme
     }
 }
 
+eLevenshteinOperator LevenshteinMatrice_base::get(const JSonElement *e) const
+{
+    return operations.at(e);
+}
+
+/**
+ * base (generic) Matrice
+**/
+const std::map<const JSonElement*, eLevenshteinOperator> LevenshteinMatrice_base::path() const
+{ return operations; }
+
+/**
+ * Normal matrice
+**/
+LevenshteinMatrice::LevenshteinMatrice()
+{ }
+
+size_t LevenshteinMatrice::result() const
+{ return levenDist; }
+
+bool LevenshteinMatrice::areSimilar() const
+{ return levenRelativeDist > LEVENSHTEIN_SENSIBILITY; }
+
 /**
  * Manual matrice
 **/
@@ -97,11 +118,6 @@ LevenshteinMatrice_manual *LevenshteinMatrice_manual::add(const JSonElement *a, 
 {
     operations[a] = b;
     return this;
-}
-
-void LevenshteinMatrice_manual::debug(std::ostream &out) const
-{
-    out << "(MANUAL - no data)" << std::endl;
 }
 
 size_t LevenshteinMatrice_manual::result() const
@@ -120,11 +136,6 @@ bool LevenshteinMatrice_manual::areSimilar() const
 LevenshteinMatriceWithScore::LevenshteinMatriceWithScore(float s)
 {
     _result = s > LEVENSHTEIN_SENSIBILITY;
-}
-
-void LevenshteinMatriceWithScore::debug(std::ostream &out) const
-{
-    out << "Comparing two raw types gave " << (_result ? "=" : "!=") << std::endl;
 }
 
 size_t LevenshteinMatriceWithScore::result() const
