@@ -296,7 +296,7 @@ void CurseOutput::init()
         init_pair(OutputFlag::TYPE_OBJKEY, COLOR_CYAN, COLOR_BLACK);
         init_pair(OutputFlag::SPECIAL_SEARCH, COLOR_WHITE, COLOR_BLUE);
         init_pair(OutputFlag::SPECIAL_ERROR, COLOR_WHITE, COLOR_RED);
-        init_pair(OutputFlag::SPECIAL_ACTIVEINPUTNAME, COLOR_WHITE, COLOR_GREEN);
+        init_pair(OutputFlag::SPECIAL_ACTIVEINPUTNAME, COLOR_BLACK, COLOR_GREEN);
         init_pair(OutputFlag::SPECIAL_INPUTNAME, COLOR_BLACK, COLOR_WHITE);
         colors.insert(OutputFlag::TYPE_NUMBER);
         colors.insert(OutputFlag::TYPE_BOOL);

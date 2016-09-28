@@ -59,19 +59,17 @@ void CurseSplitOutput::run(const std::deque<std::string> &inputName, const std::
 
 void CurseSplitOutput::loop()
 {
+    inputResult read;
     breakLoop = false;
 
     while (!redraw());
-    while(true)
+    do
     {
-        inputResult read = readInput();
-        if (read == inputResult::quit)
-            break;
-        if (read == inputResult::redraw)
-            while (!redrawCurrent(selectedWin));
-        else if (read == inputResult::redrawAll)
+        read = readInput();
+        if (read == inputResult::redraw || read == inputResult::redrawAll)
             while (!redraw());
     }
+    while (read != inputResult::quit);
 }
 
 void CurseSplitOutput::computeDiff()

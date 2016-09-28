@@ -98,7 +98,7 @@ class LevenshteinMatrice: public LevenshteinMatrice_base
                     LevenshteinMatrice_base *_subMatrice = matriceBuilder.build(*a, *b);
                     if (_subMatrice != nullptr)
                     {
-                        const T chCost = matrice[i -1][j -1] + (_subMatrice->areSimilar() ? 0 : 1);
+                        const T chCost = matrice[i -1][j -1] + (_subMatrice->areSimilar() ? 0 : _subMatrice->result());
 
                         if (chCost <= matrice[i -1][j] +1 &&
                                 chCost <= matrice[i][j -1] +1)
@@ -108,7 +108,7 @@ class LevenshteinMatrice: public LevenshteinMatrice_base
                             continue;
                         }
                         delete _subMatrice;
-                    } // Change is not worth or subMatrice is null (eg. a and b has different types)
+                    } // Change is not worth, consider adding/removing
                     matrice[i][j] = std::min(matrice[i -1][j], matrice[i][j -1]) +1;
                 }
             }
