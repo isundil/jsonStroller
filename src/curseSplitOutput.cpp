@@ -34,25 +34,22 @@ CurseSplitOutput::~CurseSplitOutput()
 
 void CurseSplitOutput::run(const std::deque<std::string> &inputName, const std::deque<JSonElement*> &roots)
 {
-
     nbInputs = inputName.size();
     selectedWin = 0;
-    scrollTop.clear();
-    select_up.clear();
-    select_down.clear();
-    selection.clear();
-    search_result.clear();
+    subWindows.clear();
 
-    for (short i =0; i < nbInputs; i++)
+    for (size_t i =0; i < nbInputs; ++i)
     {
-        this->roots.push_back(roots.at(i));
-        scrollTop.push_back(0);
-        selection.push_back(roots.at(i));
-        select_up.push_back(nullptr);
-        select_down.push_back(nullptr);
-        search_result.push_back(std::list<const JSonElement *>());
+        t_subWindow subwin;
+
+        subwin.fileName = inputName.at(i);
+        subwin.selection = subwin.root = roots.at(i);
+        subwin.select_up = subwin.select_down = nullptr;
+        subwin.innerWin = subwin.outerWin = nullptr;
+        subwin.scrollTop = 0;
+
+        subWindows.push_back(subwin);
     }
-    fileNames = inputName;
     computeDiff();
     loop();
 }
@@ -74,25 +71,28 @@ void CurseSplitOutput::loop()
 
 void CurseSplitOutput::computeDiff()
 {
+    //TODO diffMatrice should be LevenshteinMatrice_base[nbInputs -1]
+    //And we should iterate such as diffMatrice[n] = diff(n, n+1)
+
     LevenshteinMatrice_base::Builder builder;
-    if (roots.size() == 2)
-        diffMatrice = builder.build(roots.at(0), roots.at(1));
-    else if (roots.size() == 3)
-        throw std::runtime_error("3-input diff not implemented"); //TODO
+    if (nbInputs == 2)
+        diffMatrice = builder.build(subWindows.at(0).root, subWindows.at(1).root);
+    else if (nbInputs == 3)
+        throw std::runtime_error("3-input diff not implemented");
 }
 
 inputResult CurseSplitOutput::selectUp()
 {
-    selection[selectedWin] = select_up[selectedWin];
+    subWindows.at(selectedWin).selection = subWindows.at(selectedWin).select_up;
     return inputResult::redraw;
 }
 
 inputResult CurseSplitOutput::selectDown()
 {
     if (selectIsLast)
-        scrollTop[selectedWin] += 2;
-    else if (selection != select_down)
-        selection[selectedWin] = select_down[selectedWin];
+        subWindows.at(selectedWin).scrollTop += 2;
+    else if (subWindows.at(selectedWin).selection != subWindows.at(selectedWin).select_down)
+        subWindows.at(selectedWin).selection = subWindows.at(selectedWin).select_down;
     else
         return inputResult::nextInput;
     return inputResult::redraw;
@@ -100,7 +100,7 @@ inputResult CurseSplitOutput::selectDown()
 
 inputResult CurseSplitOutput::selectPUp()
 {
-    const JSonElement *_selection = selection[selectedWin];
+    const JSonElement *_selection = subWindows.at(selectedWin).selection;
     const JSonElement *brother = _selection->findPrev();
 
     if (brother == nullptr)
@@ -108,25 +108,25 @@ inputResult CurseSplitOutput::selectPUp()
         const JSonElement *parent = _selection->getParent();
         if (parent && dynamic_cast<const JSonContainer*>(parent))
         {
-            selection[selectedWin] = _selection = parent;
+            subWindows.at(selectedWin).selection = _selection = parent;
             if (_selection->getParent() && dynamic_cast<const JSonObjectEntry*> (_selection->getParent()))
-                selection[selectedWin] = _selection->getParent();
+                subWindows.at(selectedWin).selection = _selection->getParent();
         }
         else
             return inputResult::nextInput;
     }
     else
-        selection[selectedWin] = brother;
+        subWindows.at(selectedWin).selection = brother;
     return inputResult::redraw;
 }
 
 inputResult CurseSplitOutput::selectPDown()
 {
-    const JSonElement *brother = selection[selectedWin]->findNext();
+    const JSonElement *brother = subWindows.at(selectedWin).selection->findNext();
 
     if (brother)
     {
-        selection[selectedWin] = brother;
+        subWindows.at(selectedWin).selection = brother;
         return inputResult::redraw;
     }
     return inputResult::nextInput;
@@ -134,7 +134,7 @@ inputResult CurseSplitOutput::selectPDown()
 
 inputResult CurseSplitOutput::expandSelection()
 {
-    const JSonElement *_selection = selection[selectedWin];
+    const JSonElement *_selection = subWindows.at(selectedWin).selection;
 
     if (dynamic_cast<const JSonObjectEntry*>(_selection))
         _selection = **((const JSonObjectEntry*)_selection);
@@ -145,13 +145,13 @@ inputResult CurseSplitOutput::expandSelection()
         return inputResult::redraw;
     if (!((const JSonContainer*)_selection)->size())
         return inputResult::nextInput;
-    selection[selectedWin] = select_down[selectedWin];
+    subWindows.at(selectedWin).selection = subWindows.at(selectedWin).select_down;
     return inputResult::redraw;
 }
 
 inputResult CurseSplitOutput::collapseSelection()
 {
-    const JSonElement *_selection = selection[selectedWin];
+    const JSonElement *_selection = subWindows.at(selectedWin).selection;
 
     if (dynamic_cast<const JSonObjectEntry*>(_selection))
         _selection = **((const JSonObjectEntry*)_selection);
@@ -159,9 +159,9 @@ inputResult CurseSplitOutput::collapseSelection()
             || collapsed.find((const JSonContainer *)_selection) != collapsed.end()
             || (dynamic_cast<const JSonContainer*>(_selection) && ((const JSonContainer*)_selection)->size() == 0)))
     {
-        selection[selectedWin] = _selection = selection[selectedWin]->getParent();
+        subWindows.at(selectedWin).selection = _selection = subWindows.at(selectedWin).selection->getParent();
         if (_selection->getParent() && dynamic_cast<const JSonObjectEntry*>(_selection->getParent()))
-            selection[selectedWin] = _selection->getParent();
+            subWindows.at(selectedWin).selection = _selection->getParent();
     }
     else
         collapsed.insert((const JSonContainer *)_selection);
@@ -170,20 +170,21 @@ inputResult CurseSplitOutput::collapseSelection()
 
 inputResult CurseSplitOutput::initSearch()
 {
-    const SearchPattern *search_pattern = inputSearch();
-    if (!search_pattern)
+    const SearchPattern *searchPattern = inputSearch();
+    if (!searchPattern)
         return inputResult::redraw;
-    search_result.clear();
-    if (search_pattern->isEmpty())
+    for (t_subWindow &s : subWindows)
+        s.searchResults.clear();
+    if (searchPattern->isEmpty())
         return inputResult::redraw;
-    search(*search_pattern);
-    delete search_pattern;
+    search(*searchPattern);
+    delete searchPattern;
     return nextResult();
 }
 
 inputResult CurseSplitOutput::nextResult()
 {
-    if (search_result.empty())
+    if (subWindows.at(selectedWin).searchResults.empty())
         CurseOutput::redraw("Pattern not found");
     else if (jumpToNextSearch())
         return inputResult::redraw;
@@ -202,22 +203,25 @@ void CurseSplitOutput::checkSelection(const JSonElement *item, const std::pair<i
 {
     if (!selectFound)
     {
-        if (selection[workingWin] == item)
+        if (subWindows.at(workingWin).selection == item)
         {
-            if (cursor.second < scrollTop[workingWin]) //Selection is above vp, move scroll pos to selection and start drawing
-                scrollTop[workingWin] = cursor.second;
+            if (cursor.second < subWindows.at(workingWin).scrollTop) //Selection is above vp, move scroll pos to selection and start drawing
+                subWindows.at(workingWin).scrollTop = cursor.second;
             selectFound = true;
         }
         else if (!item->getParent() || !dynamic_cast<const JSonObjectEntry*>(item->getParent()))
-            select_up[workingWin] = item;
+            subWindows.at(workingWin).select_up = item;
     }
-    else if (!select_down[workingWin])
+    else if (!subWindows.at(workingWin).select_down)
     {
         const JSonElement *parent = item->getParent();
-        if (!dynamic_cast<const JSonContainer*>(item) && parent && selection[workingWin] != parent && dynamic_cast<const JSonObjectEntry*>(parent))
+        if (!dynamic_cast<const JSonContainer*>(item) &&
+                parent &&
+                subWindows.at(workingWin).selection != parent &&
+                dynamic_cast<const JSonObjectEntry*>(parent))
             item = parent;
         if (!parent || !dynamic_cast<const JSonObjectEntry*>(parent))
-            select_down[workingWin] = item;
+            subWindows.at(workingWin).select_down = item;
     }
 }
 
@@ -226,7 +230,7 @@ bool CurseSplitOutput::jumpToNextSearch(const JSonElement *current, bool &select
     const JSonContainer *container = dynamic_cast<const JSonContainer *> (current);
     const JSonObjectEntry *objEntry = dynamic_cast<const JSonObjectEntry *> (current);
 
-    if (selection[selectedWin] == current)
+    if (subWindows.at(selectedWin).selection == current)
         selectFound = true;
     if (container)
     {
@@ -237,9 +241,14 @@ bool CurseSplitOutput::jumpToNextSearch(const JSonElement *current, bool &select
     }
     else
     {
-        if (current && std::find(search_result[selectedWin].cbegin(), search_result[selectedWin].cend(), current) != search_result[selectedWin].cend() && current != selection[selectedWin] && selectFound)
+        if (current &&
+                std::find(subWindows.at(selectedWin).searchResults.cbegin(),
+                    subWindows.at(selectedWin).searchResults.cend(),
+                    current) != subWindows.at(selectedWin).searchResults.cend() &&
+                current != subWindows.at(selectedWin).selection &&
+                selectFound)
         {
-            selection[selectedWin] = current;
+            subWindows.at(selectedWin).selection = current;
             return true;
         }
         if (objEntry)
@@ -249,16 +258,16 @@ bool CurseSplitOutput::jumpToNextSearch(const JSonElement *current, bool &select
     return false;
 }
 
-unsigned int CurseSplitOutput::search(const SearchPattern &search_pattern)
+unsigned int CurseSplitOutput::search(const SearchPattern &searchPattern)
 {
     unsigned int result =0;
 
-    for (workingWin =0; workingWin < nbInputs; ++workingWin)
-        result += search(search_pattern, roots[workingWin]);
+    for (t_subWindow &w : subWindows)
+        result += search(searchPattern, w.root);
     return result;
 }
 
-unsigned int CurseSplitOutput::search(const SearchPattern &search_pattern, const JSonElement *current)
+unsigned int CurseSplitOutput::search(const SearchPattern &searchPattern, const JSonElement *current)
 {
     const JSonContainer *container = dynamic_cast<const JSonContainer *> (current);
     const JSonObjectEntry *objEntry = dynamic_cast<const JSonObjectEntry *> (current);
@@ -267,45 +276,37 @@ unsigned int CurseSplitOutput::search(const SearchPattern &search_pattern, const
     {
         if (!container->empty())
             for (const JSonElement *it : *container)
-                search(search_pattern, it);
+                search(searchPattern, it);
     }
     else
     {
-        if (current && current->match(search_pattern))
+        if (current && current->match(searchPattern))
         {
             if (current->getParent() && dynamic_cast<const JSonObjectEntry*>(current->getParent()))
-                search_result[workingWin].push_back(current->getParent());
+                subWindows.at(workingWin).searchResults.push_back(current->getParent());
             else
-                search_result[workingWin].push_back(current);
+                subWindows.at(workingWin).searchResults.push_back(current);
         }
         if (objEntry)
-            search(search_pattern, **objEntry);
+            search(searchPattern, **objEntry);
     }
-    return search_result.size();
+    return subWindows.at(workingWin).searchResults.size();
 }
 
 bool CurseSplitOutput::jumpToNextSearch()
 {
     bool selectFound = false;
-    bool res = jumpToNextSearch(roots[selectedWin], selectFound);
+    bool res = jumpToNextSearch(subWindows.at(selectedWin).root, selectFound);
 
     if (!res)
     {
-        selection[selectedWin] = *(search_result[selectedWin].cbegin());
-        unfold(selection[selectedWin]);
+        subWindows.at(selectedWin).selection = *(subWindows.at(selectedWin).searchResults.cbegin());
+        unfold(subWindows.at(selectedWin).selection);
         CurseOutput::redraw("Search hit BOTTOM, continuing at TOP");
         return false;
     }
-    unfold(selection[selectedWin]);
+    unfold(subWindows.at(selectedWin).selection);
     return true;
-}
-
-bool CurseSplitOutput::redrawCurrent(short selectedWin)
-{
-    const std::pair<unsigned int, unsigned int> screenSize = getScreenSize();
-
-    currentWin = subwindows[workingWin = selectedWin];
-    return redrawCurrent(screenSize);
 }
 
 bool CurseSplitOutput::redrawCurrent(const std::pair<unsigned int, unsigned int> &screenSize)
@@ -313,14 +314,15 @@ bool CurseSplitOutput::redrawCurrent(const std::pair<unsigned int, unsigned int>
     std::pair<int, int> cursor(0, 1);
     bool result;
 
-    select_up[workingWin] = select_down[workingWin] = nullptr;
+    subWindows.at(workingWin).select_up = subWindows.at(workingWin).select_down = nullptr;
     selectFound = selectIsLast = false;
 
-    wclear(currentWin);
-    box(outerWin[workingWin], 0, 0);
-    writeTopLine(fileNames[workingWin], workingWin == selectedWin ? OutputFlag::SPECIAL_ACTIVEINPUTNAME : OutputFlag::SPECIAL_INPUTNAME); //TODO
+    wclear(subWindows.at(workingWin).innerWin);
+    box(subWindows.at(workingWin).outerWin, 0, 0);
+    writeTopLine(subWindows.at(workingWin).fileName,
+            workingWin == selectedWin ? OutputFlag::SPECIAL_ACTIVEINPUTNAME : OutputFlag::SPECIAL_INPUTNAME);
     try {
-        result = redraw(cursor, screenSize, roots[workingWin]);
+        result = redraw(cursor, screenSize, subWindows.at(workingWin).root);
     }
     catch (SelectionOutOfRange &e)
     {
@@ -328,26 +330,26 @@ bool CurseSplitOutput::redrawCurrent(const std::pair<unsigned int, unsigned int>
     }
     if (!result && !selectFound)
     {
-        scrollTop[workingWin]++;
+        subWindows.at(workingWin).scrollTop++;
         return false;
     }
-    if (!result && !select_down[workingWin])
+    if (!result && !subWindows.at(workingWin).select_down)
         selectIsLast = true;
-    if (!select_down[workingWin])
+    if (!subWindows.at(workingWin).select_down)
     {
-        const JSonContainer *pselect = dynamic_cast<const JSonContainer*>(selection[workingWin]);
+        const JSonContainer *pselect = dynamic_cast<const JSonContainer*>(subWindows.at(workingWin).selection);
         if (pselect && !pselect->empty())
-            select_down[workingWin] = *(pselect->cbegin());
+            subWindows.at(workingWin).select_down = *(pselect->cbegin());
         else
         {
-            const JSonElement *next = selection[workingWin]->findNext();
-            select_down[workingWin] = next ? next : selection[workingWin];
+            const JSonElement *next = subWindows.at(workingWin).selection->findNext();
+            subWindows.at(workingWin).select_down = next ? next : subWindows.at(workingWin).selection;
         }
     }
-    if (!select_up[workingWin])
-        select_up[workingWin] = selection[workingWin];
-    wrefresh(outerWin[workingWin]);
-    wrefresh(currentWin);
+    if (!subWindows.at(workingWin).select_up)
+        subWindows.at(workingWin).select_up = subWindows.at(workingWin).selection;
+    wrefresh(subWindows.at(workingWin).outerWin);
+    wrefresh(subWindows.at(workingWin).innerWin);
     return true;
 }
 
@@ -360,9 +362,9 @@ bool CurseSplitOutput::redraw()
     refresh();
     for (workingWin =0; workingWin < nbInputs; workingWin++)
     {
-        outerWin.push_back(newwin(screenSize.second +2, screenSize.first, 0, workingWin * screenSize.first -workingWin));
-        currentWin = newwin(screenSize.second, screenSize.first -2, 1, workingWin * screenSize.first -workingWin +1);
-        subwindows.push_back(currentWin);
+        //TODO JSonElement by JSonElement instead of file per file
+        subWindows.at(workingWin).outerWin = newwin(screenSize.second +2, screenSize.first, 0, workingWin * screenSize.first -workingWin);
+        subWindows.at(workingWin).innerWin = newwin(screenSize.second, screenSize.first -2, 1, workingWin * screenSize.first -workingWin +1);
         if (!redrawCurrent(screenSize))
             return false;
     }
@@ -372,7 +374,7 @@ bool CurseSplitOutput::redraw()
 bool CurseSplitOutput::writeContainer(std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, const JSonContainer *item)
 {
     char childDelimiter[2];
-    const int scrollTop = this->scrollTop[workingWin];
+    const int scrollTop = subWindows.at(workingWin).scrollTop;
 
     if (dynamic_cast<const JSonObject *>(item))
         memcpy(childDelimiter, "{}", sizeof(*childDelimiter) * 2);
@@ -403,7 +405,7 @@ bool CurseSplitOutput::writeContent(std::pair<int, int> &cursor, const std::pair
     bool containerIsObject = (dynamic_cast<JSonObject *>(item) != nullptr);
     bool result = true;
     cursor.first += INDENT_LEVEL;
-    const int scrollTop = this->scrollTop[workingWin];
+    const int scrollTop = subWindows.at(workingWin).scrollTop;
 
     for (JSonElement *i : *item)
     {
@@ -444,17 +446,17 @@ bool CurseSplitOutput::writeContent(std::pair<int, int> &cursor, const std::pair
             {
                 if (!writeKey(key, ent->lazystrlen(), cursor, maxSize, getFlag(ent)))
                     break;
-                const JSonElement *saveSelection = selection[workingWin];
-                if (selection[workingWin] == ent)
-                    selection[workingWin] = **ent;
+                const JSonElement *saveSelection = subWindows.at(workingWin).selection;
+                if (saveSelection == ent)
+                    subWindows.at(workingWin).selection = **ent;
                 cursor.first += INDENT_LEVEL /2;
                 if (!redraw(cursor, maxSize, **ent))
                 {
-                    selection[workingWin] = saveSelection;
+                    subWindows.at(workingWin).selection = saveSelection;
                     cursor.first -= INDENT_LEVEL /2;
                     return false;
                 }
-                selection[workingWin] = saveSelection;
+                subWindows.at(workingWin).selection = saveSelection;
                 cursor.first -= INDENT_LEVEL /2;
             }
         }
@@ -472,7 +474,7 @@ bool CurseSplitOutput::writeContent(std::pair<int, int> &cursor, const std::pair
 
 bool CurseSplitOutput::writeKey(const std::string &key, const size_t keylen, std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, OutputFlag flags, unsigned int extraLen)
 {
-    if (cursor.second - scrollTop[workingWin] <= 0)
+    if (cursor.second - subWindows.at(workingWin).scrollTop <= 0)
     {
         cursor.second++;
         return true;
@@ -483,12 +485,12 @@ bool CurseSplitOutput::writeKey(const std::string &key, const size_t keylen, std
     flags.type(OutputFlag::TYPE_OBJ);
     write(": ", flags);
     flags.type(oldType);
-    return (cursor.second - scrollTop[workingWin] < 0 || (unsigned)(cursor.second - scrollTop[workingWin]) <= maxSize.second);
+    return (cursor.second - subWindows.at(workingWin).scrollTop < 0 || (unsigned)(cursor.second - subWindows.at(workingWin).scrollTop) <= maxSize.second);
 }
 
 bool CurseSplitOutput::writeKey(const std::string &key, const size_t keylen, const std::string &after, size_t afterlen, std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, OutputFlag flags)
 {
-    if (cursor.second - scrollTop[workingWin] <= 0)
+    if (cursor.second - subWindows.at(workingWin).scrollTop <= 0)
     {
         cursor.second++;
         return true;
@@ -501,7 +503,7 @@ bool CurseSplitOutput::writeKey(const std::string &key, const size_t keylen, con
     flags.type(oldType);
     write(after, flags);
     cursor.second += getNbLines(cursor.first +keylen +2 +afterlen, maxSize.first);
-    return (cursor.second - scrollTop[workingWin] < 0 || (unsigned)(cursor.second - scrollTop[workingWin]) <= maxSize.second);
+    return (cursor.second - subWindows.at(workingWin).scrollTop < 0 || (unsigned)(cursor.second - subWindows.at(workingWin).scrollTop) <= maxSize.second);
 }
 
 bool CurseSplitOutput::redraw(std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, JSonElement *item)
@@ -515,7 +517,7 @@ bool CurseSplitOutput::redraw(std::pair<int, int> &cursor, const std::pair<unsig
     else
     {
         cursor.second += CurseOutput::write(cursor.first, cursor.second, item, maxSize.first, CurseSplitOutput::getFlag(item));
-        if (cursor.second - scrollTop[workingWin] > 0 && (unsigned)(cursor.second - scrollTop[workingWin]) > maxSize.second -1)
+        if (cursor.second - subWindows.at(workingWin).scrollTop > 0 && (unsigned)(cursor.second - subWindows.at(workingWin).scrollTop) > maxSize.second -1)
             return false;
     }
     return true;
@@ -523,8 +525,9 @@ bool CurseSplitOutput::redraw(std::pair<int, int> &cursor, const std::pair<unsig
 
 unsigned int CurseSplitOutput::write(const int &x, const int &y, const char item, unsigned int maxWidth, OutputFlag flags)
 {
-    int offsetY = y - scrollTop[workingWin];
+    int offsetY = y - subWindows.at(workingWin).scrollTop;
     char color = OutputFlag::SPECIAL_NONE;
+    WINDOW *currentWin = subWindows.at(this->workingWin).innerWin;
 
     if (offsetY <= 0)
         return 1;
@@ -547,11 +550,11 @@ unsigned int CurseSplitOutput::write(const int &x, const int &y, const char item
 
 unsigned int CurseSplitOutput::write(const int &x, const int &y, const std::string &str, const size_t strlen, unsigned int maxWidth, const OutputFlag flags)
 {
-    int offsetY = y - scrollTop[workingWin];
+    int offsetY = y - subWindows.at(workingWin).scrollTop;
 
     if (offsetY <= 0)
         return 1;
-    wmove(currentWin, offsetY, x);
+    wmove(subWindows.at(workingWin).innerWin, offsetY, x);
     write(str, flags);
     return getNbLines(strlen +x, maxWidth);
 }
@@ -559,6 +562,7 @@ unsigned int CurseSplitOutput::write(const int &x, const int &y, const std::stri
 void CurseSplitOutput::write(const std::string &str, const OutputFlag flags) const
 {
     char color = OutputFlag::SPECIAL_NONE;
+    WINDOW *currentWin = subWindows.at(workingWin).innerWin;
 
     if (flags.selected())
         wattron(currentWin, A_REVERSE | A_BOLD);
@@ -577,22 +581,28 @@ void CurseSplitOutput::write(const std::string &str, const OutputFlag flags) con
 
 void CurseSplitOutput::destroyAllSubWin()
 {
-    for (WINDOW *i: outerWin)
+    for (t_subWindow &w : subWindows)
     {
-        wborder(i, ' ', ' ', ' ',' ',' ',' ',' ',' ');
-        wrefresh(i);
-        delwin(i);
+        if (w.outerWin)
+        {
+            wborder(w.outerWin, ' ', ' ', ' ',' ',' ',' ',' ',' ');
+            wrefresh(w.outerWin);
+            delwin(w.outerWin);
+            w.outerWin = nullptr;
+        }
+        if (w.innerWin)
+        {
+            delwin(w.innerWin);
+            w.innerWin = nullptr;
+        }
     }
-    for (WINDOW *i: subwindows)
-        delwin(i);
-    subwindows.clear();
-    outerWin.clear();
 }
 
 void CurseSplitOutput::writeTopLine(const std::string &buffer, short color) const
 {
     const std::pair<unsigned int, unsigned int> screenSize = getScreenSize();
     const size_t bufsize = buffer.size();
+    WINDOW *currentWin = subWindows.at(workingWin).innerWin;
 
     if (params.colorEnabled())
         wattron(currentWin, COLOR_PAIR(color));
@@ -623,7 +633,7 @@ void CurseSplitOutput::shutdown()
 
 const OutputFlag CurseSplitOutput::getFlag(const JSonElement *e) const
 {
-    return getFlag(e, selection[workingWin]);
+    return getFlag(e, subWindows.at(workingWin).selection);
 }
 
 const OutputFlag CurseSplitOutput::getFlag(const JSonElement *item, const JSonElement *selection) const
@@ -632,7 +642,9 @@ const OutputFlag CurseSplitOutput::getFlag(const JSonElement *item, const JSonEl
     const JSonElement *i = dynamic_cast<const JSonObjectEntry*>(item) ? **((const JSonObjectEntry*)item) : item;
 
     res.selected(item == selection);
-    res.searched(std::find(search_result[selectedWin].cbegin(), search_result[selectedWin].cend(), item) != search_result[selectedWin].cend());
+    res.searched(std::find(subWindows.at(selectedWin).searchResults.cbegin(),
+                subWindows.at(selectedWin).searchResults.cend(),
+                item) != subWindows.at(selectedWin).searchResults.cend());
 
     try {
         eLevenshteinOperator dr = diffMatrice->get(item);

@@ -6,6 +6,16 @@
 
 class LevenshteinMatrice_base;
 
+typedef struct
+{
+    std::string fileName;
+    JSonElement *root;
+    const JSonElement *selection, *select_up, *select_down;
+    WINDOW *innerWin, *outerWin;
+    std::list<const JSonElement*> searchResults;
+    int scrollTop;
+} t_subWindow;
+
 class CurseSplitOutput: public CurseOutput
 {
     public:
@@ -23,7 +33,6 @@ class CurseSplitOutput: public CurseOutput
 
         bool redraw();
         bool redraw(std::pair<int, int> &, const std::pair<unsigned int, unsigned int> &, JSonElement *);
-        bool redrawCurrent(short);
         bool redrawCurrent(const std::pair<unsigned int, unsigned int> &screenSize);
 
         bool writeContainer(std::pair<int, int> &, const std::pair<unsigned int, unsigned int> &, const JSonContainer *);
@@ -38,8 +47,8 @@ class CurseSplitOutput: public CurseOutput
 
         bool jumpToNextSearch(const JSonElement *current, bool &selectFound);
         bool jumpToNextSearch();
-        unsigned int search(const SearchPattern &search_pattern);
-        unsigned int search(const SearchPattern &search_pattern, const JSonElement *current);
+        unsigned int search(const SearchPattern &searchPattern);
+        unsigned int search(const SearchPattern &searchPattern, const JSonElement *current);
 
         /**
          * get the screen size
@@ -72,24 +81,18 @@ class CurseSplitOutput: public CurseOutput
         inputResult changeWindow(char, bool);
 
         void computeDiff();
-
-        std::deque<std::string> fileNames;
-        std::deque<JSonElement *> roots;
-        std::deque<const JSonElement *> selection, select_up, select_down;
-        std::deque<WINDOW *> subwindows, outerWin;
+        std::deque<t_subWindow> subWindows;
 
         /**
          * currently searching pattern and its results
         **/
-        std::deque<std::list<const JSonElement*> > search_result;
         const LevenshteinMatrice_base *diffMatrice;
 
         /**
          * Viewport start
         **/
-        std::deque<int> scrollTop;
+        unsigned short nbInputs, selectedWin, workingWin;
 
-        WINDOW *currentWin;
-        short nbInputs, selectedWin, workingWin;
+        // TODO t_subWindow &workingSubwin, &selectedSubwin ??
 };
 
