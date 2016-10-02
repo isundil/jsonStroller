@@ -40,12 +40,12 @@ class CurseSimpleOutput: public CurseOutput
         unsigned int write(const int &x, const int &y, const char item, unsigned int maxWidth, OutputFlag flags);
         unsigned int write(const int &x, const int &y, const std::string &str, const size_t strlen, unsigned int maxWidth, const OutputFlag flags);
         void write(const std::string &str, const OutputFlag flags) const;
-        bool writeKey(const std::string &key, const size_t keylen, std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxWidth, OutputFlag, unsigned int extraLen =0);
-        bool writeKey(const std::string &key, const size_t keylen, const std::string &after, size_t afterlen, std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, OutputFlag flags);
-        bool writeContainer(std::pair<int, int> &, const std::pair<unsigned int, unsigned int> &maxSize, const JSonContainer *);
-        bool writeContent(std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, std::list<JSonElement *> * obj);
-        bool redraw(std::pair<int, int> &, const std::pair<unsigned int, unsigned int> &, JSonElement *);
-        void checkSelection(const JSonElement *item, const std::pair<int, int> &cursor);
+        bool writeKey(const std::string &key, const size_t keylen, t_Cursor &cursor, const t_Cursor &maxWidth, OutputFlag, unsigned int extraLen =0);
+        bool writeKey(const std::string &key, const size_t keylen, const std::string &after, size_t afterlen, t_Cursor &cursor, const t_Cursor &maxSize, OutputFlag flags);
+        bool writeContainer(t_Cursor &, const t_Cursor &maxSize, const JSonContainer *);
+        bool writeContent(t_Cursor &cursor, const t_Cursor &maxSize, std::list<JSonElement *> * obj);
+        bool redraw(t_Cursor &, const t_Cursor &, JSonElement *);
+        void checkSelection(const JSonElement *item, const t_Cursor &cursor);
 
     protected:
         inputResult selectUp();

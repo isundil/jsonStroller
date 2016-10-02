@@ -30,6 +30,8 @@ enum inputResult: char
     ,nextInput  =3
 };
 
+typedef std::pair<unsigned int, unsigned int> t_Cursor;
+
 class CurseOutput
 {
     public:
@@ -69,8 +71,9 @@ class CurseOutput
         bool redraw(const std::string &errorMsg);
         /**
          * redraw item and children
-        **/
-        virtual bool redraw(std::pair<int, int> &, const std::pair<unsigned int, unsigned int> &maxWidth, JSonElement *item) =0;
+        **
+        virtual bool redraw(t_Cursor &, const t_Cursor &maxWidth, JSonElement *item) =0;
+        */
 
         /**
          * Wait for input
@@ -92,13 +95,14 @@ class CurseOutput
         /**
          * get the screen size
         **/
-        virtual const std::pair<unsigned int, unsigned int> getScreenSize() const;
-        const std::pair<unsigned int, unsigned int> getScreenSizeUnsafe() const;
+        virtual const t_Cursor getScreenSize() const;
+        const t_Cursor getScreenSizeUnsafe() const;
 
         /**
          * set the select_up and select_down pointers, scroll to selection if it is above view port
-        **/
-        virtual void checkSelection(const JSonElement *item, const std::pair<int, int>&) =0;
+        **
+        virtual void checkSelection(const JSonElement *item, const t_Cursor &) =0;
+        */
 
         /**
          * Return the number of lines written while writting nbChar bytes
@@ -124,12 +128,16 @@ class CurseOutput
         unsigned int write(const int &x, const int &y, JSonElement *item, unsigned int maxWidth, const OutputFlag);
         virtual unsigned int write(const int &x, const int &y, const std::string &item, const size_t len, unsigned int maxWidth, const OutputFlag) =0;
         virtual unsigned int write(const int &x, const int &y, const char item, unsigned int maxWidth, const OutputFlag) =0;
-        virtual bool writeKey(const std::string &key, const size_t keylen, std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxWidth, OutputFlag, unsigned int extraLen =0) =0;
-        virtual bool writeKey(const std::string &key, const size_t keylen, const std::string &after, const size_t afterlen, std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxWidth, OutputFlag) =0;
-        virtual bool writeKey(const std::string &key, const size_t keylen, const std::string &after, std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxWidth, OutputFlag);
+        /*
+        virtual bool writeKey(const std::string &key, const size_t keylen, t_Cursor &cursor, const t_Cursor &maxWidth, OutputFlag, unsigned int extraLen =0) =0;
+        */
+        virtual bool writeKey(const std::string &key, const size_t keylen, const std::string &after, const size_t afterlen, t_Cursor &cursor, const t_Cursor &maxWidth, OutputFlag) =0;
+        virtual bool writeKey(const std::string &key, const size_t keylen, const std::string &after, t_Cursor &cursor, const t_Cursor &maxWidth, OutputFlag);
 
-        virtual bool writeContainer(std::pair<int, int> &, const std::pair<unsigned int, unsigned int> &maxSize, const JSonContainer *) =0;
-        virtual bool writeContent(std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, std::list<JSonElement *> * obj) =0;
+        /*
+        virtual bool writeContainer(t_Cursor &, const t_Cursor &maxSize, const JSonContainer *) =0;
+        virtual bool writeContent(t_Cursor &cursor, const t_Cursor &maxSize, std::list<JSonElement *> * obj) =0;
+        */
 
         /**
          * prompt for user input, and return it

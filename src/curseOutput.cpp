@@ -143,7 +143,7 @@ bool CurseOutput::redraw(const std::string &errorMsg)
     return result;
 }
 
-bool CurseOutput::writeKey(const std::string &key, const size_t keylen, const std::string &after, std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, OutputFlag flags)
+bool CurseOutput::writeKey(const std::string &key, const size_t keylen, const std::string &after, t_Cursor &cursor, const t_Cursor &maxSize, OutputFlag flags)
 {
     return writeKey(key, keylen, after, after.size(), cursor, maxSize, flags);
 }
@@ -161,15 +161,15 @@ unsigned int CurseOutput::getNbLines(const size_t nbChar, unsigned int maxWidth)
     return nLine +1;
 }
 
-const std::pair<unsigned int, unsigned int> CurseOutput::getScreenSize() const
+const t_Cursor CurseOutput::getScreenSize() const
 {
     return getScreenSizeUnsafe();
 }
 
-const std::pair<unsigned int, unsigned int> CurseOutput::getScreenSizeUnsafe() const
+const t_Cursor CurseOutput::getScreenSizeUnsafe() const
 {
-    std::pair<int, int> bs;
-    std::pair<int, int> sc;
+    t_Cursor bs;
+    t_Cursor sc;
     getmaxyx(stdscr, sc.second, sc.first);
     getbegyx(stdscr, bs.second, bs.first);
     sc.first -= bs.first;
@@ -230,7 +230,7 @@ const SearchPattern *CurseOutput::inputSearch()
 
 void CurseOutput::writeTopLine(const std::string &buffer, short color) const
 {
-    const std::pair<unsigned int, unsigned int> screenSize = getScreenSize();
+    const t_Cursor screenSize = getScreenSize();
     const size_t bufsize = buffer.size();
 
     if (params.colorEnabled())
@@ -242,7 +242,7 @@ void CurseOutput::writeTopLine(const std::string &buffer, short color) const
 
 void CurseOutput::writeBottomLine(const std::string &buffer, short color) const
 {
-    const std::pair<unsigned int, unsigned int> screenSize = getScreenSizeUnsafe();
+    const t_Cursor screenSize = getScreenSizeUnsafe();
     const size_t bufsize = buffer.size();
 
     if (params.colorEnabled())
@@ -255,7 +255,7 @@ void CurseOutput::writeBottomLine(const std::string &buffer, short color) const
 
 void CurseOutput::writeBottomLine(const std::wstring &buffer, short color) const
 {
-    const std::pair<unsigned int, unsigned int> screenSize = getScreenSizeUnsafe();
+    const t_Cursor screenSize = getScreenSizeUnsafe();
     const size_t bufsize = buffer.size();
 
     if (params.colorEnabled())

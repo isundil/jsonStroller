@@ -14,6 +14,7 @@ typedef struct
     WINDOW *innerWin, *outerWin;
     std::list<const JSonElement*> searchResults;
     int scrollTop;
+    t_Cursor cursor;
 } t_subWindow;
 
 class CurseSplitOutput: public CurseOutput
@@ -27,18 +28,18 @@ class CurseSplitOutput: public CurseOutput
         **/
         void run(const std::deque<std::string> &, const std::deque<JSonElement *> &);
 
-        void checkSelection(const JSonElement *item, const std::pair<int, int> &cursor);
+        void checkSelection(const JSonElement *item);
 
         void loop();
 
         bool redraw();
-        bool redraw(std::pair<int, int> &, const std::pair<unsigned int, unsigned int> &, JSonElement *);
-        bool redrawCurrent(const std::pair<unsigned int, unsigned int> &screenSize);
+        bool redraw(const t_Cursor &screenSize, JSonElement *);
+        bool redrawCurrent(const t_Cursor &screenSize);
 
-        bool writeContainer(std::pair<int, int> &, const std::pair<unsigned int, unsigned int> &, const JSonContainer *);
-        bool writeContent(std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, std::list<JSonElement*> *_item);
-        bool writeKey(const std::string &key, const size_t keylen, std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, OutputFlag flags, unsigned int extraLen =0);
-        bool writeKey(const std::string &key, const size_t keylen, const std::string &after, size_t afterlen, std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, OutputFlag flags);
+        bool writeContainer(const t_Cursor &maxSize, const JSonContainer *);
+        bool writeContent(const t_Cursor &maxSize, std::list<JSonElement*> *_item);
+        bool writeKey(const std::string &key, const size_t keylen, const t_Cursor &maxSize, OutputFlag flags, unsigned int extraLen =0);
+        bool writeKey(const std::string &key, const size_t keylen, const std::string &after, const size_t afterlen, t_Cursor &cursor, const t_Cursor &maxWidth, OutputFlag);
         unsigned int write(const int &x, const int &y, const char item, unsigned int maxWidth, OutputFlag flags);
         unsigned int write(const int &x, const int &y, const std::string &str, const size_t strlen, unsigned int maxWidth, const OutputFlag flags);
         void write(const std::string &str, const OutputFlag flags) const;
@@ -53,7 +54,7 @@ class CurseSplitOutput: public CurseOutput
         /**
          * get the screen size
         **/
-        const std::pair<unsigned int, unsigned int> getScreenSize() const;
+        const t_Cursor getScreenSize() const;
 
         /**
          * Release ncurses

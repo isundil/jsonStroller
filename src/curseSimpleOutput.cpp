@@ -34,8 +34,8 @@ void CurseSimpleOutput::run(JSonElement *root, const std::string &i)
 
 bool CurseSimpleOutput::redraw()
 {
-    const std::pair<unsigned int, unsigned int> screenSize = getScreenSize();
-    std::pair<int, int> cursor(0, 1);
+    const t_Cursor screenSize = getScreenSize();
+    t_Cursor cursor(0, 1);
     /**
      * Will be true if the json's last item is visible
     **/
@@ -191,7 +191,7 @@ inputResult CurseSimpleOutput::changeWindow(char, bool)
     return inputResult::nextInput;
 }
 
-bool CurseSimpleOutput::redraw(std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, JSonElement *item)
+bool CurseSimpleOutput::redraw(t_Cursor &cursor, const t_Cursor &maxSize, JSonElement *item)
 {
     checkSelection(item, cursor);
     if (dynamic_cast<const JSonContainer*>(item))
@@ -208,7 +208,7 @@ bool CurseSimpleOutput::redraw(std::pair<int, int> &cursor, const std::pair<unsi
     return true;
 }
 
-bool CurseSimpleOutput::writeContainer(std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, const JSonContainer *item)
+bool CurseSimpleOutput::writeContainer(t_Cursor &cursor, const t_Cursor &maxSize, const JSonContainer *item)
 {
     char childDelimiter[2];
 
@@ -235,7 +235,7 @@ bool CurseSimpleOutput::writeContainer(std::pair<int, int> &cursor, const std::p
     return (cursor.second - scrollTop < 0 || (unsigned)(cursor.second - scrollTop) <= maxSize.second -1);
 }
 
-bool CurseSimpleOutput::writeContent(std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, std::list<JSonElement*> *_item)
+bool CurseSimpleOutput::writeContent(t_Cursor &cursor, const t_Cursor &maxSize, std::list<JSonElement*> *_item)
 {
     JSonContainer *item = (JSonContainer *)_item;
     bool containerIsObject = (dynamic_cast<JSonObject *>(item) != nullptr);
@@ -307,7 +307,7 @@ bool CurseSimpleOutput::writeContent(std::pair<int, int> &cursor, const std::pai
     return result;
 }
 
-bool CurseSimpleOutput::writeKey(const std::string &key, const size_t keylen, std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, OutputFlag flags, unsigned int extraLen)
+bool CurseSimpleOutput::writeKey(const std::string &key, const size_t keylen, t_Cursor &cursor, const t_Cursor &maxSize, OutputFlag flags, unsigned int extraLen)
 {
     if (cursor.second - scrollTop <= 0)
     {
@@ -323,7 +323,7 @@ bool CurseSimpleOutput::writeKey(const std::string &key, const size_t keylen, st
     return (cursor.second - scrollTop < 0 || (unsigned)(cursor.second - scrollTop) <= maxSize.second);
 }
 
-bool CurseSimpleOutput::writeKey(const std::string &key, const size_t keylen, const std::string &after, size_t afterlen, std::pair<int, int> &cursor, const std::pair<unsigned int, unsigned int> &maxSize, OutputFlag flags)
+bool CurseSimpleOutput::writeKey(const std::string &key, const size_t keylen, const std::string &after, size_t afterlen, t_Cursor &cursor, const t_Cursor &maxSize, OutputFlag flags)
 {
     if (cursor.second - scrollTop <= 0)
     {
@@ -493,7 +493,7 @@ bool CurseSimpleOutput::jumpToNextSearch()
     return true;
 }
 
-void CurseSimpleOutput::checkSelection(const JSonElement *item, const std::pair<int, int> &cursor)
+void CurseSimpleOutput::checkSelection(const JSonElement *item, const t_Cursor &cursor)
 {
     if (!selectFound)
     {
