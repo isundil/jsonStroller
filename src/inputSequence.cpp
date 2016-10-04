@@ -10,14 +10,14 @@ InputSequence::InputSequence(const InputSequence &o): seq(o.seq)
 InputSequence::~InputSequence()
 { }
 
-InputSequence InputSequence::read()
+InputSequence InputSequence::read(WINDOW *w)
 {
     InputSequence result;
     const char *kname = nullptr;
 
     do
     {
-        const int input = getch();
+        const int input = wgetch(w ? w : stdscr);
 
         if (input == -1)
             continue;

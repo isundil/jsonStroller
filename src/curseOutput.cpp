@@ -32,7 +32,7 @@ CurseOutput::~CurseOutput()
     runningInst = nullptr;
 }
 
-void CurseOutput::loop()
+void CurseOutput::loop(WINDOW * w)
 {
     inputResult read;
 
@@ -40,7 +40,7 @@ void CurseOutput::loop()
     do
     {
         while (!redraw());
-        read = readInput();
+        read = readInput(w);
     } while (read != inputResult::quit);
 }
 
@@ -84,11 +84,11 @@ void _resizeFnc(int signo)
  * false on:
  *  - exit signal
 **/
-inputResult CurseOutput::readInput()
+inputResult CurseOutput::readInput(WINDOW *w)
 {
     while (!breakLoop)
     {
-        inputResult r = evalKey(InputSequence::read());
+        inputResult r = evalKey(InputSequence::read(w));
         if (r != inputResult::nextInput)
             return r;
     }

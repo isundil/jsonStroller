@@ -1,8 +1,10 @@
 #pragma once
 
 #include <deque>
+#include <stack>
 #include "curseOutput.hh"
 #include "levenshtein.hpp"
+#include "jsonContainer.hh"
 
 class LevenshteinMatrice_base;
 
@@ -13,8 +15,10 @@ typedef struct
     const JSonElement *selection, *select_up, *select_down;
     WINDOW *innerWin, *outerWin;
     std::list<const JSonElement*> searchResults;
-    int scrollTop;
+    unsigned int scrollTop;
     t_Cursor cursor;
+    std::stack<JSonContainer::const_iterator> pos;
+    bool selectFound, selectIsLast;
 } t_subWindow;
 
 class CurseSplitOutput: public CurseOutput
@@ -30,11 +34,8 @@ class CurseSplitOutput: public CurseOutput
 
         void checkSelection(const JSonElement *item);
 
-        void loop();
-
         bool redraw();
         bool redraw(const t_Cursor &screenSize, JSonElement *);
-        bool redrawCurrent(const t_Cursor &screenSize);
 
         bool writeContainer(const t_Cursor &maxSize, const JSonContainer *);
         bool writeContent(const t_Cursor &maxSize, std::list<JSonElement*> *_item);

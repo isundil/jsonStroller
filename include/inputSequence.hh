@@ -11,7 +11,7 @@ class InputSequence
     public:
         ~InputSequence();
 
-        static InputSequence read();
+        static InputSequence read(WINDOW *);
 
         const std::string &key() const;
 

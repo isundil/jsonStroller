@@ -48,7 +48,7 @@ class CurseOutput
         /**
          * until kill-input, display data and read user inputs
         **/
-        virtual void loop();
+        virtual void loop(WINDOW *w);
 
         /**
          * Initialize ncurses
@@ -79,7 +79,7 @@ class CurseOutput
          * Wait for input
          * @return false if ncurses should stop
         **/
-        inputResult readInput();
+        inputResult readInput(WINDOW *w);
         inputResult evalKey(const InputSequence &k);
 
         virtual inputResult selectUp() =0;
@@ -189,12 +189,6 @@ class CurseOutput
          * initialized colors
         **/
         std::set<char /* OutputFlag::TYPE_SOMETHING */> colors;
-
-        /**
-         * Selection helpers
-         * Used for moving viewport
-        **/
-        bool selectFound, selectIsLast;
 
         class SelectionOutOfRange { };
 };

@@ -67,7 +67,7 @@ class CurseSimpleOutput: public CurseOutput
         /**
          * Viewport start
         **/
-        int scrollTop;
+        unsigned int scrollTop;
 
         /**
          * currently searching pattern and its results
@@ -83,5 +83,11 @@ class CurseSimpleOutput: public CurseOutput
          * input name
         **/
         std::string inputName;
+
+        /**
+         * Selection helpers
+         * Used for moving viewport
+        **/
+        bool selectFound, selectIsLast;
 };
 
