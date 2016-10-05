@@ -84,7 +84,7 @@ LevenshteinMatrice_base *LevenshteinMatrice_base::Builder::build(const JSonEleme
         if (aIsObject && bIsObject) {
             result *= levenshteinPercent((*(const JSonObjectEntry&)(*a))->stringify(), (*(const JSonObjectEntry&)(*b))->stringify());
         }
-        return new LevenshteinMatriceWithScore(result);
+        return new LevenshteinMatriceWithScore(result, a, b);
     }
 }
 
@@ -93,11 +93,17 @@ eLevenshteinOperator LevenshteinMatrice_base::get(const JSonElement *e) const
     return operations.at(e);
 }
 
+const JSonElement *LevenshteinMatrice_base::getEquivalence(const JSonElement *) const
+{ return nullptr; }
+
 /**
  * base (generic) Matrice
 **/
 const std::map<const JSonElement*, eLevenshteinOperator> LevenshteinMatrice_base::path() const
 { return operations; }
+
+std::map<const JSonElement*, const JSonElement *> LevenshteinMatrice_base::getEquivalences() const
+{ return std::map<const JSonElement*, const JSonElement *>(); }
 
 /**
  * Normal matrice
@@ -110,6 +116,17 @@ size_t LevenshteinMatrice::result() const
 
 bool LevenshteinMatrice::areSimilar() const
 { return levenRelativeDist > LEVENSHTEIN_SENSIBILITY; }
+
+const JSonElement *LevenshteinMatrice::getEquivalence(const JSonElement *e) const
+{
+    std::map<const JSonElement *, const JSonElement *>::const_iterator it = equivalences.find(e);
+    if (it == equivalences.cend())
+        return nullptr;
+    return (*it).second;
+}
+
+std::map<const JSonElement*, const JSonElement *> LevenshteinMatrice::getEquivalences() const
+{ return equivalences; }
 
 /**
  * Manual matrice
@@ -133,9 +150,31 @@ bool LevenshteinMatrice_manual::areSimilar() const
 /**
  * Score matrice
 **/
-LevenshteinMatriceWithScore::LevenshteinMatriceWithScore(float s)
+LevenshteinMatriceWithScore::LevenshteinMatriceWithScore(float s, const JSonElement *a, const JSonElement *b)
 {
     _result = s > LEVENSHTEIN_SENSIBILITY;
+    if (_result)
+    {
+        equivalentA = a;
+        equivalentB = b;
+    }
+    else
+        equivalentA = equivalentB = nullptr;
+}
+
+const JSonElement * LevenshteinMatriceWithScore::getEquivalence(const JSonElement *a) const
+{
+    if (equivalentA && equivalentB && equivalentA == a)
+        return equivalentB;
+    return nullptr;
+}
+
+std::map<const JSonElement *, const JSonElement *> LevenshteinMatriceWithScore::getEquivalences() const
+{
+    std::map<const JSonElement*, const JSonElement *> res;
+    if (equivalentA && equivalentB)
+        res[equivalentA] = equivalentB;
+    return res;
 }
 
 size_t LevenshteinMatriceWithScore::result() const

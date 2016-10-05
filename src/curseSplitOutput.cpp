@@ -198,6 +198,13 @@ void CurseSplitOutput::checkSelection(const JSonElement *item)
 {
     t_subWindow &w = subWindows.at(workingWin);
 
+    if (diffMatrice->getEquivalence(item))
+    {
+        if (w.inAddOrDeletion)
+            throw CurseSplitOutput::reachNext();
+    }
+    else
+        w.inAddOrDeletion = true;
     if (!w.selectFound)
     {
         if (w.selection == item)
@@ -327,6 +334,7 @@ bool CurseSplitOutput::redraw()
     {
         bool result;
 
+        w.inAddOrDeletion = false;
         try {
             //TODO JSonElement by JSonElement instead of file per file
             result = redraw(screenSize, w.root);
@@ -335,13 +343,21 @@ bool CurseSplitOutput::redraw()
         {
             return false;
         }
-        if (!result && !w.selectFound)
+        catch (CurseSplitOutput::reachNext &)
         {
-            w.scrollTop++;
-            return false;
+            ++workingWin;
+            continue;
         }
-        if (!result && !w.select_down)
-            w.selectIsLast = true;
+        if (!result)
+        {
+            if (!w.selectFound)
+            {
+                w.scrollTop++;
+                return false;
+            }
+            if (!w.select_down)
+                w.selectIsLast = true;
+        }
         if (!w.select_down)
         {
             const JSonContainer *pselect = dynamic_cast<const JSonContainer*>(w.selection);
@@ -385,8 +401,13 @@ bool CurseSplitOutput::writeContainer(const t_Cursor &maxSize, const JSonContain
         w.cursor.second += write(w.cursor.first, w.cursor.second, childDelimiter[0], maxSize.first, CurseSplitOutput::getFlag(item));
         if (w.cursor.second > w.scrollTop && (w.cursor.second - w.scrollTop) > maxSize.second -1)
                 return false;
+        w.parentsIterators.push(item);
         if (!writeContent(maxSize, (std::list<JSonElement *> *)item))
+        {
+            w.parentsIterators.pop();
             return false;
+        }
+        w.parentsIterators.pop();
         w.cursor.second += write(w.cursor.first, w.cursor.second, childDelimiter[1], maxSize.first, CurseSplitOutput::getFlag(item));
     }
     return (w.cursor.second < w.scrollTop || (w.cursor.second - w.scrollTop) <= maxSize.second -1);
@@ -506,8 +527,6 @@ bool CurseSplitOutput::writeKey(const std::string &key, const size_t keylen, con
 
 bool CurseSplitOutput::redraw(const t_Cursor &maxSize, JSonElement *item)
 {
-    t_subWindow &w = subWindows.at(workingWin);
-
     checkSelection(item);
     if (dynamic_cast<const JSonContainer*>(item))
     {
@@ -516,6 +535,8 @@ bool CurseSplitOutput::redraw(const t_Cursor &maxSize, JSonElement *item)
     }
     else
     {
+        t_subWindow &w = subWindows.at(workingWin);
+
         w.cursor.second += CurseOutput::write(w.cursor.first, w.cursor.second, item, maxSize.first, CurseSplitOutput::getFlag(item));
         if (w.cursor.second > w.scrollTop && (w.cursor.second - w.scrollTop) > maxSize.second -1)
             return false;
@@ -654,7 +675,9 @@ const OutputFlag CurseSplitOutput::getFlag(const JSonElement *item, const JSonEl
         else if (dr == eLevenshteinOperator::mod)
             res.type(OutputFlag::TYPE_STRING);
     }
-    catch (std::out_of_range &e) {}
+    catch (std::out_of_range &e) {
+        res.type(OutputFlag::SPECIAL_SEARCH);
+    }
     /*
     if (dynamic_cast<const JSonPrimitive<std::string> *>(i))
         res.type(OutputFlag::TYPE_STRING);

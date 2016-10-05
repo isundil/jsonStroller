@@ -17,8 +17,8 @@ typedef struct
     std::list<const JSonElement*> searchResults;
     unsigned int scrollTop;
     t_Cursor cursor;
-    std::stack<JSonContainer::const_iterator> pos;
-    bool selectFound, selectIsLast;
+    std::stack<const JSonElement *> parentsIterators;
+    bool selectFound, selectIsLast, inAddOrDeletion;
 } t_subWindow;
 
 class CurseSplitOutput: public CurseOutput
@@ -94,6 +94,8 @@ class CurseSplitOutput: public CurseOutput
          * Viewport start
         **/
         unsigned short nbInputs, selectedWin, workingWin;
+
+        class reachNext {};
 
         // TODO t_subWindow &workingSubwin, &selectedSubwin ??
 };

@@ -23,6 +23,8 @@ class LevenshteinMatrice_base
         virtual bool areSimilar() const =0;
 
         eLevenshteinOperator get(const JSonElement *) const;
+        virtual std::map<const JSonElement *, const JSonElement *> getEquivalences() const;
+        virtual const JSonElement * getEquivalence(const JSonElement *) const;
 
     public:
         class Builder
@@ -52,13 +54,17 @@ class LevenshteinMatrice_manual: public LevenshteinMatrice_base
 class LevenshteinMatriceWithScore: public LevenshteinMatrice_base
 {
     public:
-        LevenshteinMatriceWithScore(float score);
+        LevenshteinMatriceWithScore(float score, const JSonElement *a, const JSonElement *b);
+
+        std::map<const JSonElement *, const JSonElement *> getEquivalences() const;
+        virtual const JSonElement * getEquivalence(const JSonElement *) const;
 
         size_t result() const;
         bool areSimilar() const;
 
     private:
         bool _result;
+        const JSonElement *equivalentA, *equivalentB;
 };
 
 class LevenshteinMatrice: public LevenshteinMatrice_base
@@ -138,8 +144,11 @@ class LevenshteinMatrice: public LevenshteinMatrice_base
             delete []subMatrice;
         };
 
+        std::map<const JSonElement*, const JSonElement *> getEquivalences() const;
+
         size_t result() const;
         bool areSimilar() const;
+        const JSonElement *getEquivalence(const JSonElement *) const;
 
     private:
         template<typename T>
@@ -171,6 +180,9 @@ class LevenshteinMatrice: public LevenshteinMatrice_base
                     operations[*i] = operations[*j] = op;
                     for (std::pair<const JSonElement *, eLevenshteinOperator> e : subMatrice[_i -1][_j -1]->path())
                         operations[e.first] = e.second;
+                    for (std::pair<const JSonElement *, const JSonElement *> e : (subMatrice[_i -1][_j -1])->getEquivalences())
+                        equivalences[e.first] = e.second;
+                    equivalences[*i] = *j;
                     --i;
                     --j;
                     --_i;
@@ -194,7 +206,9 @@ class LevenshteinMatrice: public LevenshteinMatrice_base
 
     private:
         LevenshteinMatrice();
+
         size_t levenDist;
         float levenRelativeDist;
+        std::map<const JSonElement*, const JSonElement *> equivalences;
 };
 
