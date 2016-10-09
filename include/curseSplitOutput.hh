@@ -17,8 +17,8 @@ typedef struct
     std::list<const JSonElement*> searchResults;
     unsigned int scrollTop;
     t_Cursor cursor;
-    std::stack<const JSonElement *> parentsIterators;
-    bool selectFound, selectIsLast, inAddOrDeletion;
+    std::stack<JSonContainer::const_iterator> parentsIterators;
+    bool selectFound, selectIsLast;
 } t_subWindow;
 
 class CurseSplitOutput: public CurseOutput
@@ -35,9 +35,10 @@ class CurseSplitOutput: public CurseOutput
         void checkSelection(const JSonElement *item);
 
         bool redraw();
-        bool redraw(const t_Cursor &screenSize, JSonElement *);
+        bool redraw(const t_Cursor &screenSize, JSonContainer::const_iterator, bool isRoot =false);
+        bool redraw(const t_Cursor &screenSize, JSonElement *, bool isRoot =false);
 
-        bool writeContainer(const t_Cursor &maxSize, const JSonContainer *);
+        bool writeContainer(const t_Cursor &maxSize, JSonContainer *);
         bool writeContent(const t_Cursor &maxSize, std::list<JSonElement*> *_item);
         bool writeKey(const std::string &key, const size_t keylen, const t_Cursor &maxSize, OutputFlag flags, unsigned int extraLen =0);
         bool writeKey(const std::string &key, const size_t keylen, const std::string &after, const size_t afterlen, t_Cursor &cursor, const t_Cursor &maxWidth, OutputFlag);

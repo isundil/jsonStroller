@@ -144,6 +144,21 @@ class LevenshteinMatrice: public LevenshteinMatrice_base
             delete []subMatrice;
         };
 
+        void addRoot(const JSonContainer *a, const JSonContainer *b)
+        {
+            if (levenRelativeDist < LEVENSHTEIN_SENSIBILITY)
+            {
+                operations[a] = eLevenshteinOperator::add;
+                operations[b] = eLevenshteinOperator::add;
+            }
+            else
+            {
+                operations[a] = operations[b] = levenRelativeDist < 1.f ? eLevenshteinOperator::mod : eLevenshteinOperator::equ;
+                equivalences[a] = b;
+                equivalences[b] = a;
+            }
+        }
+
         std::map<const JSonElement*, const JSonElement *> getEquivalences() const;
 
         size_t result() const;

@@ -55,11 +55,16 @@ LevenshteinMatrice_base *LevenshteinMatrice_base::Builder::build(const JSonEleme
         const JSonContainer::const_iterator aBegin = ((const JSonContainer*)a)->cbegin();
         const JSonContainer::const_iterator bBegin = ((const JSonContainer*)b)->cbegin();
 
+        LevenshteinMatrice *result = nullptr;
+
         if (lenA < UCHAR_MAX && lenB < UCHAR_MAX)
-            return LevenshteinMatrice::build<unsigned char>(aBegin, bBegin, lenA, lenB);
-        if (lenA < USHRT_MAX && lenB < USHRT_MAX)
-            return LevenshteinMatrice::build<unsigned short>(aBegin, bBegin, lenA, lenB);
-        return LevenshteinMatrice::build<unsigned int>(aBegin, bBegin, lenA, lenB);
+            result = LevenshteinMatrice::build<unsigned char>(aBegin, bBegin, lenA, lenB);
+        else if (lenA < USHRT_MAX && lenB < USHRT_MAX)
+            result = LevenshteinMatrice::build<unsigned short>(aBegin, bBegin, lenA, lenB);
+        else
+            result = LevenshteinMatrice::build<unsigned int>(aBegin, bBegin, lenA, lenB);
+        result->addRoot((const JSonContainer *)a, (const JSonContainer *)b);
+        return result;
     }
     else if (aIsContainer)
     {
