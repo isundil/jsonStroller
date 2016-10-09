@@ -21,7 +21,7 @@ const char OutputFlag::SPECIAL_ERROR            =52;
 const char OutputFlag::SPECIAL_INPUTNAME        =53;
 const char OutputFlag::SPECIAL_ACTIVEINPUTNAME  =54;
 
-OutputFlag::OutputFlag(short m): mode(m)
+OutputFlag::OutputFlag(short m): mode(m), _type(0)
 { }
 
 OutputFlag::~OutputFlag()
