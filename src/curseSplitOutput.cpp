@@ -543,19 +543,17 @@ bool CurseSplitOutput::redraw(const t_Cursor &maxSize, std::pair<unsigned int, J
 {
     t_subWindow &w = subWindows.at(workingWin);
     static short dirty =0;
-    JSonContainer *parent;
     JSonElement *currentItem;
 
     if (dirty && !isRoot)
         throw CurseSplitOutput::reachNext();
     dirty = 1;
     (item.first)++;
-    parent = (JSonContainer*) item.second->getParent();
-    if (parent && item.first == parent->size())
+    if (item.first == item.second->size())
     {
         w.parentsIterators.pop();
         //TODO close brackets
-        return true;
+        throw CurseSplitOutput::reachNext();
     }
     currentItem = list_at<JSonElement*>(*(item.second), item.first);
     checkSelection(currentItem);
