@@ -6,6 +6,14 @@
 
 #pragma once
 
+enum eLevenshteinOperator: char
+{
+    add = '+',
+    rem = '-',
+    mod = '!',
+    equ = '='
+};
+
 class OutputFlag
 {
     public:
@@ -30,6 +38,12 @@ class OutputFlag
         char type() const;
         char type(char t);
 
+        /**
+         * get/set item's diff operation
+        **/
+        eLevenshteinOperator diffOp() const;
+        eLevenshteinOperator diffOp(const eLevenshteinOperator &);
+
     protected:
         /**
          * item mode bitmask
@@ -39,6 +53,8 @@ class OutputFlag
          * item type
         **/
         char _type;
+
+        eLevenshteinOperator diffOpt;
 
     public:
         static const short MODE_SELECTED = 1;

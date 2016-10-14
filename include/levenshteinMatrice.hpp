@@ -4,14 +4,7 @@
 #include <map>
 #include "jsonContainer.hh"
 #include "levenshtein.hpp"
-
-enum eLevenshteinOperator: char
-{
-    add = '+',
-    rem = '-',
-    mod = '!',
-    equ = '='
-};
+#include "outputFlag.hh"
 
 class LevenshteinMatrice_base
 {

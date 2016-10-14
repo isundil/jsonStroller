@@ -21,7 +21,7 @@ const char OutputFlag::SPECIAL_ERROR            =52;
 const char OutputFlag::SPECIAL_INPUTNAME        =53;
 const char OutputFlag::SPECIAL_ACTIVEINPUTNAME  =54;
 
-OutputFlag::OutputFlag(short m): mode(m), _type(0)
+OutputFlag::OutputFlag(short m): mode(m), _type(0), diffOpt(eLevenshteinOperator::equ)
 { }
 
 OutputFlag::~OutputFlag()
@@ -56,4 +56,10 @@ char OutputFlag::type() const
 
 char OutputFlag::type(char t)
 { return _type = t; }
+
+eLevenshteinOperator OutputFlag::diffOp() const
+{ return diffOpt; }
+
+eLevenshteinOperator OutputFlag::diffOp(const eLevenshteinOperator &e)
+{ return diffOpt = e; }
 

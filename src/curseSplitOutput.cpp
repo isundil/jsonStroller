@@ -321,7 +321,7 @@ bool CurseSplitOutput::redraw()
     workingWin = 0;
     for (t_subWindow &w : subWindows)
     {
-        w.cursor = t_Cursor(0, 1);
+        w.cursor = t_Cursor(2, 1);
         w.select_up = w.select_down = nullptr;
         w.selectFound = w.selectIsLast = false;
 
@@ -338,58 +338,55 @@ bool CurseSplitOutput::redraw()
         {
             bool result;
 
-            if ((writingDone & (1 << workingWin)) == 0)
-                continue;
-            try {
-                if (w.parentsIterators.empty())
-                    result = redraw(screenSize, w.root, true);
-                else
-                    result = redraw(screenSize, w.parentsIterators.top(), true);
-            }
-            catch (SelectionOutOfRange &e)
+            if ((writingDone & (1 << workingWin)))
             {
-                return false;
-            }
-            catch (CurseSplitOutput::reachNext &)
-            {
-                result = true;
-            }
-            if (result && !w.parentsIterators.empty())
-            {
-                ++workingWin;
-                continue;
-            }
-            if (!result)
-            {
-                if (!w.selectFound)
+                try {
+                    if (w.parentsIterators.empty())
+                        result = redraw(screenSize, w.root, true);
+                    else
+                        result = redraw(screenSize, w.parentsIterators.top(), true);
+                }
+                catch (SelectionOutOfRange &e)
                 {
-                    w.scrollTop++;
                     return false;
                 }
-                if (!w.select_down)
-                    w.selectIsLast = true;
-            }
-            if (!w.select_down)
-            {
-                const JSonContainer *pselect = dynamic_cast<const JSonContainer*>(w.selection);
-                if (pselect && !pselect->empty())
-                    w.select_down = *(pselect->cbegin());
-                else
+                catch (CurseSplitOutput::reachNext &)
                 {
-                    const JSonElement *next = w.selection->findNext();
-                    w.select_down = next ? next : w.selection;
+                    result = true;
+                }
+                if (!result || w.parentsIterators.empty())
+                {
+                    if (!result)
+                    {
+                        if (!w.selectFound)
+                        {
+                            w.scrollTop++;
+                            return false;
+                        }
+                        if (!w.select_down)
+                            w.selectIsLast = true;
+                    }
+                    if (!w.select_down)
+                    {
+                        const JSonContainer *pselect = dynamic_cast<const JSonContainer*>(w.selection);
+                        if (pselect && !pselect->empty())
+                            w.select_down = *(pselect->cbegin());
+                        else
+                        {
+                            const JSonElement *next = w.selection->findNext();
+                            w.select_down = next ? next : w.selection;
+                        }
+                    }
+                    if (!w.select_up)
+                        w.select_up = subWindows.at(workingWin).selection;
+                    writingDone &= ~(1 << workingWin);
                 }
             }
-            if (!w.select_up)
-                w.select_up = subWindows.at(workingWin).selection;
-            writingDone &= ~(1 << workingWin);
             ++workingWin;
         }
     }
     for (t_subWindow &w : subWindows)
-    {
         wrefresh(w.innerWin);
-    }
     return true;
 }
 
@@ -632,15 +629,66 @@ unsigned int CurseSplitOutput::write(const int &x, const int &y, const char item
     wattroff(currentWin, A_REVERSE | A_BOLD);
     if (color != OutputFlag::SPECIAL_NONE)
         wattroff(currentWin, COLOR_PAIR(color));
+
+    switch (flags.diffOp())
+    {
+        case eLevenshteinOperator::equ:
+            mvwprintw(currentWin, offsetY, 0, "=");
+            break;
+
+        case eLevenshteinOperator::add:
+            mvwprintw(currentWin, offsetY, 0, "+");
+            break;
+
+        case eLevenshteinOperator::mod:
+            mvwprintw(currentWin, offsetY, 0, "!");
+            break;
+
+        case eLevenshteinOperator::rem:
+            // little strange
+            mvwprintw(currentWin, offsetY, 0, "-");
+            break;
+
+        default:
+            // very fucking strange
+            mvwprintw(currentWin, offsetY, 0, "?");
+            break;
+    }
     return getNbLines(x +1, maxWidth);
 }
 
 unsigned int CurseSplitOutput::write(const int &x, const int &y, const std::string &str, const size_t strlen, unsigned int maxWidth, const OutputFlag flags)
 {
-    int offsetY = y - subWindows.at(workingWin).scrollTop;
+    const t_subWindow &w = subWindows.at(workingWin);
+    WINDOW *currentWin = w.innerWin;
+    int offsetY = y - w.scrollTop;
 
     if (offsetY <= 0)
         return 1;
+    switch (flags.diffOp())
+    {
+        case eLevenshteinOperator::equ:
+            mvwprintw(currentWin, offsetY, 0, "=");
+            break;
+
+        case eLevenshteinOperator::add:
+            mvwprintw(currentWin, offsetY, 0, "+");
+            break;
+
+        case eLevenshteinOperator::mod:
+            mvwprintw(currentWin, offsetY, 0, "!");
+            break;
+
+        case eLevenshteinOperator::rem:
+            // little strange
+            mvwprintw(currentWin, offsetY, 0, "-");
+            break;
+
+        default:
+            // very fucking strange
+            mvwprintw(currentWin, offsetY, 0, "?");
+            break;
+    }
     wmove(subWindows.at(workingWin).innerWin, offsetY, x);
     write(str, flags);
     return getNbLines(strlen +x, maxWidth);
@@ -733,18 +781,12 @@ const OutputFlag CurseSplitOutput::getFlag(const JSonElement *item, const JSonEl
                 item) != subWindows.at(selectedWin).searchResults.cend());
 
     try {
-        eLevenshteinOperator dr = diffMatrice->get(item);
-        if (dr == eLevenshteinOperator::add)
-            res.type(OutputFlag::TYPE_NUMBER);
-        else if (dr == eLevenshteinOperator::rem)
-            res.type(OutputFlag::TYPE_BOOL);
-        else if (dr == eLevenshteinOperator::mod)
-            res.type(OutputFlag::TYPE_STRING);
+        res.diffOp(diffMatrice->get(item));
     }
     catch (std::out_of_range &e) {
-        res.type(OutputFlag::SPECIAL_SEARCH);
+        res.diffOp(eLevenshteinOperator::add);
     }
-    /*
+
     if (dynamic_cast<const JSonPrimitive<std::string> *>(i))
         res.type(OutputFlag::TYPE_STRING);
     else if (dynamic_cast<const JSonPrimitive<bool> *>(i))
@@ -757,7 +799,6 @@ const OutputFlag CurseSplitOutput::getFlag(const JSonElement *item, const JSonEl
         res.type(OutputFlag::TYPE_OBJ);
     else if (dynamic_cast<const JSonArray*>(i))
         res.type(OutputFlag::TYPE_ARR);
-    */
     return res;
 }
 
