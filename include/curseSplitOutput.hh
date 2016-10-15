@@ -12,7 +12,7 @@ typedef struct
 {
     std::string fileName;
     JSonElement *root;
-    const JSonElement *selection, *select_up, *select_down;
+    const JSonElement *selection, *lastSelection, *select_up, *select_down;
     WINDOW *innerWin, *outerWin;
     std::list<const JSonElement*> searchResults;
     unsigned int scrollTop;

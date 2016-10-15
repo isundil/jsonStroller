@@ -52,7 +52,7 @@ void CurseSplitOutput::run(const std::deque<std::string> &inputName, const std::
         t_subWindow subwin;
 
         subwin.fileName = inputName.at(i);
-        subwin.selection = subwin.root = roots.at(i);
+        subwin.selection = subwin.lastSelection = subwin.root = roots.at(i);
         subwin.select_up = subwin.select_down = nullptr;
         subwin.innerWin = subwin.outerWin = nullptr;
         subwin.scrollTop = 0;
@@ -83,20 +83,42 @@ void CurseSplitOutput::computeDiff()
 
 inputResult CurseSplitOutput::selectUp()
 {
-    subWindows.at(selectedWin).selection = subWindows.at(selectedWin).select_up;
+    size_t i =0;
+    const JSonElement *newSelection = subWindows.at(selectedWin).select_up;
+
+    for (t_subWindow &w : subWindows) {
+        if (i == selectedWin)
+            w.selection = w.lastSelection = w.select_up;
+        else
+        {
+            w.selection = diffMatrice->getEquivalence(newSelection);
+            if (w.selection)
+                w.lastSelection = w.selection;
+        }
+        ++i;
+    }
     return inputResult::redraw;
 }
 
 inputResult CurseSplitOutput::selectDown()
 {
-    t_subWindow &w = subWindows.at(selectedWin);
+    const JSonElement *newSelection = subWindows.at(selectedWin).select_down;
+    size_t i = 0;
 
-    if (w.selectIsLast)
-        w.scrollTop += 2;
-    else if (w.selection != w.select_down)
-        w.selection = w.select_down;
-    else
-        return inputResult::nextInput;
+    for (t_subWindow &w : subWindows)
+    {
+        if (w.selectIsLast)
+            w.scrollTop += 2;
+        if (i == selectedWin)
+            w.selection = w.lastSelection = newSelection;
+        else
+        {
+            w.selection = diffMatrice->getEquivalence(newSelection);
+            if (w.selection)
+                w.lastSelection = w.selection;
+        }
+        ++i;
+    }
     return inputResult::redraw;
 }
 
@@ -198,6 +220,23 @@ inputResult CurseSplitOutput::changeWindow(char d, bool c)
     if ((selectedWin +d < 0 || selectedWin +d >= nbInputs) && !c)
         return inputResult::nextInput;
     selectedWin = (selectedWin +d) % nbInputs;
+    t_subWindow &w = subWindows.at(selectedWin);
+    if (!w.selection)
+    {
+        size_t i =0;
+        for (t_subWindow &it : subWindows)
+        {
+            if (i == selectedWin)
+                it.selection = it.lastSelection;
+            else
+            {
+                it.selection = diffMatrice->getEquivalence(w.lastSelection);
+                if (it.selection)
+                    it.lastSelection = it.selection;
+            }
+            ++i;
+        }
+    }
     return inputResult::redrawAll;
 }
 
@@ -207,7 +246,7 @@ void CurseSplitOutput::checkSelection(const JSonElement *item)
 
     if (!w.selectFound)
     {
-        if (w.selection == item)
+        if (w.lastSelection == item)
         {
             if (w.cursor.second < w.scrollTop) //Selection is above vp, move scroll pos to selection and start drawing
                 w.scrollTop = w.cursor.second;
@@ -221,7 +260,7 @@ void CurseSplitOutput::checkSelection(const JSonElement *item)
         const JSonElement *parent = item->getParent();
         if (!dynamic_cast<const JSonContainer*>(item) &&
                 parent &&
-                w.selection != parent &&
+                w.lastSelection != parent &&
                 dynamic_cast<const JSonObjectEntry*>(parent))
             item = parent;
         if (!parent || !dynamic_cast<const JSonObjectEntry*>(parent))
@@ -234,7 +273,7 @@ bool CurseSplitOutput::jumpToNextSearch(const JSonElement *current, bool &select
     const JSonContainer *container = dynamic_cast<const JSonContainer *> (current);
     const JSonObjectEntry *objEntry = dynamic_cast<const JSonObjectEntry *> (current);
 
-    if (subWindows.at(selectedWin).selection == current)
+    if (subWindows.at(selectedWin).lastSelection == current)
         selectFound = true;
     if (container)
     {
@@ -252,7 +291,7 @@ bool CurseSplitOutput::jumpToNextSearch(const JSonElement *current, bool &select
                 current != subWindows.at(selectedWin).selection &&
                 selectFound)
         {
-            subWindows.at(selectedWin).selection = current;
+            subWindows.at(selectedWin).lastSelection = current;
             return true;
         }
         if (objEntry)
@@ -304,7 +343,7 @@ bool CurseSplitOutput::jumpToNextSearch()
 
     if (!res)
     {
-        subWindows.at(selectedWin).selection = *(subWindows.at(selectedWin).searchResults.cbegin());
+        subWindows.at(selectedWin).lastSelection = *(subWindows.at(selectedWin).searchResults.cbegin());
         unfold(subWindows.at(selectedWin).selection);
         CurseOutput::redraw("Search hit BOTTOM, continuing at TOP");
         return false;
@@ -373,12 +412,12 @@ bool CurseSplitOutput::redraw()
                             w.select_down = *(pselect->cbegin());
                         else
                         {
-                            const JSonElement *next = w.selection->findNext();
-                            w.select_down = next ? next : w.selection;
+                            const JSonElement *next = w.lastSelection->findNext();
+                            w.select_down = next ? next : w.lastSelection;
                         }
                     }
                     if (!w.select_up)
-                        w.select_up = subWindows.at(workingWin).selection;
+                        w.select_up = subWindows.at(workingWin).lastSelection;
                     writingDone &= ~(1 << workingWin);
                 }
             }
@@ -476,17 +515,17 @@ bool CurseSplitOutput::writeContent(const t_Cursor &maxSize, std::list<JSonEleme
             {
                 if (!writeKey(key, ent->lazystrlen(), maxSize, getFlag(ent)))
                     break;
-                const JSonElement *saveSelection = w.selection;
+                const JSonElement *saveSelection = w.lastSelection;
                 if (saveSelection == ent)
-                    w.selection = **ent;
+                    w.selection = w.lastSelection = **ent;
                 w.cursor.first += INDENT_LEVEL /2;
                 if (!redraw(maxSize, **ent))
                 {
-                    w.selection = saveSelection;
+                    w.selection = w.lastSelection = saveSelection;
                     w.cursor.first -= INDENT_LEVEL /2;
                     return false;
                 }
-                w.selection = saveSelection;
+                w.selection = w.lastSelection = saveSelection;
                 w.cursor.first -= INDENT_LEVEL /2;
             }
         }

@@ -124,10 +124,14 @@ bool LevenshteinMatrice::areSimilar() const
 
 const JSonElement *LevenshteinMatrice::getEquivalence(const JSonElement *e) const
 {
-    std::map<const JSonElement *, const JSonElement *>::const_iterator it = equivalences.find(e);
-    if (it == equivalences.cend())
-        return nullptr;
-    return (*it).second;
+    for (std::pair<const JSonElement *, const JSonElement *> it : equivalences)
+    {
+        if (it.first == e)
+            return it.second;
+        if (it.second == e)
+            return it.first;
+    }
+    return nullptr;
 }
 
 std::map<const JSonElement*, const JSonElement *> LevenshteinMatrice::getEquivalences() const
