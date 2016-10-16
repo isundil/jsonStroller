@@ -83,20 +83,7 @@ void CurseSplitOutput::computeDiff()
 
 inputResult CurseSplitOutput::selectUp()
 {
-    size_t i =0;
-    const JSonElement *newSelection = subWindows.at(selectedWin).select_up;
-
-    for (t_subWindow &w : subWindows) {
-        if (i == selectedWin)
-            w.selection = w.lastSelection = w.select_up;
-        else
-        {
-            w.selection = diffMatrice->getEquivalence(newSelection);
-            if (w.selection)
-                w.lastSelection = w.selection;
-        }
-        ++i;
-    }
+    setSelection(subWindows.at(selectedWin).select_up);
     return inputResult::redraw;
 }
 
@@ -122,25 +109,43 @@ inputResult CurseSplitOutput::selectDown()
     return inputResult::redraw;
 }
 
+void CurseSplitOutput::setSelection(const JSonElement *selection)
+{
+    size_t i =0;
+
+    for (t_subWindow &w : subWindows)
+    {
+        if (i == selectedWin)
+            w.selection = w.lastSelection = selection;
+        else
+        {
+            w.selection = diffMatrice->getEquivalence(selection);
+            if (w.selection)
+                w.lastSelection = w.selection;
+        }
+        ++i;
+    }
+}
+
 inputResult CurseSplitOutput::selectPUp()
 {
     const JSonElement *_selection = subWindows.at(selectedWin).selection;
-    const JSonElement *brother = _selection->findPrev();
+    const JSonElement *nextSelection = _selection->findPrev();
 
-    if (brother == nullptr)
+    if (nextSelection == nullptr)
     {
         const JSonElement *parent = _selection->getParent();
+
         if (parent && dynamic_cast<const JSonContainer*>(parent))
         {
-            subWindows.at(selectedWin).selection = _selection = parent;
+            nextSelection = _selection = parent;
             if (_selection->getParent() && dynamic_cast<const JSonObjectEntry*> (_selection->getParent()))
-                subWindows.at(selectedWin).selection = _selection->getParent();
+                nextSelection = _selection->getParent();
         }
         else
             return inputResult::nextInput;
     }
-    else
-        subWindows.at(selectedWin).selection = brother;
+    setSelection(nextSelection);
     return inputResult::redraw;
 }
 
@@ -150,7 +155,7 @@ inputResult CurseSplitOutput::selectPDown()
 
     if (brother)
     {
-        subWindows.at(selectedWin).selection = brother;
+        setSelection(brother);
         return inputResult::redraw;
     }
     return inputResult::nextInput;
@@ -166,10 +171,14 @@ inputResult CurseSplitOutput::expandSelection()
         return inputResult::nextInput;
 
     if (collapsed.erase((const JSonContainer *)_selection))
+    {
+        _selection = diffMatrice->getEquivalence(_selection);
+        collapsed.erase((const JSonContainer *)_selection);
         return inputResult::redraw;
+    }
     if (!((const JSonContainer*)_selection)->size())
         return inputResult::nextInput;
-    subWindows.at(selectedWin).selection = subWindows.at(selectedWin).select_down;
+    selectDown();
     return inputResult::redraw;
 }
 
@@ -183,12 +192,19 @@ inputResult CurseSplitOutput::collapseSelection()
             || collapsed.find((const JSonContainer *)_selection) != collapsed.end()
             || (dynamic_cast<const JSonContainer*>(_selection) && ((const JSonContainer*)_selection)->size() == 0)))
     {
-        subWindows.at(selectedWin).selection = _selection = subWindows.at(selectedWin).selection->getParent();
+        _selection = subWindows.at(selectedWin).selection->getParent();
         if (_selection->getParent() && dynamic_cast<const JSonObjectEntry*>(_selection->getParent()))
-            subWindows.at(selectedWin).selection = _selection->getParent();
+            setSelection(_selection->getParent());
+        else
+            setSelection(_selection);
     }
     else
+    {
         collapsed.insert((const JSonContainer *)_selection);
+        _selection = diffMatrice->getEquivalence(_selection);
+        if (_selection)
+            collapsed.insert((const JSonContainer *)_selection);
+    }
     return inputResult::redraw;
 }
 

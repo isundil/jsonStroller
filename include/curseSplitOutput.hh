@@ -84,6 +84,8 @@ class CurseSplitOutput: public CurseOutput
         inputResult nextResult();
         inputResult changeWindow(char, bool);
 
+        void setSelection(const JSonElement *);
+
         void computeDiff();
         std::deque<t_subWindow> subWindows;
 
