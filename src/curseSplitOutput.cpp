@@ -368,6 +368,54 @@ bool CurseSplitOutput::jumpToNextSearch()
     return true;
 }
 
+Optional<bool> CurseSplitOutput::redrawOneItemToWorkingWin(t_subWindow &w, const t_Cursor &screenSize)
+{
+    bool result;
+
+    try {
+        if (w.parentsIterators.empty())
+            result = redraw(screenSize, w.root, true);
+        else
+            result = redraw(screenSize, w.parentsIterators.top(), true);
+    }
+    catch (SelectionOutOfRange &e)
+    {
+        return Optional<bool>::empty;
+    }
+    catch (CurseSplitOutput::reachNext &)
+    {
+        result = true;
+    }
+    if (!result || w.parentsIterators.empty())
+    {
+        if (!result)
+        {
+            if (!w.selectFound)
+            {
+                w.scrollTop++;
+                return Optional<bool>::empty;
+            }
+            if (!w.select_down)
+                w.selectIsLast = true;
+        }
+        if (!w.select_down)
+        {
+            const JSonContainer *pselect = dynamic_cast<const JSonContainer*>(w.selection);
+            if (pselect && !pselect->empty())
+                w.select_down = *(pselect->cbegin());
+            else
+            {
+                const JSonElement *next = w.lastSelection->findNext();
+                w.select_down = next ? next : w.lastSelection;
+            }
+        }
+        if (!w.select_up)
+            w.select_up = subWindows.at(workingWin).lastSelection;
+        return Optional<bool>::of(true);
+    }
+    return Optional<bool>::of(false);
+}
+
 bool CurseSplitOutput::redraw()
 {
     const t_Cursor screenSize = getScreenSize();
@@ -389,53 +437,18 @@ bool CurseSplitOutput::redraw()
     while (writingDone)
     {
         workingWin = 0;
+        //TODO first, iterate through windows to check which one has "new" items (and prints them)
+        for (t_subWindow &w : subWindows)
+            ;
         for (t_subWindow &w : subWindows)
         {
-            bool result;
-
             if ((writingDone & (1 << workingWin)))
             {
-                try {
-                    if (w.parentsIterators.empty())
-                        result = redraw(screenSize, w.root, true);
-                    else
-                        result = redraw(screenSize, w.parentsIterators.top(), true);
-                }
-                catch (SelectionOutOfRange &e)
-                {
+                Optional<bool> wrote = redrawOneItemToWorkingWin(w, screenSize);
+                if (wrote.absent())
                     return false;
-                }
-                catch (CurseSplitOutput::reachNext &)
-                {
-                    result = true;
-                }
-                if (!result || w.parentsIterators.empty())
-                {
-                    if (!result)
-                    {
-                        if (!w.selectFound)
-                        {
-                            w.scrollTop++;
-                            return false;
-                        }
-                        if (!w.select_down)
-                            w.selectIsLast = true;
-                    }
-                    if (!w.select_down)
-                    {
-                        const JSonContainer *pselect = dynamic_cast<const JSonContainer*>(w.selection);
-                        if (pselect && !pselect->empty())
-                            w.select_down = *(pselect->cbegin());
-                        else
-                        {
-                            const JSonElement *next = w.lastSelection->findNext();
-                            w.select_down = next ? next : w.lastSelection;
-                        }
-                    }
-                    if (!w.select_up)
-                        w.select_up = subWindows.at(workingWin).lastSelection;
+                if (wrote.get())
                     writingDone &= ~(1 << workingWin);
-                }
             }
             ++workingWin;
         }
