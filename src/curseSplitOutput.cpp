@@ -436,12 +436,42 @@ bool CurseSplitOutput::redraw()
     }
     while (writingDone)
     {
+        bool restart = false;
         workingWin = 0;
-        //TODO first, iterate through windows to check which one has "new" items (and prints them)
         for (t_subWindow &w : subWindows)
         {
-            ;
+            if ((writingDone & (1 << workingWin)) &&
+                    ((!w.parentsIterators.empty() && isAdded(w.parentsIterators.top())) ||
+                     (w.parentsIterators.empty() && isAdded(w.root))))
+            {
+                const unsigned int startY = w.cursor.second;
+
+                do
+                {
+                    const Optional<bool> wrote = redrawOneItemToWorkingWin(w, screenSize);
+
+                    if (wrote.absent())
+                        return false;
+                    if (wrote.get())
+                    {
+                        writingDone &= ~(1 << workingWin);
+                        break;
+                    }
+                } while (isAdded(w.parentsIterators.top()));
+
+                const unsigned int diffY = w.cursor.second - startY;
+                unsigned int i = 0;
+                for (t_subWindow &wi: subWindows)
+                    if (i++ != workingWin)
+                        wi.cursor.second += diffY;
+                restart = true;
+                break;
+            }
+            ++workingWin;
         }
+        if (restart)
+            continue;
+        workingWin = 0;
         for (t_subWindow &w : subWindows)
         {
             if ((writingDone & (1 << workingWin)))
@@ -601,9 +631,19 @@ bool CurseSplitOutput::writeKey(const std::string &key, const size_t keylen, con
     return (cursor.second < w.scrollTop || (cursor.second - w.scrollTop) <= maxWidth.second);
 }
 
-const Optional<bool> CurseSplitOutput::isAdded(const std::pair<int, JSonContainer *> &item)
+bool CurseSplitOutput::isAdded(const JSonElement *e) const
 {
-    return Optional<bool>::empty;
+    return diffMatrice->getEquivalence(e) == nullptr;
+}
+
+bool CurseSplitOutput::isAdded(const std::pair<int, JSonContainer *> &item) const
+{
+    const JSonElement *e;
+
+    if ((unsigned int) (item.first +1) == item.second->size())
+        e = item.second;
+    e = list_at<JSonElement*>(*(item.second), item.first +1);
+    return isAdded(e);
 }
 
 bool CurseSplitOutput::redraw(const t_Cursor &maxSize, std::pair<int, JSonContainer *> &item)

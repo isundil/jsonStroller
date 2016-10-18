@@ -39,7 +39,8 @@ class CurseSplitOutput: public CurseOutput
         bool redraw(const t_Cursor &screenSize, std::pair<int, JSonContainer *> &);
         bool redraw(const t_Cursor &screenSize, JSonElement *);
         const Optional<bool> redrawOneItemToWorkingWin(t_subWindow &w, const t_Cursor &);
-        const Optional<bool> isAdded(const std::pair<int, JSonContainer *> &);
+        bool isAdded(const std::pair<int, JSonContainer *> &) const;
+        bool isAdded(const JSonElement *e) const;
 
         bool writeContainer(const t_Cursor &maxSize, JSonContainer *, bool opening = true);
         bool writeContent(const t_Cursor &maxSize, std::list<JSonElement*> *_item);
