@@ -401,7 +401,7 @@ const Optional<bool> CurseSplitOutput::redrawOneItemToWorkingWin(t_subWindow &w,
         if (!w.select_down)
         {
             const JSonContainer *pselect = dynamic_cast<const JSonContainer*>(w.selection);
-            if (pselect && !pselect->empty())
+            if (pselect && !pselect->empty() && collapsed.find(pselect) == collapsed.cend())
                 w.select_down = *(pselect->cbegin());
             else
             {
@@ -436,6 +436,7 @@ bool CurseSplitOutput::redraw()
     }
     while (writingDone)
     {
+        // Display Gap (--)
         bool restart = false;
         workingWin = 0;
         for (t_subWindow &w : subWindows)
@@ -461,21 +462,21 @@ bool CurseSplitOutput::redraw()
 
                 const unsigned int diffY = w.cursor.second - startY;
                 unsigned int i = 0;
+
                 for (t_subWindow &wi: subWindows)
                     if (i++ != workingWin)
-                    {
-                        unsigned int j = diffY;
                         for (unsigned int j = 0; j < diffY; ++j)
-                            displayDiffOp(wi.innerWin, wi.cursor.second +j, eLevenshteinOperator::rem);
-                        wi.cursor.second += diffY;
-                    }
+                            displayDiffOp(wi.innerWin, (wi.cursor.second)++, eLevenshteinOperator::rem);
                 restart = true;
+
                 break;
             }
             ++workingWin;
         }
         if (restart)
             continue;
+
+        // Actual display
         workingWin = 0;
         for (t_subWindow &w : subWindows)
         {

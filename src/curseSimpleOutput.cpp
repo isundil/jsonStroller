@@ -62,7 +62,7 @@ bool CurseSimpleOutput::redraw()
     if (!select_down)
     {
         const JSonContainer *pselect = dynamic_cast<const JSonContainer*>(selection);
-        if (pselect && !pselect->empty())
+        if (pselect && !pselect->empty() && collapsed.find(pselect) == collapsed.cend())
             select_down = *(pselect->cbegin());
         else
         {
