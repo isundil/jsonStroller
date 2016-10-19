@@ -49,6 +49,7 @@ class CurseSplitOutput: public CurseOutput
         unsigned int write(const int &x, const int &y, const char item, unsigned int maxWidth, OutputFlag flags);
         unsigned int write(const int &x, const int &y, const std::string &str, const size_t strlen, unsigned int maxWidth, const OutputFlag flags);
         void write(const std::string &str, const OutputFlag flags) const;
+        void displayDiffOp(WINDOW *w, const int &y, const eLevenshteinOperator &op) const;
 
         void writeTopLine(const std::string &currentBuffer, short color) const;
 

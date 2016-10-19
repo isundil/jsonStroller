@@ -298,6 +298,11 @@ void CurseOutput::init()
         init_pair(OutputFlag::SPECIAL_ERROR, COLOR_WHITE, COLOR_RED);
         init_pair(OutputFlag::SPECIAL_ACTIVEINPUTNAME, COLOR_BLACK, COLOR_GREEN);
         init_pair(OutputFlag::SPECIAL_INPUTNAME, COLOR_BLACK, COLOR_WHITE);
+
+        init_pair(OutputFlag::DIFF_ADD, COLOR_GREEN, COLOR_BLACK);
+        init_pair(OutputFlag::DIFF_MOD, COLOR_CYAN, COLOR_BLACK);
+        init_pair(OutputFlag::DIFF_REM, COLOR_MAGENTA, COLOR_BLACK);
+
         colors.insert(OutputFlag::TYPE_NUMBER);
         colors.insert(OutputFlag::TYPE_BOOL);
         colors.insert(OutputFlag::TYPE_STRING);

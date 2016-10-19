@@ -463,7 +463,12 @@ bool CurseSplitOutput::redraw()
                 unsigned int i = 0;
                 for (t_subWindow &wi: subWindows)
                     if (i++ != workingWin)
+                    {
+                        unsigned int j = diffY;
+                        for (unsigned int j = 0; j < diffY; ++j)
+                            displayDiffOp(wi.innerWin, wi.cursor.second +j, eLevenshteinOperator::rem);
                         wi.cursor.second += diffY;
+                    }
                 restart = true;
                 break;
             }
@@ -718,31 +723,41 @@ unsigned int CurseSplitOutput::write(const int &x, const int &y, const char item
     if (color != OutputFlag::SPECIAL_NONE)
         wattroff(currentWin, COLOR_PAIR(color));
 
-    switch (flags.diffOp())
-    {
-        case eLevenshteinOperator::equ:
-            mvwprintw(currentWin, offsetY, 0, "=");
-            break;
+    displayDiffOp(currentWin, offsetY, flags.diffOp());
+    return getNbLines(x +1, maxWidth);
+}
 
+void CurseSplitOutput::displayDiffOp(WINDOW *w, const int &y, const eLevenshteinOperator &op) const
+{
+    switch (op)
+    {
         case eLevenshteinOperator::add:
-            mvwprintw(currentWin, offsetY, 0, "+");
+            wattron(w, A_REVERSE | A_BOLD);
+            wattron(w, COLOR_PAIR(OutputFlag::DIFF_ADD));
+            mvwprintw(w, y, 0, "++");
+            wattroff(w, COLOR_PAIR(OutputFlag::DIFF_ADD));
+            wattroff(w, A_REVERSE | A_BOLD);
             break;
 
         case eLevenshteinOperator::mod:
-            mvwprintw(currentWin, offsetY, 0, "!");
+            wattron(w, A_REVERSE | A_BOLD);
+            wattron(w, COLOR_PAIR(OutputFlag::DIFF_MOD));
+            mvwprintw(w, y, 0, "!!");
+            wattroff(w, COLOR_PAIR(OutputFlag::DIFF_MOD));
+            wattroff(w, A_REVERSE | A_BOLD);
             break;
 
         case eLevenshteinOperator::rem:
-            // little strange
-            mvwprintw(currentWin, offsetY, 0, "-");
+            wattron(w, A_REVERSE | A_BOLD);
+            wattron(w, COLOR_PAIR(OutputFlag::DIFF_REM));
+            mvwprintw(w, y, 0, "--");
+            wattroff(w, COLOR_PAIR(OutputFlag::DIFF_REM));
+            wattroff(w, A_REVERSE | A_BOLD);
             break;
 
-        default:
-            // very fucking strange
-            mvwprintw(currentWin, offsetY, 0, "?");
+        case eLevenshteinOperator::equ: // skip
             break;
     }
-    return getNbLines(x +1, maxWidth);
 }
 
 unsigned int CurseSplitOutput::write(const int &x, const int &y, const std::string &str, const size_t strlen, unsigned int maxWidth, const OutputFlag flags)
@@ -753,30 +768,7 @@ unsigned int CurseSplitOutput::write(const int &x, const int &y, const std::stri
 
     if (offsetY <= 0)
         return 1;
-    switch (flags.diffOp())
-    {
-        case eLevenshteinOperator::equ:
-            mvwprintw(currentWin, offsetY, 0, "=");
-            break;
-
-        case eLevenshteinOperator::add:
-            mvwprintw(currentWin, offsetY, 0, "+");
-            break;
-
-        case eLevenshteinOperator::mod:
-            mvwprintw(currentWin, offsetY, 0, "!");
-            break;
-
-        case eLevenshteinOperator::rem:
-            // little strange
-            mvwprintw(currentWin, offsetY, 0, "-");
-            break;
-
-        default:
-            // very fucking strange
-            mvwprintw(currentWin, offsetY, 0, "?");
-            break;
-    }
+    displayDiffOp(currentWin, y, flags.diffOp());
     wmove(subWindows.at(workingWin).innerWin, offsetY, x);
     write(str, flags);
     return getNbLines(strlen +x, maxWidth);

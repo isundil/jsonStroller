@@ -21,6 +21,10 @@ const char OutputFlag::SPECIAL_ERROR            =52;
 const char OutputFlag::SPECIAL_INPUTNAME        =53;
 const char OutputFlag::SPECIAL_ACTIVEINPUTNAME  =54;
 
+const char OutputFlag::DIFF_ADD     =60;
+const char OutputFlag::DIFF_MOD     =61;
+const char OutputFlag::DIFF_REM     =62;
+
 OutputFlag::OutputFlag(short m): mode(m), _type(0), diffOpt(eLevenshteinOperator::equ)
 { }
 

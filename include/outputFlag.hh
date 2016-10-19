@@ -74,5 +74,9 @@ class OutputFlag
         static const char SPECIAL_ERROR;
         static const char SPECIAL_INPUTNAME;
         static const char SPECIAL_ACTIVEINPUTNAME;
+
+        static const char DIFF_ADD;
+        static const char DIFF_MOD;
+        static const char DIFF_REM;
 };
 
