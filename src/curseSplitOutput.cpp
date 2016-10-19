@@ -640,9 +640,10 @@ bool CurseSplitOutput::isAdded(const std::pair<int, JSonContainer *> &item) cons
 {
     const JSonElement *e;
 
-    if ((unsigned int) (item.first +1) == item.second->size())
+    if ((unsigned int) (item.first +1) >= item.second->size())
         e = item.second;
-    e = list_at<JSonElement*>(*(item.second), item.first +1);
+    else
+        e = list_at<JSonElement*>(*(item.second), item.first +1);
     return isAdded(e);
 }
 
