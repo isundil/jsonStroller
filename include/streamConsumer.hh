@@ -52,7 +52,7 @@ class StreamConsumer
         static std::string extractUnicode(const char *);
         static std::string extractUnicode(const std::string &);
 
-    private:
+    protected:
         /**
          * @return non-null on successfully read JSonElement, or null if token (',', '[', ...)
         **/

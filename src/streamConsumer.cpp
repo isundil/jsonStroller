@@ -8,6 +8,7 @@
 #include <sstream>
 #include "jsonElement.hh"
 #include "streamConsumer.hh"
+#include "unicode.hpp"
 
 StreamConsumer::StreamConsumer(std::istream &s): stream(s), root(nullptr)
 { }
@@ -335,33 +336,14 @@ JSonElement *StreamConsumer::consumeToken(JSonContainer *parent, std::stringstre
     return nullptr;
 }
 
-static unsigned char hexbyte(const char c)
-{
-    if (c >= '0' && c <= '9')
-        return c - '0';
-    if (c >= 'A' && c <= 'F')
-        return c - 'A' + 10;
-    if (c >= 'a' && c <= 'f')
-        return c - 'a' + 10;
-    throw std::invalid_argument(JsonHexvalueException::msg(c));
-}
-
-template<typename T>
-static T hexbyte(const char str[], unsigned int len)
-{
-    T result = 0;
-    for (unsigned int i =0; i < len; ++i)
-        result = (result << 4) + hexbyte(str[i]);
-    return result;
-}
-
 void StreamConsumer::appendUnicode(const char unicode[4], std::stringstream &buf)
 {
     unsigned short uni = hexbyte<unsigned short>(unicode, 4);
     char test[5];
+
     bzero(test, sizeof(*test) *5);
     snprintf(test, 4, "%lc", uni);
-    buf.write(test, 3);
+    buf.write(test, 2);
 }
 
 std::string StreamConsumer::extractUnicode(const char *buf)
