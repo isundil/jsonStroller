@@ -6,6 +6,8 @@
 
 #include <iostream>
 #include <sstream>
+#include <codecvt>
+#include <locale>
 #include "jsonElement.hh"
 #include "streamConsumer.hh"
 #include "unicode.hpp"
@@ -339,11 +341,9 @@ JSonElement *StreamConsumer::consumeToken(JSonContainer *parent, std::stringstre
 void StreamConsumer::appendUnicode(const char unicode[4], std::stringstream &buf)
 {
     unsigned short uni = hexbyte<unsigned short>(unicode, 4);
-    char test[5];
-
-    bzero(test, sizeof(*test) *5);
-    snprintf(test, 4, "%lc", uni);
-    buf.write(test, 2);
+    std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> converter;
+    std::string unichar = converter.to_bytes(uni);
+    buf.write(unichar.c_str(), unichar.size());
 }
 
 std::string StreamConsumer::extractUnicode(const char *buf)

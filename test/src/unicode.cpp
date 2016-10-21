@@ -19,7 +19,7 @@ class StreamConsumerTester: public StreamConsumer
         {
             std::string s = getStringFromUnicode("00e8");
             if (s != "è")
-                FAILED(s, "!=", "è");
+                FAILED((int)(s.c_str()[0]), "!=", (int)L'è');
             return true;
         };
 };
