@@ -21,6 +21,7 @@ add_executable(jsonstroll
     src/linearHistory.cpp
     src/outputFlag.cpp
     src/streamConsumer.cpp
+    src/unicode.cpp
     src/searchPattern.cpp
     src/inputSequence.cpp
     src/levenshtein.cpp
@@ -51,6 +52,7 @@ add_executable(json_test
     src/searchPattern.cpp
     src/levenshtein.cpp
     src/streamConsumer.cpp
+    src/unicode.cpp
     src/jsonArray.cpp
     src/jsonObjectEntry.cpp
     src/jsonObject.cpp
@@ -79,6 +81,28 @@ add_executable(optional_test
 add_test(optional_test test/optional_test)
 set_property(
     TARGET optional_test
+    PROPERTY RUNTIME_OUTPUT_DIRECTORY test
+    )
+
+add_executable(unicode_test
+    src/unicode.cpp
+    src/jsonException.cpp
+    src/streamConsumer.cpp
+    src/jsonArray.cpp
+    src/jsonContainer.cpp
+    src/jsonObject.cpp
+    src/jsonObjectEntry.cpp
+    src/jsonElement.cpp
+    src/jsonPrimitive.cpp
+    src/linearHistory.cpp
+    src/searchPattern.cpp
+    src/warning.cpp
+
+    test/src/unicode.cpp
+    )
+add_test(unicode_test test/unicode_test)
+set_property(
+    TARGET unicode_test
     PROPERTY RUNTIME_OUTPUT_DIRECTORY test
     )
 

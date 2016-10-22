@@ -52,7 +52,7 @@ class StreamConsumer
         static std::string extractUnicode(const char *);
         static std::string extractUnicode(const std::string &);
 
-    private:
+    protected:
         /**
          * @return non-null on successfully read JSonElement, or null if token (',', '[', ...)
         **/
@@ -61,6 +61,7 @@ class StreamConsumer
         JSonElement *consumeBool(JSonContainer *parent, std::stringstream &buf, char c);
         JSonElement *consumeNumber(JSonContainer *parent, std::stringstream &buf, char c);
         JSonElement *consumeNull(JSonContainer *parent, std::stringstream &buf);
+        bool consumeEscapedChar(char c, std::stringstream &buf);
 
         /**
          * read next item, fill object or array if found

@@ -6,8 +6,11 @@
 
 #include <iostream>
 #include <sstream>
+#include <codecvt>
+#include <locale>
 #include "jsonElement.hh"
 #include "streamConsumer.hh"
+#include "unicode.hpp"
 
 StreamConsumer::StreamConsumer(std::istream &s): stream(s), root(nullptr)
 { }
@@ -154,42 +157,52 @@ JSonElement *StreamConsumer::consumeString(JSonContainer *parent, std::stringstr
         }
         else
         {
-            if (c == '\\' || c == '"')
-                buf.write("\"", 1);
-            else if (c == 'u')
-            {
-                if (params && params->isIgnoringUnicode())
-                    buf.write("\\u", 2);
-                else
-                {
-                    char unicodeBuf[4];
-                    stream.read(unicodeBuf, 4);
-                    std::streamsize gcount = stream.gcount();
-                    history.put(unicodeBuf, gcount);
-                    if (gcount != 4)
-                        break;
-                    try {
-                        appendUnicode(unicodeBuf, buf);
-                    }
-                    catch (std::invalid_argument &e)
-                    {
-                        throw JsonHexvalueException(e.what(), stream.tellg(), history);
-                    }
-                }
-            }
-            else if (params && params->isStrict())
-                throw JsonEscapedException(c, stream.tellg(), history);
+            if (consumeEscapedChar(c, buf))
+                escaped = false;
             else
-            {
-                buf.write("\\", 1).write(&c, 1);
-                warnings.push_back(Warning(JsonEscapedException(c, stream.tellg(), history)));
-            }
-            escaped = false;
+                break;
         }
     }
     buf.str("");
     buf.clear();
     return nullptr;
+}
+
+bool StreamConsumer::consumeEscapedChar(char c, std::stringstream &buf)
+{
+    if (c == '\\' || c == '"' || c == '/')
+        buf.write(&c, 1);
+    else if (c == 'u')
+    {
+        if (params && params->isIgnoringUnicode())
+            buf.write("\\u", 2);
+        else
+        {
+            char unicodeBuf[4];
+            stream.read(unicodeBuf, 4);
+            std::streamsize gcount = stream.gcount();
+            history.put(unicodeBuf, gcount);
+            if (gcount != 4)
+                return false;
+            try {
+                appendUnicode(unicodeBuf, buf);
+            }
+            catch (std::invalid_argument &e)
+            {
+                throw JsonHexvalueException(e.what(), stream.tellg(), history);
+            }
+        }
+    }
+    else if (c == 'b' || c == 'f' || c == 'r' || c == 'n' || c == 't')
+        buf.write("\\", 1).write(&c, 1);
+    else if (params && params->isStrict())
+        throw JsonEscapedException(c, stream.tellg(), history);
+    else
+    {
+        buf.write("\\", 1).write(&c, 1);
+        warnings.push_back(Warning(JsonEscapedException(c, stream.tellg(), history)));
+    }
+    return true;
 }
 
 JSonElement *StreamConsumer::consumeBool(JSonContainer *parent, std::stringstream &buf, char firstChar)
@@ -335,33 +348,12 @@ JSonElement *StreamConsumer::consumeToken(JSonContainer *parent, std::stringstre
     return nullptr;
 }
 
-static unsigned char hexbyte(const char c)
-{
-    if (c >= '0' && c <= '9')
-        return c - '0';
-    if (c >= 'A' && c <= 'F')
-        return c - 'A' + 10;
-    if (c >= 'a' && c <= 'f')
-        return c - 'a' + 10;
-    throw std::invalid_argument(JsonHexvalueException::msg(c));
-}
-
-template<typename T>
-static T hexbyte(const char str[], unsigned int len)
-{
-    T result = 0;
-    for (unsigned int i =0; i < len; ++i)
-        result = (result << 4) + hexbyte(str[i]);
-    return result;
-}
-
 void StreamConsumer::appendUnicode(const char unicode[4], std::stringstream &buf)
 {
     unsigned short uni = hexbyte<unsigned short>(unicode, 4);
-    char test[5];
-    bzero(test, sizeof(*test) *5);
-    snprintf(test, 4, "%lc", uni);
-    buf.write(test, 3);
+    std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> converter;
+    std::string unichar = converter.to_bytes(uni);
+    buf.write(unichar.c_str(), unichar.size());
 }
 
 std::string StreamConsumer::extractUnicode(const char *buf)

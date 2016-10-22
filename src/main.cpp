@@ -40,8 +40,6 @@ void runDiff(const Params &params)
     std::deque<Warning> warns;
     std::deque<std::string> inputNames;
 
-    if (!params.isIgnoringUnicode())
-        setlocale(LC_ALL, "");
     for (std::pair<std::string, std::basic_istream<char>*> input : inputs)
     {
         StreamConsumer *stream;
@@ -92,8 +90,6 @@ void run(const Params &params)
     CurseSimpleOutput *out = new CurseSimpleOutput(params);
     std::list<Warning> warns;
 
-    if (!params.isIgnoringUnicode())
-        setlocale(LC_ALL, "");
     for (std::pair<std::string, std::basic_istream<char>*> input : inputs)
     {
         StreamConsumer *stream;
@@ -152,6 +148,8 @@ int main(int ac, char **av)
 
     if (_run)
     {
+        if (!params->isIgnoringUnicode())
+            setlocale(LC_ALL, "");
         if (params->isDiff())
             runDiff(*params);
         else
