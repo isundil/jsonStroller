@@ -157,42 +157,52 @@ JSonElement *StreamConsumer::consumeString(JSonContainer *parent, std::stringstr
         }
         else
         {
-            if (c == '\\' || c == '"')
-                buf.write("\"", 1);
-            else if (c == 'u')
-            {
-                if (params && params->isIgnoringUnicode())
-                    buf.write("\\u", 2);
-                else
-                {
-                    char unicodeBuf[4];
-                    stream.read(unicodeBuf, 4);
-                    std::streamsize gcount = stream.gcount();
-                    history.put(unicodeBuf, gcount);
-                    if (gcount != 4)
-                        break;
-                    try {
-                        appendUnicode(unicodeBuf, buf);
-                    }
-                    catch (std::invalid_argument &e)
-                    {
-                        throw JsonHexvalueException(e.what(), stream.tellg(), history);
-                    }
-                }
-            }
-            else if (params && params->isStrict())
-                throw JsonEscapedException(c, stream.tellg(), history);
+            if (consumeEscapedChar(c, buf))
+                escaped = false;
             else
-            {
-                buf.write("\\", 1).write(&c, 1);
-                warnings.push_back(Warning(JsonEscapedException(c, stream.tellg(), history)));
-            }
-            escaped = false;
+                break;
         }
     }
     buf.str("");
     buf.clear();
     return nullptr;
+}
+
+bool StreamConsumer::consumeEscapedChar(char c, std::stringstream &buf)
+{
+    if (c == '\\' || c == '"' || c == '/')
+        buf.write(&c, 1);
+    else if (c == 'u')
+    {
+        if (params && params->isIgnoringUnicode())
+            buf.write("\\u", 2);
+        else
+        {
+            char unicodeBuf[4];
+            stream.read(unicodeBuf, 4);
+            std::streamsize gcount = stream.gcount();
+            history.put(unicodeBuf, gcount);
+            if (gcount != 4)
+                return false;
+            try {
+                appendUnicode(unicodeBuf, buf);
+            }
+            catch (std::invalid_argument &e)
+            {
+                throw JsonHexvalueException(e.what(), stream.tellg(), history);
+            }
+        }
+    }
+    else if (c == 'b' || c == 'f' || c == 'r' || c == 'n' || c == 't')
+        buf.write("\\", 1).write(&c, 1);
+    else if (params && params->isStrict())
+        throw JsonEscapedException(c, stream.tellg(), history);
+    else
+    {
+        buf.write("\\", 1).write(&c, 1);
+        warnings.push_back(Warning(JsonEscapedException(c, stream.tellg(), history)));
+    }
+    return true;
 }
 
 JSonElement *StreamConsumer::consumeBool(JSonContainer *parent, std::stringstream &buf, char firstChar)
