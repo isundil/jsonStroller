@@ -84,12 +84,16 @@ LevenshteinMatrice_base *LevenshteinMatrice_base::Builder::build(const JSonEleme
     {
         const bool aIsObject = ((dynamic_cast<const JSonObjectEntry*>(a)) != nullptr);
         const bool bIsObject = ((dynamic_cast<const JSonObjectEntry*>(b)) != nullptr);
-        float result = levenshteinPercent(a->stringify(), b->stringify());
 
-        if (aIsObject && bIsObject) {
-            result *= levenshteinPercent((*(const JSonObjectEntry&)(*a))->stringify(), (*(const JSonObjectEntry&)(*b))->stringify());
+        if (aIsObject && bIsObject)
+        {
+            if (a->stringify() == b->stringify() && (*(const JSonObjectEntry&)(*a))->stringify() == (*(const JSonObjectEntry&)(*b))->stringify())
+                return LevenshteinMatrice_base::Builder::build(*(const JSonObjectEntry&)(*a), *(const JSonObjectEntry&)(*b));
+            return new LevenshteinMatriceWithScore(0.f, a, b);
         }
-        return new LevenshteinMatriceWithScore(result, a, b);
+        else if (aIsObject || bIsObject)
+            return new LevenshteinMatriceWithScore(0.f, a, b);
+        return new LevenshteinMatriceWithScore(levenshteinPercent(a->stringify(), b->stringify()), a, b);
     }
 }
 
