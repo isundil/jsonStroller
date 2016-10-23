@@ -36,14 +36,13 @@ class CurseSplitOutput: public CurseOutput
         void checkSelection(const JSonElement *item);
 
         bool redraw();
-        bool redraw(const t_Cursor &screenSize, std::pair<int, JSonContainer *> &);
-        bool redraw(const t_Cursor &screenSize, JSonElement *);
+        bool redraw(t_subWindow &, const t_Cursor &screenSize, std::pair<int, JSonContainer *> &);
+        bool redraw(t_subWindow &, const t_Cursor &screenSize, JSonElement *);
         const Optional<bool> redrawOneItemToWorkingWin(t_subWindow &w, const t_Cursor &);
         bool isAdded(const std::pair<int, JSonContainer *> &) const;
         bool isAdded(const JSonElement *e) const;
 
         bool writeContainer(const t_Cursor &maxSize, JSonContainer *, bool opening = true);
-        bool writeContent(const t_Cursor &maxSize, std::list<JSonElement*> *_item);
         bool writeKey(const std::string &key, const size_t keylen, const t_Cursor &maxSize, OutputFlag flags, unsigned int extraLen =0);
         bool writeKey(const std::string &key, const size_t keylen, const std::string &after, const size_t afterlen, t_Cursor &cursor, const t_Cursor &maxWidth, OutputFlag);
         unsigned int write(const int &x, const int &y, const char item, unsigned int maxWidth, OutputFlag flags);
@@ -102,8 +101,6 @@ class CurseSplitOutput: public CurseOutput
          * Viewport start
         **/
         unsigned short nbInputs, selectedWin, workingWin;
-
-        class reachNext {};
 
         // TODO t_subWindow &workingSubwin, &selectedSubwin ??
 };
