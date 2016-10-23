@@ -42,6 +42,7 @@ class CurseSimpleOutput: public CurseOutput
         void write(const std::string &str, const OutputFlag flags) const;
         bool writeKey(const std::string &key, const size_t keylen, t_Cursor &cursor, const t_Cursor &maxWidth, OutputFlag, unsigned int extraLen =0);
         bool writeKey(const std::string &key, const size_t keylen, const std::string &after, size_t afterlen, t_Cursor &cursor, const t_Cursor &maxSize, OutputFlag flags);
+        bool writeKey(const std::string &key, const size_t keylen, const std::string &after, t_Cursor &cursor, const t_Cursor &maxWidth, OutputFlag);
         bool writeContainer(t_Cursor &, const t_Cursor &maxSize, const JSonContainer *);
         bool writeContent(t_Cursor &cursor, const t_Cursor &maxSize, std::list<JSonElement *> * obj);
         bool redraw(t_Cursor &, const t_Cursor &, JSonElement *);

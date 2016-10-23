@@ -128,8 +128,6 @@ class CurseOutput
         unsigned int write(const int &x, const int &y, JSonElement *item, unsigned int maxWidth, const OutputFlag);
         virtual unsigned int write(const int &x, const int &y, const std::string &item, const size_t len, unsigned int maxWidth, const OutputFlag) =0;
         virtual unsigned int write(const int &x, const int &y, const char item, unsigned int maxWidth, const OutputFlag) =0;
-        virtual bool writeKey(const std::string &key, const size_t keylen, const std::string &after, const size_t afterlen, t_Cursor &cursor, const t_Cursor &maxWidth, OutputFlag) =0;
-        virtual bool writeKey(const std::string &key, const size_t keylen, const std::string &after, t_Cursor &cursor, const t_Cursor &maxWidth, OutputFlag);
 
         /**
          * prompt for user input, and return it

@@ -255,10 +255,10 @@ bool CurseSimpleOutput::writeContent(t_Cursor &cursor, const t_Cursor &maxSize, 
             {
                 if (dynamic_cast<JSonObject *>(**ent))
                 {
-                    if (!CurseOutput::writeKey(key, ent->lazystrlen(), "{ ... }", cursor, maxSize, CurseSimpleOutput::getFlag(ent)) || (cursor.second - scrollTop > 0 && (cursor.second - scrollTop) > maxSize.second -1))
+                    if (!writeKey(key, ent->lazystrlen(), "{ ... }", cursor, maxSize, CurseSimpleOutput::getFlag(ent)) || (cursor.second - scrollTop > 0 && (cursor.second - scrollTop) > maxSize.second -1))
                         break;
                 }
-                else if (!CurseOutput::writeKey(key, ent->lazystrlen(), "[ ... ]", cursor, maxSize, CurseSimpleOutput::getFlag(ent)) || (cursor.second - scrollTop > 0 && (cursor.second - scrollTop) > maxSize.second -1))
+                else if (!writeKey(key, ent->lazystrlen(), "[ ... ]", cursor, maxSize, CurseSimpleOutput::getFlag(ent)) || (cursor.second - scrollTop > 0 && (cursor.second - scrollTop) > maxSize.second -1))
                     break;
             }
             else if (!isContainer)
@@ -271,10 +271,10 @@ bool CurseSimpleOutput::writeContent(t_Cursor &cursor, const t_Cursor &maxSize, 
             {
                 if (dynamic_cast<const JSonObject *>(**ent) )
                 {
-                    if (!CurseOutput::writeKey(key, ent->lazystrlen(), "{ }", cursor, maxSize, CurseSimpleOutput::getFlag(ent)) || (cursor.second - scrollTop > 0 && (cursor.second - scrollTop) > maxSize.second -1))
+                    if (!writeKey(key, ent->lazystrlen(), "{ }", cursor, maxSize, CurseSimpleOutput::getFlag(ent)) || (cursor.second - scrollTop > 0 && (cursor.second - scrollTop) > maxSize.second -1))
                         break;
                 }
-                else if (!CurseOutput::writeKey(key, ent->lazystrlen(), "[ ]", cursor, maxSize, CurseSimpleOutput::getFlag(ent)) || (cursor.second - scrollTop > 0 && (cursor.second - scrollTop) > maxSize.second -1))
+                else if (!writeKey(key, ent->lazystrlen(), "[ ]", cursor, maxSize, CurseSimpleOutput::getFlag(ent)) || (cursor.second - scrollTop > 0 && (cursor.second - scrollTop) > maxSize.second -1))
                     break;
             }
             else
@@ -339,6 +339,11 @@ bool CurseSimpleOutput::writeKey(const std::string &key, const size_t keylen, co
     write(after.c_str(), flags);
     cursor.second += getNbLines(cursor.first +keylen +2 +afterlen, maxSize.first);
     return (cursor.second >= scrollTop || (cursor.second - scrollTop) <= maxSize.second);
+}
+
+bool CurseSimpleOutput::writeKey(const std::string &key, const size_t keylen, const std::string &after, t_Cursor &cursor, const t_Cursor &maxSize, OutputFlag flags)
+{
+    return writeKey(key, keylen, after, after.size(), cursor, maxSize, flags);
 }
 
 unsigned int CurseSimpleOutput::write(const int &x, const int &y, const char item, unsigned int maxWidth, OutputFlag flags)

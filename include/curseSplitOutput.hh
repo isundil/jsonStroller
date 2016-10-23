@@ -7,6 +7,7 @@
 #include "jsonContainer.hh"
 
 class LevenshteinMatrice_base;
+class JSonObjectEntry;
 
 typedef struct
 {
@@ -43,8 +44,10 @@ class CurseSplitOutput: public CurseOutput
         bool isAdded(const JSonElement *e) const;
 
         bool writeContainer(const t_Cursor &maxSize, JSonContainer *, bool opening = true);
-        bool writeKey(const std::string &key, const size_t keylen, const t_Cursor &maxSize, OutputFlag flags, unsigned int extraLen =0);
-        bool writeKey(const std::string &key, const size_t keylen, const std::string &after, const size_t afterlen, t_Cursor &cursor, const t_Cursor &maxWidth, OutputFlag);
+        bool writeObjectEntry(t_subWindow &w, const t_Cursor &maxSize, JSonObjectEntry *item);
+        bool writeKey(t_subWindow &, const std::string &key, const size_t keylen, const t_Cursor &maxSize, OutputFlag flags, unsigned int extraLen =0);
+        bool writeKey(t_subWindow &, const std::string &key, const size_t keylen, const std::string &after, const size_t afterlen, t_Cursor &cursor, const t_Cursor &maxWidth, OutputFlag);
+        bool writeKey(t_subWindow &, const std::string &key, const size_t keylen, const std::string &after, t_Cursor &cursor, const t_Cursor &maxWidth, OutputFlag);
         unsigned int write(const int &x, const int &y, const char item, unsigned int maxWidth, OutputFlag flags);
         unsigned int write(const int &x, const int &y, const std::string &str, const size_t strlen, unsigned int maxWidth, const OutputFlag flags);
         void write(const std::string &str, const OutputFlag flags) const;
