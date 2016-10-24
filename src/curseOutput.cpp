@@ -143,11 +143,6 @@ bool CurseOutput::redraw(const std::string &errorMsg)
     return result;
 }
 
-bool CurseOutput::writeKey(const std::string &key, const size_t keylen, const std::string &after, t_Cursor &cursor, const t_Cursor &maxSize, OutputFlag flags)
-{
-    return writeKey(key, keylen, after, after.size(), cursor, maxSize, flags);
-}
-
 unsigned int CurseOutput::write(const int &x, const int &y, JSonElement *item, unsigned int maxWidth, OutputFlag flags)
 {
     return write(x, y, item->stringify(), item->lazystrlen(), maxWidth, flags);
