@@ -281,7 +281,7 @@ void CurseSplitOutput::checkSelection(const JSonElement *item)
                 w.lastSelection != parent &&
                 dynamic_cast<const JSonObjectEntry*>(parent))
             item = parent;
-        if (!parent || !dynamic_cast<const JSonObjectEntry*>(parent))
+        if (!item->getParent() || !dynamic_cast<const JSonObjectEntry*>(item->getParent()))
             w.select_down = item;
     }
 }
@@ -623,7 +623,6 @@ bool CurseSplitOutput::writeObjectEntry(t_subWindow &w, const t_Cursor &maxSize,
     bool isContainer = (dynamic_cast<JSonContainer *>(**ent) != nullptr);
     std::string key = ent->stringify();
 
-    checkSelection(ent);
     if (isContainer && collapsed.find((JSonContainer*)(**ent)) != collapsed.cend()) // inline collapsed container
     {
         if (dynamic_cast<JSonObject *>(**ent))
