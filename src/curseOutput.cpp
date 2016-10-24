@@ -56,6 +56,7 @@ bool CurseOutput::onsig(int signo)
     switch (signo)
     {
     case SIGWINCH:
+    case SIGCONT:
         if (ioctl(fileno(screen_fd ? screen_fd : stdout), TIOCGWINSZ, &size) == 0)
             resize_term(size.ws_row, size.ws_col);
         onResizeHandler(getScreenSize());
@@ -314,5 +315,6 @@ void CurseOutput::init()
     signal(SIGINT, _resizeFnc);
     signal(SIGTERM, _resizeFnc);
     signal(SIGKILL, _resizeFnc);
+    signal(SIGCONT, _resizeFnc);
 }
 
