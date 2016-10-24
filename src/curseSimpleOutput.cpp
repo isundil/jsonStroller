@@ -29,12 +29,12 @@ void CurseSimpleOutput::run(JSonElement *root, const std::string &i)
     scrollTop = 0;
     selection = data = root;
     inputName = i;
+    screenSize = getScreenSize();
     loop(nullptr);
 }
 
 bool CurseSimpleOutput::redraw()
 {
-    const t_Cursor screenSize = getScreenSize();
     t_Cursor cursor(0, 1);
     /**
      * Will be true if the json's last item is visible
@@ -46,7 +46,7 @@ bool CurseSimpleOutput::redraw()
     clear();
     writeTopLine(inputName, OutputFlag::SPECIAL_ACTIVEINPUTNAME);
     try {
-        result = redraw(cursor, screenSize, data);
+        result = redraw(cursor, data);
     }
     catch (SelectionOutOfRange &e)
     {
@@ -74,6 +74,12 @@ bool CurseSimpleOutput::redraw()
         select_up = selection;
     refresh();
     return true;
+}
+
+void CurseSimpleOutput::onResizeHandler(const t_Cursor &ss)
+{
+    screenSize = t_Cursor(ss);
+    clear();
 }
 
 inputResult CurseSimpleOutput::selectUp()
@@ -191,24 +197,24 @@ inputResult CurseSimpleOutput::changeWindow(char, bool)
     return inputResult::nextInput;
 }
 
-bool CurseSimpleOutput::redraw(t_Cursor &cursor, const t_Cursor &maxSize, JSonElement *item)
+bool CurseSimpleOutput::redraw(t_Cursor &cursor, JSonElement *item)
 {
     checkSelection(item, cursor);
     if (dynamic_cast<const JSonContainer*>(item))
     {
-        if (!writeContainer(cursor, maxSize, (const JSonContainer *) item))
+        if (!writeContainer(cursor, (const JSonContainer *) item))
             return false;
     }
     else
     {
-        cursor.second += CurseOutput::write(cursor.first, cursor.second, item, maxSize.first, CurseSimpleOutput::getFlag(item));
-        if (cursor.second - scrollTop > 0 && (cursor.second - scrollTop) > maxSize.second -1)
+        cursor.second += CurseOutput::write(cursor.first, cursor.second, item, screenSize.first, CurseSimpleOutput::getFlag(item));
+        if (cursor.second - scrollTop > 0 && (cursor.second - scrollTop) > screenSize.second -1)
             return false;
     }
     return true;
 }
 
-bool CurseSimpleOutput::writeContainer(t_Cursor &cursor, const t_Cursor &maxSize, const JSonContainer *item)
+bool CurseSimpleOutput::writeContainer(t_Cursor &cursor, const JSonContainer *item)
 {
     char childDelimiter[2];
 
@@ -221,21 +227,21 @@ bool CurseSimpleOutput::writeContainer(t_Cursor &cursor, const t_Cursor &maxSize
     {
         std::string ss;
         ss.append(&childDelimiter[0], 1).append(" ... ").append(&childDelimiter[1], 1);
-        cursor.second += write(cursor.first, cursor.second, ss, 7, maxSize.first, CurseSimpleOutput::getFlag(item));
+        cursor.second += write(cursor.first, cursor.second, ss, 7, screenSize.first, CurseSimpleOutput::getFlag(item));
     }
     else
     {
-        cursor.second += write(cursor.first, cursor.second, childDelimiter[0], maxSize.first, CurseSimpleOutput::getFlag(item));
-        if (cursor.second <= scrollTop && cursor.second > maxSize.second +scrollTop -1)
+        cursor.second += write(cursor.first, cursor.second, childDelimiter[0], screenSize.first, CurseSimpleOutput::getFlag(item));
+        if (cursor.second <= scrollTop && cursor.second > screenSize.second +scrollTop -1)
                 return false;
-        if (!writeContent(cursor, maxSize, (std::list<JSonElement *> *)item))
+        if (!writeContent(cursor, (std::list<JSonElement *> *)item))
             return false;
-        cursor.second += write(cursor.first, cursor.second, childDelimiter[1], maxSize.first, CurseSimpleOutput::getFlag(item));
+        cursor.second += write(cursor.first, cursor.second, childDelimiter[1], screenSize.first, CurseSimpleOutput::getFlag(item));
     }
-    return (cursor.second >= scrollTop || (cursor.second - scrollTop) <= maxSize.second -1);
+    return (cursor.second >= scrollTop || (cursor.second - scrollTop) <= screenSize.second -1);
 }
 
-bool CurseSimpleOutput::writeContent(t_Cursor &cursor, const t_Cursor &maxSize, std::list<JSonElement*> *_item)
+bool CurseSimpleOutput::writeContent(t_Cursor &cursor, std::list<JSonElement*> *_item)
 {
     JSonContainer *item = (JSonContainer *)_item;
     bool containerIsObject = (dynamic_cast<JSonObject *>(item) != nullptr);
@@ -255,37 +261,37 @@ bool CurseSimpleOutput::writeContent(t_Cursor &cursor, const t_Cursor &maxSize, 
             {
                 if (dynamic_cast<JSonObject *>(**ent))
                 {
-                    if (!writeKey(key, ent->lazystrlen(), "{ ... }", cursor, maxSize, CurseSimpleOutput::getFlag(ent)) || (cursor.second - scrollTop > 0 && (cursor.second - scrollTop) > maxSize.second -1))
+                    if (!writeKey(key, ent->lazystrlen(), "{ ... }", cursor, CurseSimpleOutput::getFlag(ent)) || (cursor.second - scrollTop > 0 && (cursor.second - scrollTop) > screenSize.second -1))
                         break;
                 }
-                else if (!writeKey(key, ent->lazystrlen(), "[ ... ]", cursor, maxSize, CurseSimpleOutput::getFlag(ent)) || (cursor.second - scrollTop > 0 && (cursor.second - scrollTop) > maxSize.second -1))
+                else if (!writeKey(key, ent->lazystrlen(), "[ ... ]", cursor, CurseSimpleOutput::getFlag(ent)) || (cursor.second - scrollTop > 0 && (cursor.second - scrollTop) > screenSize.second -1))
                     break;
             }
             else if (!isContainer)
             {
                 JSonElement *eContent = **ent;
-                if (!writeKey(key, ent->lazystrlen(), eContent->stringify(), eContent->lazystrlen(), cursor, maxSize, CurseSimpleOutput::getFlag(ent)) || (cursor.second - scrollTop > 0 && (cursor.second - scrollTop) > maxSize.second -1))
+                if (!writeKey(key, ent->lazystrlen(), eContent->stringify(), eContent->lazystrlen(), cursor, CurseSimpleOutput::getFlag(ent)) || (cursor.second - scrollTop > 0 && (cursor.second - scrollTop) > screenSize.second -1))
                     break;
             }
             else if (((JSonContainer*)(**ent))->size() == 0)
             {
                 if (dynamic_cast<const JSonObject *>(**ent) )
                 {
-                    if (!writeKey(key, ent->lazystrlen(), "{ }", cursor, maxSize, CurseSimpleOutput::getFlag(ent)) || (cursor.second - scrollTop > 0 && (cursor.second - scrollTop) > maxSize.second -1))
+                    if (!writeKey(key, ent->lazystrlen(), "{ }", cursor, CurseSimpleOutput::getFlag(ent)) || (cursor.second - scrollTop > 0 && (cursor.second - scrollTop) > screenSize.second -1))
                         break;
                 }
-                else if (!writeKey(key, ent->lazystrlen(), "[ ]", cursor, maxSize, CurseSimpleOutput::getFlag(ent)) || (cursor.second - scrollTop > 0 && (cursor.second - scrollTop) > maxSize.second -1))
+                else if (!writeKey(key, ent->lazystrlen(), "[ ]", cursor, CurseSimpleOutput::getFlag(ent)) || (cursor.second - scrollTop > 0 && (cursor.second - scrollTop) > screenSize.second -1))
                     break;
             }
             else
             {
-                if (!writeKey(key, ent->lazystrlen(), cursor, maxSize, CurseSimpleOutput::getFlag(ent)))
+                if (!writeKey(key, ent->lazystrlen(), cursor, CurseSimpleOutput::getFlag(ent)))
                     break;
                 const JSonElement *saveSelection = selection;
                 if (selection == ent)
                     selection = **ent;
                 cursor.first += INDENT_LEVEL /2;
-                if (!redraw(cursor, maxSize, **ent))
+                if (!redraw(cursor, **ent))
                 {
                     selection = saveSelection;
                     cursor.first -= INDENT_LEVEL /2;
@@ -297,7 +303,7 @@ bool CurseSimpleOutput::writeContent(t_Cursor &cursor, const t_Cursor &maxSize, 
         }
         else
         {
-            if (!redraw(cursor, maxSize, i))
+            if (!redraw(cursor, i))
                 break;
         }
         result = true;
@@ -307,7 +313,7 @@ bool CurseSimpleOutput::writeContent(t_Cursor &cursor, const t_Cursor &maxSize, 
     return result;
 }
 
-bool CurseSimpleOutput::writeKey(const std::string &key, const size_t keylen, t_Cursor &cursor, const t_Cursor &maxSize, OutputFlag flags, unsigned int extraLen)
+bool CurseSimpleOutput::writeKey(const std::string &key, const size_t keylen, t_Cursor &cursor, OutputFlag flags, unsigned int extraLen)
 {
     if (cursor.second - scrollTop <= 0)
     {
@@ -316,14 +322,14 @@ bool CurseSimpleOutput::writeKey(const std::string &key, const size_t keylen, t_
     }
     char oldType = flags.type();
     flags.type(OutputFlag::TYPE_OBJKEY);
-    cursor.second += write(cursor.first, cursor.second, key, keylen, maxSize.first -extraLen -2, flags);
+    cursor.second += write(cursor.first, cursor.second, key, keylen, screenSize.first -extraLen -2, flags);
     flags.type(OutputFlag::TYPE_OBJ);
     write(": ", flags);
     flags.type(oldType);
-    return (cursor.second >= scrollTop || cursor.second <= maxSize.second +scrollTop);
+    return (cursor.second >= scrollTop || cursor.second <= screenSize.second +scrollTop);
 }
 
-bool CurseSimpleOutput::writeKey(const std::string &key, const size_t keylen, const std::string &after, size_t afterlen, t_Cursor &cursor, const t_Cursor &maxSize, OutputFlag flags)
+bool CurseSimpleOutput::writeKey(const std::string &key, const size_t keylen, const std::string &after, size_t afterlen, t_Cursor &cursor, OutputFlag flags)
 {
     if (cursor.second - scrollTop <= 0)
     {
@@ -337,13 +343,13 @@ bool CurseSimpleOutput::writeKey(const std::string &key, const size_t keylen, co
     write(": ", flags);
     flags.type(oldType);
     write(after.c_str(), flags);
-    cursor.second += getNbLines(cursor.first +keylen +2 +afterlen, maxSize.first);
-    return (cursor.second >= scrollTop || (cursor.second - scrollTop) <= maxSize.second);
+    cursor.second += getNbLines(cursor.first +keylen +2 +afterlen, screenSize.first);
+    return (cursor.second >= scrollTop || (cursor.second - scrollTop) <= screenSize.second);
 }
 
-bool CurseSimpleOutput::writeKey(const std::string &key, const size_t keylen, const std::string &after, t_Cursor &cursor, const t_Cursor &maxSize, OutputFlag flags)
+bool CurseSimpleOutput::writeKey(const std::string &key, const size_t keylen, const std::string &after, t_Cursor &cursor, OutputFlag flags)
 {
-    return writeKey(key, keylen, after, after.size(), cursor, maxSize, flags);
+    return writeKey(key, keylen, after, after.size(), cursor, flags);
 }
 
 unsigned int CurseSimpleOutput::write(const int &x, const int &y, const char item, unsigned int maxWidth, OutputFlag flags)
