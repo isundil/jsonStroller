@@ -44,6 +44,11 @@ void CurseOutput::loop(WINDOW * w)
     } while (read != inputResult::quit);
 }
 
+void CurseOutput::onResizeHandler(const t_Cursor &)
+{
+    clear();
+}
+
 bool CurseOutput::onsig(int signo)
 {
     struct winsize size;
@@ -53,7 +58,7 @@ bool CurseOutput::onsig(int signo)
     case SIGWINCH:
         if (ioctl(fileno(screen_fd ? screen_fd : stdout), TIOCGWINSZ, &size) == 0)
             resize_term(size.ws_row, size.ws_col);
-        clear();
+        onResizeHandler(getScreenSize());
         while (!redraw());
         break;
 

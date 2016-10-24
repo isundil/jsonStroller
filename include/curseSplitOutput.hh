@@ -90,6 +90,8 @@ class CurseSplitOutput: public CurseOutput
         inputResult nextResult();
         inputResult changeWindow(char, bool);
 
+        void onResizeHandler(const t_Cursor &);
+
         void setSelection(const JSonElement *);
 
         void computeDiff();

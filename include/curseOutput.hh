@@ -61,6 +61,11 @@ class CurseOutput
         virtual void shutdown() =0;
 
         /**
+         * Called before redraw after window got SIGWINCH'd
+        **/
+        virtual void onResizeHandler(const t_Cursor &);
+
+        /**
          * return false if bottom of screen is touched
          * redraw all data
         **/

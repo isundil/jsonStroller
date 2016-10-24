@@ -414,6 +414,22 @@ const Optional<bool> CurseSplitOutput::redrawOneItemToWorkingWin(t_subWindow &w,
     return Optional<bool>::of(false);
 }
 
+void CurseSplitOutput::onResizeHandler(const t_Cursor &screenSize)
+{
+    size_t i =0;
+    destroyAllSubWin();
+    clear();
+
+    for (t_subWindow &subwin: subWindows)
+    {
+        subwin.outerWin = newwin(screenSize.second +2, screenSize.first, 0, i * (screenSize.first -1));
+        subwin.innerWin = newwin(screenSize.second, screenSize.first -2, 1, i * (screenSize.first -1) +1);
+        box(subwin.outerWin, 0, 0);
+        wrefresh(subwin.outerWin);
+        ++i;
+    }
+}
+
 bool CurseSplitOutput::redraw()
 {
     const t_Cursor screenSize = getScreenSize();
