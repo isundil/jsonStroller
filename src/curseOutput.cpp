@@ -29,7 +29,11 @@ CurseOutput::CurseOutput(const Params &p): params(p)
 
 CurseOutput::~CurseOutput()
 {
+    struct winsize size;
+
     runningInst = nullptr;
+    if (ioctl(fileno(screen_fd ? screen_fd : stdout), TIOCGWINSZ, &size) == 0)
+        resize_term(size.ws_row, size.ws_col);
 }
 
 void CurseOutput::loop(WINDOW * w)
@@ -52,15 +56,23 @@ void CurseOutput::onResizeHandler(const t_Cursor &)
 bool CurseOutput::onsig(int signo)
 {
     struct winsize size;
+    t_Cursor oldScrSize;
 
     switch (signo)
     {
     case SIGWINCH:
-    case SIGCONT:
         if (ioctl(fileno(screen_fd ? screen_fd : stdout), TIOCGWINSZ, &size) == 0)
             resize_term(size.ws_row, size.ws_col);
         onResizeHandler(getScreenSize());
         while (!redraw());
+        break;
+
+    case SIGCONT:
+        oldScrSize = getScreenSizeUnsafe();
+        if (ioctl(fileno(screen_fd ? screen_fd : stdout), TIOCGWINSZ, &size) == -1)
+            break;
+        if (size.ws_row != oldScrSize.second || size.ws_col != oldScrSize.first)
+            kill(getpid(), SIGWINCH);
         break;
 
     case SIGKILL:

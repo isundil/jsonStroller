@@ -79,7 +79,6 @@ bool CurseSimpleOutput::redraw()
 void CurseSimpleOutput::onResizeHandler(const t_Cursor &ss)
 {
     screenSize = t_Cursor(ss);
-    clear();
 }
 
 inputResult CurseSimpleOutput::selectUp()
