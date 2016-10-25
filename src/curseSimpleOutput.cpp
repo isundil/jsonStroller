@@ -201,7 +201,7 @@ bool CurseSimpleOutput::redraw(t_Cursor &cursor, JSonElement *item)
     else
     {
         cursor.second += CurseOutput::write(cursor.first, cursor.second, item, screenSize.first, CurseSimpleOutput::getFlag(item));
-        if (cursor.second - scrollTop > 0 && (cursor.second - scrollTop) > screenSize.second -1)
+        if (hasReachedBottom(cursor.second, scrollTop, screenSize.second))
             return false;
     }
     return true;
@@ -225,13 +225,13 @@ bool CurseSimpleOutput::writeContainer(t_Cursor &cursor, const JSonContainer *it
     else
     {
         cursor.second += write(cursor.first, cursor.second, childDelimiter[0], screenSize.first, CurseSimpleOutput::getFlag(item));
-        if (cursor.second <= scrollTop && cursor.second > screenSize.second +scrollTop -1)
+        if (hasReachedBottom(cursor.second, scrollTop, screenSize.second))
                 return false;
         if (!writeContent(cursor, (std::list<JSonElement *> *)item))
             return false;
         cursor.second += write(cursor.first, cursor.second, childDelimiter[1], screenSize.first, CurseSimpleOutput::getFlag(item));
     }
-    return (cursor.second >= scrollTop || (cursor.second - scrollTop) <= screenSize.second -1);
+    return !hasReachedBottom(cursor.second, scrollTop, screenSize.second);
 }
 
 bool CurseSimpleOutput::writeContent(t_Cursor &cursor, std::list<JSonElement*> *_item)
@@ -254,26 +254,31 @@ bool CurseSimpleOutput::writeContent(t_Cursor &cursor, std::list<JSonElement*> *
             {
                 if (dynamic_cast<JSonObject *>(**ent))
                 {
-                    if (!writeKey(key, ent->lazystrlen(), "{ ... }", cursor, CurseSimpleOutput::getFlag(ent)) || (cursor.second - scrollTop > 0 && (cursor.second - scrollTop) > screenSize.second -1))
+                    if (!writeKey(key, ent->lazystrlen(), "{ ... }", cursor, CurseSimpleOutput::getFlag(ent)))
                         break;
                 }
-                else if (!writeKey(key, ent->lazystrlen(), "[ ... ]", cursor, CurseSimpleOutput::getFlag(ent)) || (cursor.second - scrollTop > 0 && (cursor.second - scrollTop) > screenSize.second -1))
+                else if (!writeKey(key, ent->lazystrlen(), "[ ... ]", cursor, CurseSimpleOutput::getFlag(ent)))
+                    break;
+                if (hasReachedBottom(cursor.second, scrollTop, screenSize.second))
                     break;
             }
             else if (!isContainer)
             {
                 JSonElement *eContent = **ent;
-                if (!writeKey(key, ent->lazystrlen(), eContent->stringify(), eContent->lazystrlen(), cursor, CurseSimpleOutput::getFlag(ent)) || (cursor.second - scrollTop > 0 && (cursor.second - scrollTop) > screenSize.second -1))
+                if (!writeKey(key, ent->lazystrlen(), eContent->stringify(), eContent->lazystrlen(), cursor, CurseSimpleOutput::getFlag(ent))
+                        || hasReachedBottom(cursor.second, scrollTop, screenSize.second))
                     break;
             }
             else if (((JSonContainer*)(**ent))->size() == 0)
             {
                 if (dynamic_cast<const JSonObject *>(**ent) )
                 {
-                    if (!writeKey(key, ent->lazystrlen(), "{ }", cursor, CurseSimpleOutput::getFlag(ent)) || (cursor.second - scrollTop > 0 && (cursor.second - scrollTop) > screenSize.second -1))
+                    if (!writeKey(key, ent->lazystrlen(), "{ }", cursor, CurseSimpleOutput::getFlag(ent)))
                         break;
                 }
-                else if (!writeKey(key, ent->lazystrlen(), "[ ]", cursor, CurseSimpleOutput::getFlag(ent)) || (cursor.second - scrollTop > 0 && (cursor.second - scrollTop) > screenSize.second -1))
+                else if (!writeKey(key, ent->lazystrlen(), "[ ]", cursor, CurseSimpleOutput::getFlag(ent)))
+                    break;
+                if (hasReachedBottom(cursor.second, scrollTop, screenSize.second))
                     break;
             }
             else
@@ -319,7 +324,7 @@ bool CurseSimpleOutput::writeKey(const std::string &key, const size_t keylen, t_
     flags.type(OutputFlag::TYPE_OBJ);
     write(": ", flags);
     flags.type(oldType);
-    return (cursor.second >= scrollTop || cursor.second <= screenSize.second +scrollTop);
+    return !hasReachedBottom(cursor.second, scrollTop, screenSize.second);
 }
 
 bool CurseSimpleOutput::writeKey(const std::string &key, const size_t keylen, const std::string &after, size_t afterlen, t_Cursor &cursor, OutputFlag flags)
@@ -337,7 +342,7 @@ bool CurseSimpleOutput::writeKey(const std::string &key, const size_t keylen, co
     flags.type(oldType);
     write(after.c_str(), flags);
     cursor.second += getNbLines(cursor.first +keylen +2 +afterlen, screenSize.first);
-    return (cursor.second >= scrollTop || (cursor.second - scrollTop) <= screenSize.second);
+    return !hasReachedBottom(cursor.second, scrollTop, screenSize.second);
 }
 
 bool CurseSimpleOutput::writeKey(const std::string &key, const size_t keylen, const std::string &after, t_Cursor &cursor, OutputFlag flags)

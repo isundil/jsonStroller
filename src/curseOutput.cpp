@@ -175,6 +175,11 @@ unsigned int CurseOutput::getNbLines(const size_t nbChar, unsigned int maxWidth)
     return nLine +1;
 }
 
+bool CurseOutput::hasReachedBottom(unsigned int pos, unsigned int scrollTop, unsigned int height) const
+{
+    return (pos >= scrollTop && (pos -scrollTop) > height -1);
+}
+
 const t_Cursor CurseOutput::getScreenSizeUnsafe() const
 {
     t_Cursor bs;

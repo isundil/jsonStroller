@@ -97,6 +97,8 @@ class CurseOutput
         virtual inputResult nextResult() =0;
         virtual inputResult changeWindow(char direction, bool cycle) =0;
 
+        virtual bool hasReachedBottom(unsigned int pos, unsigned int scrollTop, unsigned int maxHeight) const;
+
         /**
          * get the screen size
         **/
