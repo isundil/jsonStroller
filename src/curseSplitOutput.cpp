@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <curses.h>
+#include <alloca.h>
 #include "searchPattern.hh"
 #include "curseSplitOutput.hh"
 #include "jsonObject.hh"
@@ -431,6 +432,7 @@ void CurseSplitOutput::onResizeHandler()
 bool CurseSplitOutput::redraw()
 {
     short writingDone = (1 << nbInputs) -1;
+    unsigned int *cursorInit = (unsigned int *)alloca(sizeof(*cursorInit) * nbInputs);
 
     workingWin = 0;
     for (t_subWindow &w : subWindows)
@@ -449,6 +451,8 @@ bool CurseSplitOutput::redraw()
     {
         // Display Gap (--)
         bool restart = false;
+        unsigned int maxLines = 0;
+
         workingWin = 0;
         for (t_subWindow &w : subWindows)
         {
@@ -491,6 +495,8 @@ bool CurseSplitOutput::redraw()
         workingWin = 0;
         for (t_subWindow &w : subWindows)
         {
+            cursorInit[workingWin] = w.cursor.second;
+
             if ((writingDone & (1 << workingWin)))
             {
                 const Optional<bool> wrote = redrawOneItemToWorkingWin(w);
@@ -499,9 +505,15 @@ bool CurseSplitOutput::redraw()
                     return false;
                 if (wrote.get())
                     writingDone &= ~(1 << workingWin);
+                maxLines = std::max(maxLines, w.cursor.second - cursorInit[workingWin]);
             }
             ++workingWin;
         }
+
+        // Display multi-lines gaps
+        workingWin = 0;
+        for (t_subWindow &w : subWindows)
+            w.cursor.second = cursorInit[workingWin++] + maxLines;
     }
     for (t_subWindow &w : subWindows)
         wrefresh(w.innerWin);
