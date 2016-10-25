@@ -90,7 +90,7 @@ class CurseSplitOutput: public CurseOutput
         inputResult nextResult();
         inputResult changeWindow(char, bool);
 
-        void onResizeHandler(const t_Cursor &);
+        void onResizeHandler();
 
         void setSelection(const JSonElement *);
 
@@ -106,8 +106,6 @@ class CurseSplitOutput: public CurseOutput
          * Viewport start
         **/
         unsigned short nbInputs, selectedWin, workingWin;
-
-        t_Cursor screenSize;
         // TODO t_subWindow &workingSubwin, &selectedSubwin ??
 };
 

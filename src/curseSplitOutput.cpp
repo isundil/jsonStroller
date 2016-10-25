@@ -41,10 +41,10 @@ CurseSplitOutput::~CurseSplitOutput()
 void CurseSplitOutput::run(const std::deque<std::string> &inputName, const std::deque<JSonElement*> &roots)
 {
     nbInputs = inputName.size();
-    screenSize = getScreenSize();
     selectedWin = 0;
     destroyAllSubWin();
     subWindows.clear();
+    screenSize = getScreenSize(); // screenSize is based on nbInputs, we must refresh it
 
     for (size_t i =0; i < nbInputs; ++i)
     {
@@ -413,12 +413,11 @@ const Optional<bool> CurseSplitOutput::redrawOneItemToWorkingWin(t_subWindow &w)
     return Optional<bool>::of(false);
 }
 
-void CurseSplitOutput::onResizeHandler(const t_Cursor &screenSize)
+void CurseSplitOutput::onResizeHandler()
 {
     size_t i =0;
     destroyAllSubWin();
     clear();
-    this->screenSize = t_Cursor(screenSize);
 
     for (t_subWindow &subwin: subWindows)
     {

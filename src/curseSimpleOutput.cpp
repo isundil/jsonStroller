@@ -29,7 +29,6 @@ void CurseSimpleOutput::run(JSonElement *root, const std::string &i)
     scrollTop = 0;
     selection = data = root;
     inputName = i;
-    screenSize = getScreenSize();
     loop(nullptr);
 }
 
@@ -74,11 +73,6 @@ bool CurseSimpleOutput::redraw()
         select_up = selection;
     refresh();
     return true;
-}
-
-void CurseSimpleOutput::onResizeHandler(const t_Cursor &ss)
-{
-    screenSize = t_Cursor(ss);
 }
 
 inputResult CurseSimpleOutput::selectUp()
@@ -538,4 +532,8 @@ void CurseSimpleOutput::shutdown()
     screen = nullptr;
 }
 
+const t_Cursor CurseSimpleOutput::getScreenSize() const
+{
+    return getScreenSizeUnsafe();
+}
 

@@ -48,7 +48,7 @@ void CurseOutput::loop(WINDOW * w)
     } while (read != inputResult::quit);
 }
 
-void CurseOutput::onResizeHandler(const t_Cursor &)
+void CurseOutput::onResizeHandler()
 {
     clear();
 }
@@ -63,7 +63,8 @@ bool CurseOutput::onsig(int signo)
     case SIGWINCH:
         if (ioctl(fileno(screen_fd ? screen_fd : stdout), TIOCGWINSZ, &size) == 0)
             resize_term(size.ws_row, size.ws_col);
-        onResizeHandler(getScreenSize());
+        screenSize = getScreenSize();
+        onResizeHandler();
         while (!redraw());
         break;
 
@@ -172,11 +173,6 @@ unsigned int CurseOutput::getNbLines(const size_t nbChar, unsigned int maxWidth)
     if (nLine == (unsigned int) nLine)
         return nLine;
     return nLine +1;
-}
-
-const t_Cursor CurseOutput::getScreenSize() const
-{
-    return getScreenSizeUnsafe();
 }
 
 const t_Cursor CurseOutput::getScreenSizeUnsafe() const
@@ -298,6 +294,7 @@ void CurseOutput::init()
     noecho();
     curs_set(false);
     keypad(stdscr, true);
+    screenSize = getScreenSize();
 
     if (params.colorEnabled())
     {

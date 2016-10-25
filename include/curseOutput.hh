@@ -63,7 +63,7 @@ class CurseOutput
         /**
          * Called before redraw after window got SIGWINCH'd
         **/
-        virtual void onResizeHandler(const t_Cursor &);
+        virtual void onResizeHandler();
 
         /**
          * return false if bottom of screen is touched
@@ -100,7 +100,7 @@ class CurseOutput
         /**
          * get the screen size
         **/
-        virtual const t_Cursor getScreenSize() const;
+        virtual const t_Cursor getScreenSize() const =0;
         const t_Cursor getScreenSizeUnsafe() const;
 
         /**
@@ -184,6 +184,8 @@ class CurseOutput
          * initialized colors
         **/
         std::set<char /* OutputFlag::TYPE_SOMETHING */> colors;
+
+        t_Cursor screenSize;
 
         class SelectionOutOfRange { };
 };

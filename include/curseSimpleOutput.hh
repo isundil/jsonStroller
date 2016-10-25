@@ -30,6 +30,7 @@ class CurseSimpleOutput: public CurseOutput
         **/
         void shutdown();
 
+        const t_Cursor getScreenSize() const;
         /**
          * get flags to be passed to write.
          * Contains indications on who to write item
@@ -58,8 +59,6 @@ class CurseSimpleOutput: public CurseOutput
         inputResult initSearch();
         inputResult nextResult();
         inputResult changeWindow(char, bool);
-
-        void onResizeHandler(const t_Cursor &newSize);
 
         /**
          * Root item
@@ -92,7 +91,5 @@ class CurseSimpleOutput: public CurseOutput
          * Used for moving viewport
         **/
         bool selectFound, selectIsLast;
-
-        t_Cursor screenSize;
 };
 
