@@ -29,7 +29,11 @@ CurseOutput::CurseOutput(const Params &p): params(p)
 
 CurseOutput::~CurseOutput()
 {
+    struct winsize size;
+
     runningInst = nullptr;
+    if (ioctl(fileno(screen_fd ? screen_fd : stdout), TIOCGWINSZ, &size) == 0)
+        resize_term(size.ws_row, size.ws_col);
 }
 
 void CurseOutput::loop(WINDOW * w)
@@ -44,17 +48,32 @@ void CurseOutput::loop(WINDOW * w)
     } while (read != inputResult::quit);
 }
 
+void CurseOutput::onResizeHandler()
+{
+    clear();
+}
+
 bool CurseOutput::onsig(int signo)
 {
     struct winsize size;
+    t_Cursor oldScrSize;
 
     switch (signo)
     {
     case SIGWINCH:
         if (ioctl(fileno(screen_fd ? screen_fd : stdout), TIOCGWINSZ, &size) == 0)
             resize_term(size.ws_row, size.ws_col);
-        clear();
+        screenSize = getScreenSize();
+        onResizeHandler();
         while (!redraw());
+        break;
+
+    case SIGCONT:
+        oldScrSize = getScreenSizeUnsafe();
+        if (ioctl(fileno(screen_fd ? screen_fd : stdout), TIOCGWINSZ, &size) == -1)
+            break;
+        if (size.ws_row != oldScrSize.second || size.ws_col != oldScrSize.first)
+            kill(getpid(), SIGWINCH);
         break;
 
     case SIGKILL:
@@ -156,9 +175,9 @@ unsigned int CurseOutput::getNbLines(const size_t nbChar, unsigned int maxWidth)
     return nLine +1;
 }
 
-const t_Cursor CurseOutput::getScreenSize() const
+bool CurseOutput::hasReachedBottom(unsigned int pos, unsigned int scrollTop, unsigned int height) const
 {
-    return getScreenSizeUnsafe();
+    return (pos >= scrollTop && (pos -scrollTop) > height -1);
 }
 
 const t_Cursor CurseOutput::getScreenSizeUnsafe() const
@@ -280,6 +299,7 @@ void CurseOutput::init()
     noecho();
     curs_set(false);
     keypad(stdscr, true);
+    screenSize = getScreenSize();
 
     if (params.colorEnabled())
     {
@@ -309,5 +329,6 @@ void CurseOutput::init()
     signal(SIGINT, _resizeFnc);
     signal(SIGTERM, _resizeFnc);
     signal(SIGKILL, _resizeFnc);
+    signal(SIGCONT, _resizeFnc);
 }
 

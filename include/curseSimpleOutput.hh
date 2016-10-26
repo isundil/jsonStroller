@@ -30,6 +30,7 @@ class CurseSimpleOutput: public CurseOutput
         **/
         void shutdown();
 
+        const t_Cursor getScreenSize() const;
         /**
          * get flags to be passed to write.
          * Contains indications on who to write item
@@ -40,12 +41,12 @@ class CurseSimpleOutput: public CurseOutput
         unsigned int write(const int &x, const int &y, const char item, unsigned int maxWidth, OutputFlag flags);
         unsigned int write(const int &x, const int &y, const std::string &str, const size_t strlen, unsigned int maxWidth, const OutputFlag flags);
         void write(const std::string &str, const OutputFlag flags) const;
-        bool writeKey(const std::string &key, const size_t keylen, t_Cursor &cursor, const t_Cursor &maxWidth, OutputFlag, unsigned int extraLen =0);
-        bool writeKey(const std::string &key, const size_t keylen, const std::string &after, size_t afterlen, t_Cursor &cursor, const t_Cursor &maxSize, OutputFlag flags);
-        bool writeKey(const std::string &key, const size_t keylen, const std::string &after, t_Cursor &cursor, const t_Cursor &maxWidth, OutputFlag);
-        bool writeContainer(t_Cursor &, const t_Cursor &maxSize, const JSonContainer *);
-        bool writeContent(t_Cursor &cursor, const t_Cursor &maxSize, std::list<JSonElement *> * obj);
-        bool redraw(t_Cursor &, const t_Cursor &, JSonElement *);
+        bool writeKey(const std::string &key, const size_t keylen, t_Cursor &cursor, OutputFlag, unsigned int extraLen =0);
+        bool writeKey(const std::string &key, const size_t keylen, const std::string &after, size_t afterlen, t_Cursor &cursor, OutputFlag flags);
+        bool writeKey(const std::string &key, const size_t keylen, const std::string &after, t_Cursor &cursor, OutputFlag);
+        bool writeContainer(t_Cursor &, const JSonContainer *);
+        bool writeContent(t_Cursor &cursor, std::list<JSonElement *> * obj);
+        bool redraw(t_Cursor &, JSonElement *);
         void checkSelection(const JSonElement *item, const t_Cursor &cursor);
 
     protected:

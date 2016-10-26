@@ -61,6 +61,11 @@ class CurseOutput
         virtual void shutdown() =0;
 
         /**
+         * Called before redraw after window got SIGWINCH'd
+        **/
+        virtual void onResizeHandler();
+
+        /**
          * return false if bottom of screen is touched
          * redraw all data
         **/
@@ -92,10 +97,12 @@ class CurseOutput
         virtual inputResult nextResult() =0;
         virtual inputResult changeWindow(char direction, bool cycle) =0;
 
+        virtual bool hasReachedBottom(unsigned int pos, unsigned int scrollTop, unsigned int maxHeight) const;
+
         /**
          * get the screen size
         **/
-        virtual const t_Cursor getScreenSize() const;
+        virtual const t_Cursor getScreenSize() const =0;
         const t_Cursor getScreenSizeUnsafe() const;
 
         /**
@@ -179,6 +186,8 @@ class CurseOutput
          * initialized colors
         **/
         std::set<char /* OutputFlag::TYPE_SOMETHING */> colors;
+
+        t_Cursor screenSize;
 
         class SelectionOutOfRange { };
 };

@@ -8,7 +8,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <curses.h>
-
+#include <alloca.h>
 #include "searchPattern.hh"
 #include "curseSplitOutput.hh"
 #include "jsonObject.hh"
@@ -42,10 +42,10 @@ CurseSplitOutput::~CurseSplitOutput()
 void CurseSplitOutput::run(const std::deque<std::string> &inputName, const std::deque<JSonElement*> &roots)
 {
     nbInputs = inputName.size();
-    const t_Cursor screenSize = getScreenSize();
     selectedWin = 0;
     destroyAllSubWin();
     subWindows.clear();
+    screenSize = getScreenSize(); // screenSize is based on nbInputs, we must refresh it
 
     for (size_t i =0; i < nbInputs; ++i)
     {
@@ -370,15 +370,15 @@ bool CurseSplitOutput::jumpToNextSearch()
     return true;
 }
 
-const Optional<bool> CurseSplitOutput::redrawOneItemToWorkingWin(t_subWindow &w, const t_Cursor &screenSize)
+const Optional<bool> CurseSplitOutput::redrawOneItemToWorkingWin(t_subWindow &w)
 {
     bool result;
 
     try {
         if (w.parentsIterators.empty())
-            result = redraw(w, screenSize, w.root);
+            result = redraw(w, w.root);
         else
-            result = redraw(w, screenSize, w.parentsIterators.top());
+            result = redraw(w, w.parentsIterators.top());
     }
     catch (SelectionOutOfRange &e)
     {
@@ -414,10 +414,25 @@ const Optional<bool> CurseSplitOutput::redrawOneItemToWorkingWin(t_subWindow &w,
     return Optional<bool>::of(false);
 }
 
+void CurseSplitOutput::onResizeHandler()
+{
+    size_t i =0;
+    clear();
+
+    for (t_subWindow &subwin: subWindows)
+    {
+        wresize(subwin.outerWin, screenSize.second +2, screenSize.first);
+        wresize(subwin.innerWin, screenSize.second, screenSize.first -2);
+        box(subwin.outerWin, 0, 0);
+        wrefresh(subwin.outerWin);
+        ++i;
+    }
+}
+
 bool CurseSplitOutput::redraw()
 {
-    const t_Cursor screenSize = getScreenSize();
     short writingDone = (1 << nbInputs) -1;
+    unsigned int *cursorInit = (unsigned int *)alloca(sizeof(*cursorInit) * nbInputs);
 
     workingWin = 0;
     for (t_subWindow &w : subWindows)
@@ -436,6 +451,8 @@ bool CurseSplitOutput::redraw()
     {
         // Display Gap (--)
         bool restart = false;
+        unsigned int maxLines = 0;
+
         workingWin = 0;
         for (t_subWindow &w : subWindows)
         {
@@ -447,7 +464,7 @@ bool CurseSplitOutput::redraw()
 
                 do
                 {
-                    const Optional<bool> wrote = redrawOneItemToWorkingWin(w, screenSize);
+                    const Optional<bool> wrote = redrawOneItemToWorkingWin(w);
 
                     if (wrote.absent())
                         return false;
@@ -478,24 +495,32 @@ bool CurseSplitOutput::redraw()
         workingWin = 0;
         for (t_subWindow &w : subWindows)
         {
+            cursorInit[workingWin] = w.cursor.second;
+
             if ((writingDone & (1 << workingWin)))
             {
-                const Optional<bool> wrote = redrawOneItemToWorkingWin(w, screenSize);
+                const Optional<bool> wrote = redrawOneItemToWorkingWin(w);
 
                 if (wrote.absent())
                     return false;
                 if (wrote.get())
                     writingDone &= ~(1 << workingWin);
+                maxLines = std::max(maxLines, w.cursor.second - cursorInit[workingWin]);
             }
             ++workingWin;
         }
+
+        // Display multi-lines gaps
+        workingWin = 0;
+        for (t_subWindow &w : subWindows)
+            w.cursor.second = cursorInit[workingWin++] + maxLines;
     }
     for (t_subWindow &w : subWindows)
         wrefresh(w.innerWin);
     return true;
 }
 
-bool CurseSplitOutput::writeContainer(const t_Cursor &maxSize, JSonContainer *item, bool opening)
+bool CurseSplitOutput::writeContainer(JSonContainer *item, bool opening)
 {
     char childDelimiter[2];
     t_subWindow &w = subWindows.at(workingWin);
@@ -508,27 +533,27 @@ bool CurseSplitOutput::writeContainer(const t_Cursor &maxSize, JSonContainer *it
     if (!opening) // Display close brackets
     {
         w.cursor.first -= INDENT_LEVEL;
-        w.cursor.second += write(w.cursor.first, w.cursor.second, childDelimiter[1], maxSize.first, CurseSplitOutput::getFlag(item));
+        w.cursor.second += write(w.cursor.first, w.cursor.second, childDelimiter[1], screenSize.first -2, CurseSplitOutput::getFlag(item));
     }
     else if (collapsed.find((const JSonContainer *)item) != collapsed.end()) // inline collapsed
     {
         std::string ss;
         ss.append(&childDelimiter[0], 1).append(" ... ").append(&childDelimiter[1], 1);
-        w.cursor.second += write(w.cursor.first, w.cursor.second, ss, 7, maxSize.first, CurseSplitOutput::getFlag(item));
+        w.cursor.second += write(w.cursor.first, w.cursor.second, ss, 7, screenSize.first -2, CurseSplitOutput::getFlag(item));
     }
     else // Display open brackets
     {
-        w.cursor.second += write(w.cursor.first, w.cursor.second, childDelimiter[0], maxSize.first, CurseSplitOutput::getFlag(item));
-        if (w.cursor.second > w.scrollTop && (w.cursor.second - w.scrollTop) > maxSize.second -1)
+        w.cursor.second += write(w.cursor.first, w.cursor.second, childDelimiter[0], screenSize.first -2, CurseSplitOutput::getFlag(item));
+        if (hasReachedBottom(w.cursor.second, w.scrollTop, screenSize.second))
             return false;
         w.parentsIterators.push(std::pair<int, JSonContainer *>(-1, item));
         w.cursor.first += INDENT_LEVEL;
         return true;
     }
-    return (w.cursor.second < w.scrollTop || (w.cursor.second - w.scrollTop) <= maxSize.second -1);
+    return !hasReachedBottom(w.cursor.second, w.scrollTop, screenSize.second);
 }
 
-bool CurseSplitOutput::writeKey(t_subWindow &w, const std::string &key, const size_t keylen, const t_Cursor &maxSize, OutputFlag flags, unsigned int extraLen)
+bool CurseSplitOutput::writeKey(t_subWindow &w, const std::string &key, const size_t keylen, OutputFlag flags, unsigned int extraLen)
 {
     if (w.cursor.second <= w.scrollTop)
     {
@@ -537,14 +562,14 @@ bool CurseSplitOutput::writeKey(t_subWindow &w, const std::string &key, const si
     }
     char oldType = flags.type();
     flags.type(OutputFlag::TYPE_OBJKEY);
-    w.cursor.second += write(w.cursor.first, w.cursor.second, key, keylen, maxSize.first -extraLen -2, flags);
+    w.cursor.second += write(w.cursor.first, w.cursor.second, key, keylen, screenSize.first -extraLen -2 -2, flags);
     flags.type(OutputFlag::TYPE_OBJ);
     write(": ", flags);
     flags.type(oldType);
-    return (w.cursor.second < w.scrollTop || (w.cursor.second - w.scrollTop) <= maxSize.second);
+    return !hasReachedBottom(w.cursor.second, w.scrollTop, screenSize.second);
 }
 
-bool CurseSplitOutput::writeKey(t_subWindow &w, const std::string &key, const size_t keylen, const std::string &after, const size_t afterlen, t_Cursor &cursor, const t_Cursor &maxWidth, OutputFlag flags)
+bool CurseSplitOutput::writeKey(t_subWindow &w, const std::string &key, const size_t keylen, const std::string &after, const size_t afterlen, t_Cursor &cursor, OutputFlag flags)
 {
     if (cursor.second <= w.scrollTop)
     {
@@ -558,13 +583,13 @@ bool CurseSplitOutput::writeKey(t_subWindow &w, const std::string &key, const si
     write(": ", flags);
     flags.type(oldType);
     write(after, flags);
-    cursor.second += getNbLines(cursor.first +keylen +2 +afterlen, maxWidth.first);
-    return (cursor.second < w.scrollTop || (cursor.second - w.scrollTop) <= maxWidth.second);
+    cursor.second += getNbLines(cursor.first +keylen +2 +afterlen, screenSize.first -2);
+    return !hasReachedBottom(w.cursor.second, w.scrollTop, screenSize.second);
 }
 
-bool CurseSplitOutput::writeKey(t_subWindow &w, const std::string &key, const size_t keylen, const std::string &after, t_Cursor &cursor, const t_Cursor &maxWidth, OutputFlag flags)
+bool CurseSplitOutput::writeKey(t_subWindow &w, const std::string &key, const size_t keylen, const std::string &after, t_Cursor &cursor, OutputFlag flags)
 {
-    return writeKey(w, key, keylen, after, after.length(), cursor, maxWidth, flags);
+    return writeKey(w, key, keylen, after, after.length(), cursor, flags);
 }
 
 bool CurseSplitOutput::isAdded(const JSonElement *e) const
@@ -583,7 +608,7 @@ bool CurseSplitOutput::isAdded(const std::pair<int, JSonContainer *> &item) cons
     return isAdded(e);
 }
 
-bool CurseSplitOutput::redraw(t_subWindow &w, const t_Cursor &maxSize, std::pair<int, JSonContainer *> &item)
+bool CurseSplitOutput::redraw(t_subWindow &w, std::pair<int, JSonContainer *> &item)
 {
     JSonElement *currentItem;
 
@@ -591,34 +616,34 @@ bool CurseSplitOutput::redraw(t_subWindow &w, const t_Cursor &maxSize, std::pair
     if ((unsigned int) item.first == item.second->size())
     {
         w.parentsIterators.pop();
-        return writeContainer(maxSize, item.second, false);
+        return writeContainer(item.second, false);
     }
     currentItem = list_at<JSonElement*>(*(item.second), item.first);
-    return redraw(w, maxSize, currentItem);
+    return redraw(w, currentItem);
 }
 
-bool CurseSplitOutput::redraw(t_subWindow &w, const t_Cursor &maxSize, JSonElement *item)
+bool CurseSplitOutput::redraw(t_subWindow &w, JSonElement *item)
 {
     checkSelection(item);
     if (dynamic_cast<const JSonContainer*>(item))
     {
-        if (!writeContainer(maxSize, (JSonContainer *) item))
+        if (!writeContainer((JSonContainer *) item))
             return false;
     }
     else if (dynamic_cast<JSonObjectEntry*>(item))
     {
-        return writeObjectEntry(w, maxSize, (JSonObjectEntry*) item);
+        return writeObjectEntry(w, (JSonObjectEntry*) item);
     }
     else
     {
-        w.cursor.second += CurseOutput::write(w.cursor.first, w.cursor.second, item, maxSize.first, CurseSplitOutput::getFlag(item));
-        if (w.cursor.second > w.scrollTop && (w.cursor.second - w.scrollTop) > maxSize.second -1)
+        w.cursor.second += CurseOutput::write(w.cursor.first, w.cursor.second, item, screenSize.first -2, CurseSplitOutput::getFlag(item));
+        if (hasReachedBottom(w.cursor.second, w.scrollTop, screenSize.second))
             return false;
     }
     return true;
 }
 
-bool CurseSplitOutput::writeObjectEntry(t_subWindow &w, const t_Cursor &maxSize, JSonObjectEntry *ent)
+bool CurseSplitOutput::writeObjectEntry(t_subWindow &w, JSonObjectEntry *ent)
 {
     bool isContainer = (dynamic_cast<JSonContainer *>(**ent) != nullptr);
     std::string key = ent->stringify();
@@ -627,38 +652,39 @@ bool CurseSplitOutput::writeObjectEntry(t_subWindow &w, const t_Cursor &maxSize,
     {
         if (dynamic_cast<JSonObject *>(**ent))
         {
-            if (!writeKey(w, key, ent->lazystrlen(), "{ ... }", w.cursor, maxSize, getFlag(ent)) || (w.cursor.second > w.scrollTop && (w.cursor.second - w.scrollTop) > maxSize.second -1))
+            if (!writeKey(w, key, ent->lazystrlen(), "{ ... }", w.cursor, getFlag(ent)))
                 return false;
         }
-        else if (!writeKey(w, key, ent->lazystrlen(), "[ ... ]", w.cursor, maxSize, getFlag(ent)) || (w.cursor.second > w.scrollTop && (w.cursor.second - w.scrollTop) > maxSize.second -1))
+        else if (!writeKey(w, key, ent->lazystrlen(), "[ ... ]", w.cursor, getFlag(ent)))
+            return false;
+        if (hasReachedBottom(w.cursor.second, w.scrollTop, screenSize.second))
             return false;
     }
     else if (!isContainer) // inline value
     {
         JSonElement *eContent = **ent;
-        if (!writeKey(w, key, ent->lazystrlen(), eContent->stringify(), eContent->lazystrlen(), w.cursor, maxSize, getFlag(ent))
-                || (w.cursor.second > w.scrollTop && (w.cursor.second - w.scrollTop) > maxSize.second -1))
+        if (!writeKey(w, key, ent->lazystrlen(), eContent->stringify(), eContent->lazystrlen(), w.cursor, getFlag(ent)))
             return false;
     }
     else if (((JSonContainer*)(**ent))->size() == 0) // inline empty
     {
         if (dynamic_cast<const JSonObject *>(**ent) )
         {
-            if (!writeKey(w, key, ent->lazystrlen(), "{ }", w.cursor, maxSize, getFlag(ent)) || (w.cursor.second > w.scrollTop && (w.cursor.second - w.scrollTop) > maxSize.second -1))
+            if (!writeKey(w, key, ent->lazystrlen(), "{ }", w.cursor, getFlag(ent)))
                 return false;
         }
-        else if (!writeKey(w, key, ent->lazystrlen(), "[ ]", w.cursor, maxSize, getFlag(ent)) || (w.cursor.second > w.scrollTop && (w.cursor.second - w.scrollTop) > maxSize.second -1))
+        else if (!writeKey(w, key, ent->lazystrlen(), "[ ]", w.cursor, getFlag(ent)))
+            return false;
+        if (hasReachedBottom(w.cursor.second, w.scrollTop, screenSize.second))
             return false;
     }
     else // Container
     {
-        if (!writeKey(w, key, ent->lazystrlen(), maxSize, getFlag(ent)))
+        if (!writeKey(w, key, ent->lazystrlen(), getFlag(ent)))
             return false;
-        writeContainer(maxSize, (JSonContainer*)(**ent), true);
+        writeContainer((JSonContainer*)(**ent), true);
     }
-    if (w.cursor.second > w.scrollTop && (w.cursor.second - w.scrollTop) > maxSize.second -1)
-        return false;
-    return true;
+    return !hasReachedBottom(w.cursor.second, w.scrollTop, screenSize.second);
 }
 
 unsigned int CurseSplitOutput::write(const int &x, const int &y, const char item, unsigned int maxWidth, OutputFlag flags)
@@ -776,7 +802,6 @@ void CurseSplitOutput::destroyAllSubWin()
 
 void CurseSplitOutput::writeTopLine(const std::string &buffer, short color) const
 {
-    const t_Cursor screenSize = getScreenSize();
     const size_t bufsize = buffer.size();
     WINDOW *currentWin = subWindows.at(workingWin).innerWin;
 

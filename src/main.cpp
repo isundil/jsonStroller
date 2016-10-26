@@ -16,7 +16,7 @@ void displayException(const std::string &filename, const Params &params, const s
 {
     const std::string buffer = e.getHistory();
 
-    std::cerr << params.getProgName() << ": " << filename << " [" << type << "] at line " << e.currentLine() << ", " << e.currentCol() << " ("  << e.what() << ") while reading" << std::endl;
+    std::cerr << params.getProgName() << ": " << filename << " [" << type << "] at line " << e.currentLine() << ", col " << e.currentCol() << " ("  << e.what() << ") while reading" << std::endl;
     std::cerr << buffer << std::endl << std::string(buffer.size() -1, '~') << '^' << std::endl;
 }
 

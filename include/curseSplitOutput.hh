@@ -37,17 +37,17 @@ class CurseSplitOutput: public CurseOutput
         void checkSelection(const JSonElement *item);
 
         bool redraw();
-        bool redraw(t_subWindow &, const t_Cursor &screenSize, std::pair<int, JSonContainer *> &);
-        bool redraw(t_subWindow &, const t_Cursor &screenSize, JSonElement *);
-        const Optional<bool> redrawOneItemToWorkingWin(t_subWindow &w, const t_Cursor &);
+        bool redraw(t_subWindow &, std::pair<int, JSonContainer *> &);
+        bool redraw(t_subWindow &, JSonElement *);
+        const Optional<bool> redrawOneItemToWorkingWin(t_subWindow &w);
         bool isAdded(const std::pair<int, JSonContainer *> &) const;
         bool isAdded(const JSonElement *e) const;
 
-        bool writeContainer(const t_Cursor &maxSize, JSonContainer *, bool opening = true);
-        bool writeObjectEntry(t_subWindow &w, const t_Cursor &maxSize, JSonObjectEntry *item);
-        bool writeKey(t_subWindow &, const std::string &key, const size_t keylen, const t_Cursor &maxSize, OutputFlag flags, unsigned int extraLen =0);
-        bool writeKey(t_subWindow &, const std::string &key, const size_t keylen, const std::string &after, const size_t afterlen, t_Cursor &cursor, const t_Cursor &maxWidth, OutputFlag);
-        bool writeKey(t_subWindow &, const std::string &key, const size_t keylen, const std::string &after, t_Cursor &cursor, const t_Cursor &maxWidth, OutputFlag);
+        bool writeContainer(JSonContainer *, bool opening = true);
+        bool writeObjectEntry(t_subWindow &w, JSonObjectEntry *item);
+        bool writeKey(t_subWindow &, const std::string &key, const size_t keylen, OutputFlag flags, unsigned int extraLen =0);
+        bool writeKey(t_subWindow &, const std::string &key, const size_t keylen, const std::string &after, const size_t afterlen, t_Cursor &cursor, OutputFlag);
+        bool writeKey(t_subWindow &, const std::string &key, const size_t keylen, const std::string &after, t_Cursor &cursor, OutputFlag);
         unsigned int write(const int &x, const int &y, const char item, unsigned int maxWidth, OutputFlag flags);
         unsigned int write(const int &x, const int &y, const std::string &str, const size_t strlen, unsigned int maxWidth, const OutputFlag flags);
         void write(const std::string &str, const OutputFlag flags) const;
@@ -90,6 +90,8 @@ class CurseSplitOutput: public CurseOutput
         inputResult nextResult();
         inputResult changeWindow(char, bool);
 
+        void onResizeHandler();
+
         void setSelection(const JSonElement *);
 
         void computeDiff();
@@ -104,7 +106,6 @@ class CurseSplitOutput: public CurseOutput
          * Viewport start
         **/
         unsigned short nbInputs, selectedWin, workingWin;
-
         // TODO t_subWindow &workingSubwin, &selectedSubwin ??
 };
 
