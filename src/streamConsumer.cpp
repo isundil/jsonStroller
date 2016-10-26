@@ -208,32 +208,43 @@ bool StreamConsumer::consumeEscapedChar(char c, std::stringstream &buf)
 JSonElement *StreamConsumer::consumeBool(JSonContainer *parent, std::stringstream &buf, char firstChar)
 {
     size_t read =1;
+    const char firstLowerChar = std::tolower(firstChar);
+    std::string rawInput;
 
     buf.str("");
     buf.clear();
-    buf.write(&firstChar, 1);
+    buf.write(&firstLowerChar, 1);
+    rawInput += firstChar;
 
     //TODO batch-get 3 char, then do that
     while (stream.good())
     {
-        char c = stream.get();
+        const char c = stream.get();
+        const char cLower = std::tolower(c);
         history.put(c);
 
-        if (c == 'a' || c == 'e' || c == 'l' || c == 'r' || c == 's' || c == 'u')
+        if (cLower == 'a' || cLower == 'e' || cLower == 'l' || cLower == 'r' || cLower == 's' || cLower == 'u')
         {
-            if ((read >= 5 && firstChar == 'f') || (read >= 4 && firstChar == 't'))
+            if ((read >= 5 && firstLowerChar == 'f') || (read >= 4 && firstLowerChar == 't'))
                 throw JsonFormatException(stream.tellg(), history);
-            buf.write(&c, 1);
+            buf.write(&cLower, 1);
             read++;
+            rawInput += c;
         }
+        else if ((buf.str() != "true" && buf.str() != "false") || (buf.str() != rawInput && params->isStrict()))
+            throw JsonFormatException(stream.tellg(), history);
         else if (buf.str() == "true")
         {
+            if (buf.str() != rawInput)
+                warnings.push_back(Warning(JsonFormatException(stream.tellg(), history)));
             history.pop_back();
             stream.unget();
             return new JSonPrimitive<bool>(parent, true);
         }
         else if (buf.str() == "false")
         {
+            if (buf.str() != rawInput)
+                warnings.push_back(Warning(JsonFormatException(stream.tellg(), history)));
             history.pop_back();
             stream.unget();
             return new JSonPrimitive<bool>(parent, false);
@@ -296,9 +307,10 @@ JSonElement *StreamConsumer::consumeNumber(JSonContainer *parent, std::stringstr
     return nullptr;
 }
 
-JSonElement *StreamConsumer::consumeNull(JSonContainer *parent, std::stringstream &buf)
+JSonElement *StreamConsumer::consumeNull(JSonContainer *parent, std::stringstream &buf, char firstChar)
 {
-    char _buf[5] = { 'n', '\0', '\0', '\0', '\0' };
+    char _buf[5] = { firstChar, '\0', '\0', '\0', '\0' };
+    std::string _bufLower = "n";
 
     buf.str("");
     buf.clear();
@@ -312,8 +324,14 @@ JSonElement *StreamConsumer::consumeNull(JSonContainer *parent, std::stringstrea
         buf.clear();
         return nullptr;
     }
-    if (std::string("null") == _buf)
+    for (int i =1; i < 4; ++i)
+        _bufLower += std::tolower(_buf[i]);
+    if (_bufLower == "null" && (_bufLower == buf.str() || !params->isStrict()))
+    {
+        if (buf.str() != "null")
+            warnings.push_back(Warning(JsonFormatException(stream.tellg(), history)));
         return new JSonPrimitive<Null>(parent, Null());
+    }
     throw JsonFormatException(stream.tellg(), history);
 }
 
@@ -327,10 +345,10 @@ JSonElement *StreamConsumer::consumeToken(JSonContainer *parent, std::stringstre
         //!InString, !inbool
         if (c == '"')
             return consumeString(parent, buf);
-        else if (c == 't' || c == 'f')
+        else if (c == 't' || c == 'f' || c == 'T' || c == 'F')
             return consumeBool(parent, buf, c);
-        else if (c == 'n')
-            return consumeNull(parent, buf);
+        else if (c == 'n' || c == 'N')
+            return consumeNull(parent, buf, c);
         else if ((c >= '0' && c <= '9') || c == '.' || c == '-')
             return consumeNumber(parent, buf, c);
         else if (c == '{' || c == '[' || c == '}' || c == ']' || c == ':' || c == ',')

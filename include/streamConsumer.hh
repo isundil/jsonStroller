@@ -60,7 +60,7 @@ class StreamConsumer
         JSonElement *consumeString(JSonContainer *parent, std::stringstream &buf);
         JSonElement *consumeBool(JSonContainer *parent, std::stringstream &buf, char c);
         JSonElement *consumeNumber(JSonContainer *parent, std::stringstream &buf, char c);
-        JSonElement *consumeNull(JSonContainer *parent, std::stringstream &buf);
+        JSonElement *consumeNull(JSonContainer *parent, std::stringstream &buf, char firstChar);
         bool consumeEscapedChar(char c, std::stringstream &buf);
 
         /**
