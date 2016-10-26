@@ -4,7 +4,10 @@
 
 size_t levenshtein(const std::string &a, const std::string &b)
 {
+    if (a == b)
+        return 0;
     int **matrice = new int*[a.size() +1]();
+
     matrice[0] = new int[b.size() +1]();
     for (size_t j=0; j <= b.size(); j++)
         matrice[0][j] = j;
@@ -30,7 +33,7 @@ float levenshteinPercent(const std::string &a, const std::string &b)
 {
     if (a.empty() && b.empty())
         return 1.f;
-    return 1 - (levenshtein(a, b) / std::max(a.size(), b.size()));
+    return 1.f - ((float)levenshtein(a, b) / std::max(a.size(), b.size()));
 }
 
 /**
@@ -173,13 +176,14 @@ LevenshteinMatriceWithScore::LevenshteinMatriceWithScore(float s, const JSonElem
     }
     else
         equivalentA = equivalentB = nullptr;
+    operations[a] = operations[b] = (_result ? eLevenshteinOperator::equ : eLevenshteinOperator::add);
 }
 
 const JSonElement * LevenshteinMatriceWithScore::getEquivalence(const JSonElement *a) const
 {
-    if (equivalentA && equivalentB && equivalentA == a)
+    if (equivalentA == a)
         return equivalentB;
-    return nullptr;
+    return equivalentB == a ? equivalentA : nullptr;
 }
 
 std::map<const JSonElement *, const JSonElement *> LevenshteinMatriceWithScore::getEquivalences() const
