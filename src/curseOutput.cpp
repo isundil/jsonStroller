@@ -90,9 +90,9 @@ bool CurseOutput::onsig(int signo)
 
 void _resizeFnc(int signo)
 {
-    if (!runningInst)
-        return;
-    runningInst->onsig(signo);
+    if (runningInst)
+        runningInst->onsig(signo);
+    signal(signo, _resizeFnc);
 }
 
 /**
@@ -244,12 +244,12 @@ const SearchPattern *CurseOutput::inputSearch()
 
 void CurseOutput::writeTopLine(const std::string &buffer, short color) const
 {
-    const t_Cursor screenSize = getScreenSize();
-    const size_t bufsize = buffer.size();
+    const std::string str = buffer.substr(0, screenSize.first);
+    const size_t bufsize = str.size();
 
     if (params.colorEnabled())
         attron(COLOR_PAIR(color));
-    mvprintw(0, 0, "%s%*c", buffer.c_str(), screenSize.first - bufsize, ' ');
+    mvprintw(0, 0, "%s%*c", str.c_str(), screenSize.first - bufsize, ' ');
     if (params.colorEnabled())
         attroff(COLOR_PAIR(color));
 }

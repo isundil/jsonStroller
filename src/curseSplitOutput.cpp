@@ -423,6 +423,8 @@ void CurseSplitOutput::onResizeHandler()
     {
         wresize(subwin.outerWin, screenSize.second +2, screenSize.first);
         wresize(subwin.innerWin, screenSize.second, screenSize.first -2);
+        mvwin(subwin.outerWin, 0, i * (screenSize.first -1));
+        mvwin(subwin.innerWin, 1, i * (screenSize.first -1) +1);
         box(subwin.outerWin, 0, 0);
         wrefresh(subwin.outerWin);
         ++i;
@@ -802,12 +804,16 @@ void CurseSplitOutput::destroyAllSubWin()
 
 void CurseSplitOutput::writeTopLine(const std::string &buffer, short color) const
 {
-    const size_t bufsize = buffer.size();
+    const std::string str = buffer.substr(0, screenSize.first -2);
+    const size_t bufsize = str.size();
     WINDOW *currentWin = subWindows.at(workingWin).innerWin;
 
     if (params.colorEnabled())
         wattron(currentWin, COLOR_PAIR(color));
-    mvwprintw(currentWin, 0, 0, "%s%*c", buffer.c_str(), screenSize.first - bufsize -2, ' ');
+    if (bufsize == screenSize.first -2)
+        mvwprintw(currentWin, 0, 0, "%s", str.c_str());
+    else
+        mvwprintw(currentWin, 0, 0, "%s%*c", str.c_str(), screenSize.first - bufsize -2, ' ');
     if (params.colorEnabled())
         wattroff(currentWin, COLOR_PAIR(color));
 }
