@@ -506,8 +506,8 @@ void CurseSimpleOutput::checkSelection(const JSonElement *item, const t_Cursor &
     {
         if (selection == item)
         {
-            if (cursor.second < scrollTop) //Selection is above vp, move scroll pos to selection and start drawing
-                scrollTop = cursor.second;
+            if (cursor.second <= scrollTop) //Selection is above vp, move scroll pos to selection and start drawing
+                scrollTop = cursor.second == 0 ? 0 : cursor.second -1;
             selectFound = true;
         }
         else if (!item->getParent() || !dynamic_cast<const JSonObjectEntry*>(item->getParent()))

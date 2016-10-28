@@ -266,8 +266,8 @@ void CurseSplitOutput::checkSelection(const JSonElement *item)
     {
         if (w.lastSelection == item)
         {
-            if (w.cursor.second < w.scrollTop) //Selection is above vp, move scroll pos to selection and start drawing
-                w.scrollTop = w.cursor.second;
+            if (w.cursor.second <= w.scrollTop) //Selection is above vp, move scroll pos to selection and start drawing
+                w.scrollTop = w.cursor.second == 0 ? 0 : w.cursor.second -1;
             w.selectFound = true;
         }
         else if (!item->getParent() || !dynamic_cast<const JSonObjectEntry*>(item->getParent()))
