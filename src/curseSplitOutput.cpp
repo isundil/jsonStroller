@@ -689,13 +689,13 @@ bool CurseSplitOutput::writeObjectEntry(t_subWindow &w, JSonObjectEntry *ent)
     return !hasReachedBottom(w.cursor.second, w.scrollTop, screenSize.second);
 }
 
-unsigned int CurseSplitOutput::write(const int &x, const int &y, const char item, unsigned int maxWidth, OutputFlag flags)
+unsigned int CurseSplitOutput::write(const unsigned int &x, const unsigned int &y, const char item, unsigned int maxWidth, OutputFlag flags)
 {
-    int offsetY = y - subWindows.at(workingWin).scrollTop;
+    unsigned int offsetY = y - subWindows.at(workingWin).scrollTop;
     WINDOW *currentWin = subWindows.at(workingWin).innerWin;
     char color = OutputFlag::SPECIAL_NONE;
 
-    if (offsetY <= 0)
+    if (y <= subWindows.at(workingWin).scrollTop) // underflow / before top of screen
         return 1;
 
     if (flags.selected())
@@ -749,16 +749,15 @@ void CurseSplitOutput::displayDiffOp(WINDOW *w, const int &y, const eLevenshtein
     }
 }
 
-unsigned int CurseSplitOutput::write(const int &x, const int &y, const std::string &str, const size_t strlen, unsigned int maxWidth, const OutputFlag flags)
+unsigned int CurseSplitOutput::write(const unsigned int &x, const unsigned int &y, const std::string &str, const size_t strlen, unsigned int maxWidth, const OutputFlag flags)
 {
     const t_subWindow &w = subWindows.at(workingWin);
     WINDOW *currentWin = w.innerWin;
-    int offsetY = y - w.scrollTop;
 
-    if (offsetY <= 0)
+    if (y <= w.scrollTop)
         return 1;
     displayDiffOp(currentWin, y, flags.diffOp());
-    wmove(subWindows.at(workingWin).innerWin, offsetY, x);
+    wmove(subWindows.at(workingWin).innerWin, y - w.scrollTop, x);
     write(str, flags);
     return getNbLines(strlen +x, maxWidth);
 }

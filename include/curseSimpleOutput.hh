@@ -38,8 +38,8 @@ class CurseSimpleOutput: public CurseOutput
         const OutputFlag getFlag(const JSonElement *item) const;
         const OutputFlag getFlag(const JSonElement *item, const JSonElement *selection) const;
 
-        unsigned int write(const int &x, const int &y, const char item, unsigned int maxWidth, OutputFlag flags);
-        unsigned int write(const int &x, const int &y, const std::string &str, const size_t strlen, unsigned int maxWidth, const OutputFlag flags);
+        unsigned int write(const unsigned int &x, const unsigned int &y, const char item, unsigned int maxWidth, OutputFlag flags);
+        unsigned int write(const unsigned int &x, const unsigned int &y, const std::string &str, const size_t strlen, unsigned int maxWidth, const OutputFlag flags);
         void write(const std::string &str, const OutputFlag flags) const;
         bool writeKey(const std::string &key, const size_t keylen, t_Cursor &cursor, OutputFlag, unsigned int extraLen =0);
         bool writeKey(const std::string &key, const size_t keylen, const std::string &after, size_t afterlen, t_Cursor &cursor, OutputFlag flags);

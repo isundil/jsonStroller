@@ -48,8 +48,8 @@ class CurseSplitOutput: public CurseOutput
         bool writeKey(t_subWindow &, const std::string &key, const size_t keylen, OutputFlag flags, unsigned int extraLen =0);
         bool writeKey(t_subWindow &, const std::string &key, const size_t keylen, const std::string &after, const size_t afterlen, t_Cursor &cursor, OutputFlag);
         bool writeKey(t_subWindow &, const std::string &key, const size_t keylen, const std::string &after, t_Cursor &cursor, OutputFlag);
-        unsigned int write(const int &x, const int &y, const char item, unsigned int maxWidth, OutputFlag flags);
-        unsigned int write(const int &x, const int &y, const std::string &str, const size_t strlen, unsigned int maxWidth, const OutputFlag flags);
+        unsigned int write(const unsigned int &x, const unsigned int &y, const char item, unsigned int maxWidth, OutputFlag flags);
+        unsigned int write(const unsigned int &x, const unsigned int &y, const std::string &str, const size_t strlen, unsigned int maxWidth, const OutputFlag flags);
         void write(const std::string &str, const OutputFlag flags) const;
         void displayDiffOp(WINDOW *w, const int &y, const eLevenshteinOperator &op) const;
 

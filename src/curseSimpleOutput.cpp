@@ -313,7 +313,7 @@ bool CurseSimpleOutput::writeContent(t_Cursor &cursor, std::list<JSonElement*> *
 
 bool CurseSimpleOutput::writeKey(const std::string &key, const size_t keylen, t_Cursor &cursor, OutputFlag flags, unsigned int extraLen)
 {
-    if (cursor.second - scrollTop <= 0)
+    if (cursor.second <= scrollTop)
     {
         cursor.second++;
         return true;
@@ -329,7 +329,7 @@ bool CurseSimpleOutput::writeKey(const std::string &key, const size_t keylen, t_
 
 bool CurseSimpleOutput::writeKey(const std::string &key, const size_t keylen, const std::string &after, size_t afterlen, t_Cursor &cursor, OutputFlag flags)
 {
-    if (cursor.second - scrollTop <= 0)
+    if (cursor.second <= scrollTop)
     {
         cursor.second++;
         return true;
@@ -350,12 +350,11 @@ bool CurseSimpleOutput::writeKey(const std::string &key, const size_t keylen, co
     return writeKey(key, keylen, after, after.size(), cursor, flags);
 }
 
-unsigned int CurseSimpleOutput::write(const int &x, const int &y, const char item, unsigned int maxWidth, OutputFlag flags)
+unsigned int CurseSimpleOutput::write(const unsigned int &x, const unsigned int &y, const char item, unsigned int maxWidth, OutputFlag flags)
 {
-    int offsetY = y - scrollTop;
     char color = OutputFlag::SPECIAL_NONE;
 
-    if (offsetY <= 0)
+    if (y <= scrollTop)
         return 1;
 
     if (flags.selected())
@@ -367,19 +366,18 @@ unsigned int CurseSimpleOutput::write(const int &x, const int &y, const char ite
 
     if (color != OutputFlag::SPECIAL_NONE)
         attron(COLOR_PAIR(color));
-    mvprintw(offsetY, x, "%c", item);
+    mvprintw(y - scrollTop, x, "%c", item);
     attroff(A_REVERSE | A_BOLD);
     if (color != OutputFlag::SPECIAL_NONE)
         attroff(COLOR_PAIR(color));
     return getNbLines(x +1, maxWidth);
 }
 
-unsigned int CurseSimpleOutput::write(const int &x, const int &y, const std::string &str, const size_t strlen, unsigned int maxWidth, const OutputFlag flags)
+unsigned int CurseSimpleOutput::write(const unsigned int &x, const unsigned int &y, const std::string &str, const size_t strlen, unsigned int maxWidth, const OutputFlag flags)
 {
-    int offsetY = y - scrollTop;
-    if (offsetY <= 0)
+    if (y <= scrollTop)
         return 1;
-    move(offsetY, x);
+    move(y - scrollTop, x);
     write(str, flags);
     return getNbLines(strlen +x, maxWidth);
 }
