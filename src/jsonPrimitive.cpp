@@ -9,6 +9,9 @@
 AJSonPrimitive::~AJSonPrimitive()
 {}
 
+bool AJSonPrimitive::sameType(const AJSonPrimitive *o) const
+{ return getTypeStr() == o->getTypeStr(); }
+
 template<> JSonPrimitive<Null>::~JSonPrimitive() {}
 template<> JSonPrimitive<double>::~JSonPrimitive() {}
 template<> JSonPrimitive<bool>::~JSonPrimitive() {}
@@ -39,4 +42,22 @@ template<> std::string JSonPrimitive<int>::toString() const
 
 template<> std::string JSonPrimitive<bool>::toString() const
 { return value ? "true" : "false"; }
+
+template<> std::string JSonPrimitive<std::string>::getTypeStr() const
+{ return "str"; }
+
+template<> std::string JSonPrimitive<Null>::getTypeStr() const
+{ return "null"; }
+
+template<> std::string JSonPrimitive<double>::getTypeStr() const
+{ return "number"; }
+
+template<> std::string JSonPrimitive<long long>::getTypeStr() const
+{ return "number"; }
+
+template<> std::string JSonPrimitive<int>::getTypeStr() const
+{ return "number"; }
+
+template<> std::string JSonPrimitive<bool>::getTypeStr() const
+{ return "bool"; }
 

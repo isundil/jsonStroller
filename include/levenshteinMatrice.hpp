@@ -48,6 +48,7 @@ class LevenshteinMatriceWithScore: public LevenshteinMatrice_base
 {
     public:
         LevenshteinMatriceWithScore(float score, const JSonElement *a, const JSonElement *b);
+        LevenshteinMatriceWithScore(float score, const JSonElement *a, const JSonElement *b, bool sameType);
 
         std::map<const JSonElement *, const JSonElement *> getEquivalences() const;
         virtual const JSonElement * getEquivalence(const JSonElement *) const;
@@ -114,7 +115,8 @@ class LevenshteinMatrice: public LevenshteinMatrice_base
 
             result->levenDist = matrice[n][m];
             result->levenRelativeDist = 1 -(matrice[n][m] / std::max(n, m));
-            result->shortestPath<T>(matrice, subMatrice, n, m, --a, --b);
+            if (result->levenRelativeDist > LEVENSHTEIN_SENSIBILITY)
+                result->shortestPath<T>(matrice, subMatrice, n, m, --a, --b);
             cleanMatrice(matrice, subMatrice, n, m);
             return result;
         };

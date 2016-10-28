@@ -14,6 +14,8 @@ class AJSonPrimitive
 {
     public:
         virtual ~AJSonPrimitive();
+        virtual std::string getTypeStr() const =0;
+        bool sameType(const AJSonPrimitive *other) const;
 };
 
 template <typename T>
@@ -31,6 +33,8 @@ class JSonPrimitive: public JSonElement, public AJSonPrimitive
          * get stringified value
         **/
         std::string stringify() const;
+
+        std::string getTypeStr() const;
 
         bool operator<(const JSonPrimitive<T> &other) const;
         bool operator==(const JSonPrimitive<T> &other) const;

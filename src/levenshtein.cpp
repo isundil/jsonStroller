@@ -1,6 +1,7 @@
 #include <climits>
 #include "levenshteinMatrice.hpp"
 #include "jsonObjectEntry.hh"
+#include "jsonPrimitive.hh"
 
 size_t levenshtein(const std::string &a, const std::string &b)
 {
@@ -90,13 +91,13 @@ LevenshteinMatrice_base *LevenshteinMatrice_base::Builder::build(const JSonEleme
 
         if (aIsObject && bIsObject)
         {
-            if (a->stringify() == b->stringify() && (*(const JSonObjectEntry&)(*a))->stringify() == (*(const JSonObjectEntry&)(*b))->stringify())
+            if (a->stringify() == b->stringify())
                 return LevenshteinMatrice_base::Builder::build(*(const JSonObjectEntry&)(*a), *(const JSonObjectEntry&)(*b));
             return new LevenshteinMatriceWithScore(0.f, a, b);
         }
         else if (aIsObject || bIsObject)
             return new LevenshteinMatriceWithScore(0.f, a, b);
-        return new LevenshteinMatriceWithScore(levenshteinPercent(a->stringify(), b->stringify()), a, b);
+        return new LevenshteinMatriceWithScore(levenshteinPercent(a->stringify(), b->stringify()), a, b, ((const AJSonPrimitive*)a)->sameType((const AJSonPrimitive *)b));
     }
 }
 
@@ -177,6 +178,22 @@ LevenshteinMatriceWithScore::LevenshteinMatriceWithScore(float s, const JSonElem
     else
         equivalentA = equivalentB = nullptr;
     operations[a] = operations[b] = (_result ? eLevenshteinOperator::equ : eLevenshteinOperator::add);
+}
+
+LevenshteinMatriceWithScore::LevenshteinMatriceWithScore(float s, const JSonElement *a, const JSonElement *b, bool sameType)
+{
+    _result = s > LEVENSHTEIN_SENSIBILITY;
+    if (_result)
+    {
+        equivalentA = a;
+        equivalentB = b;
+    }
+    else
+        equivalentA = equivalentB = nullptr;
+    if (_result)
+        operations[a] = operations[b] = (sameType ? eLevenshteinOperator::equ : eLevenshteinOperator::mod);
+    else
+        operations[a] = operations[b] = eLevenshteinOperator::mod;
 }
 
 const JSonElement * LevenshteinMatriceWithScore::getEquivalence(const JSonElement *a) const
