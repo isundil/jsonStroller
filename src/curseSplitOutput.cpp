@@ -52,7 +52,7 @@ void CurseSplitOutput::run(const std::deque<std::string> &inputName, const std::
         t_subWindow subwin;
 
         subwin.fileName = inputName.at(i);
-        subwin.selection = subwin.lastSelection = subwin.root = roots.at(i);
+        subwin.lastSelection = subwin.root = roots.at(i);
         subwin.select_up = subwin.select_down = nullptr;
         subwin.innerWin = subwin.outerWin = nullptr;
         subwin.scrollTop = 0;
@@ -64,6 +64,7 @@ void CurseSplitOutput::run(const std::deque<std::string> &inputName, const std::
         wrefresh(subwin.outerWin);
     }
     computeDiff();
+    setSelection(subWindows.at(0).lastSelection);
     loop(subWindows.at(0).outerWin);
 }
 

@@ -47,7 +47,6 @@ class LevenshteinMatrice_manual: public LevenshteinMatrice_base
 class LevenshteinMatriceWithScore: public LevenshteinMatrice_base
 {
     public:
-        LevenshteinMatriceWithScore(float score, const JSonElement *a, const JSonElement *b);
         LevenshteinMatriceWithScore(float score, const JSonElement *a, const JSonElement *b, bool sameType);
 
         std::map<const JSonElement *, const JSonElement *> getEquivalences() const;
