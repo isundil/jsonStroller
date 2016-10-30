@@ -57,6 +57,10 @@ class CurseSplitOutput: public CurseOutput
 
         bool jumpToNextSearch(const JSonElement *current, bool &selectFound);
         bool jumpToNextSearch();
+
+        virtual void writeBottomLine(const std::string &currentBuffer, short color) const;
+        virtual void writeBottomLine(const std::wstring &currentBuffer, short color) const;
+
         unsigned int search(const SearchPattern &searchPattern);
         unsigned int search(const SearchPattern &searchPattern, const JSonElement *current);
 
@@ -106,6 +110,7 @@ class CurseSplitOutput: public CurseOutput
          * Viewport start
         **/
         unsigned short nbInputs, selectedWin, workingWin;
+        WINDOW *bottomLine;
         // TODO t_subWindow &workingSubwin, &selectedSubwin ??
 };
 

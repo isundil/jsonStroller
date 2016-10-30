@@ -158,6 +158,7 @@ inputResult CurseOutput::evalKey(const InputSequence &c)
 bool CurseOutput::redraw(const std::string &errorMsg)
 {
     bool result = redraw();
+
     writeBottomLine(errorMsg, OutputFlag::SPECIAL_ERROR);
     return result;
 }
@@ -200,21 +201,22 @@ void CurseOutput::unfold(const JSonElement *item)
     }
 }
 
-const SearchPattern *CurseOutput::inputSearch()
+const SearchPattern *CurseOutput::inputSearch(WINDOW *w)
 {
     std::wstring buffer;
     bool abort = false;
+    if (!w)
+        w = stdscr;
 
     curs_set(true);
-    wtimeout(stdscr, -1);
+    wtimeout(w, -1);
     while (!abort)
     {
         int c;
 
         writeBottomLine(L'/' +buffer, OutputFlag::SPECIAL_SEARCH);
-        refresh();
-        c = getwchar();
-        if (c == L'\r')
+        c = wgetch(w);
+        if (c == L'\n' || c == L'\r')
             break;
         else if (c == L'\b' || c == 127)
         {
@@ -226,7 +228,7 @@ const SearchPattern *CurseOutput::inputSearch()
         else
             buffer += c;
     }
-    wtimeout(stdscr, 150);
+    wtimeout(w, 150);
     curs_set(false);
 
     {
@@ -265,6 +267,7 @@ void CurseOutput::writeBottomLine(const std::string &buffer, short color) const
     move(screenSize.second -1, bufsize);
     if (params.colorEnabled())
         attroff(COLOR_PAIR(color));
+    refresh();
 }
 
 void CurseOutput::writeBottomLine(const std::wstring &buffer, short color) const
@@ -278,6 +281,7 @@ void CurseOutput::writeBottomLine(const std::wstring &buffer, short color) const
     move(screenSize.second -1, bufsize);
     if (params.colorEnabled())
         attroff(COLOR_PAIR(color));
+    refresh();
 }
 
 void CurseOutput::init()

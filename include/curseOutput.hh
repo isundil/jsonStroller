@@ -140,7 +140,7 @@ class CurseOutput
          * prompt for user input, and return it
          * @throws noInputException if user use a kill-key (to exit buffer)
         **/
-        const SearchPattern *inputSearch();
+        const SearchPattern *inputSearch(WINDOW *w =nullptr);
 
         /**
          * find occurences of search result and fill this#search_result

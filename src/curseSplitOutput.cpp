@@ -16,9 +16,10 @@
 #include "jsonPrimitive.hh"
 #include "levenshteinMatrice.hpp"
 
-template<class T> const T &list_at(const std::list<T> &l, unsigned int pos)
+template<class T> static const T &list_at(const std::list<T> &l, unsigned int pos)
 {
     typename std::list<T>::const_iterator it = l.cbegin();
+
     std::advance(it, pos);
     return *it;
 }
@@ -46,6 +47,8 @@ void CurseSplitOutput::run(const std::deque<std::string> &inputName, const std::
     destroyAllSubWin();
     subWindows.clear();
     screenSize = getScreenSize(); // screenSize is based on nbInputs, we must refresh it
+    t_Cursor ss = getScreenSizeUnsafe();
+    bottomLine = newwin(1, ss.first, ss.second -1, 0);
 
     for (size_t i =0; i < nbInputs; ++i)
     {
@@ -90,23 +93,7 @@ inputResult CurseSplitOutput::selectUp()
 
 inputResult CurseSplitOutput::selectDown()
 {
-    const JSonElement *newSelection = subWindows.at(selectedWin).select_down;
-    size_t i = 0;
-
-    for (t_subWindow &w : subWindows)
-    {
-        if (w.selectIsLast)
-            w.scrollTop += 2;
-        if (i == selectedWin)
-            w.selection = w.lastSelection = newSelection;
-        else
-        {
-            w.selection = diffMatrice->getEquivalence(newSelection);
-            if (w.selection)
-                w.lastSelection = w.selection;
-        }
-        ++i;
-    }
+    setSelection(subWindows.at(selectedWin).select_down);
     return inputResult::redraw;
 }
 
@@ -211,7 +198,8 @@ inputResult CurseSplitOutput::collapseSelection()
 
 inputResult CurseSplitOutput::initSearch()
 {
-    const SearchPattern *searchPattern = inputSearch();
+    const SearchPattern *searchPattern = inputSearch(subWindows.at(0).outerWin);
+
     if (!searchPattern)
         return inputResult::redraw;
     for (t_subWindow &s : subWindows)
@@ -310,7 +298,7 @@ bool CurseSplitOutput::jumpToNextSearch(const JSonElement *current, bool &select
                 current != subWindows.at(selectedWin).selection &&
                 selectFound)
         {
-            subWindows.at(selectedWin).lastSelection = current;
+            setSelection(current);
             return true;
         }
         if (objEntry)
@@ -345,14 +333,14 @@ unsigned int CurseSplitOutput::search(const SearchPattern &searchPattern, const 
         if (current && current->match(searchPattern))
         {
             if (current->getParent() && dynamic_cast<const JSonObjectEntry*>(current->getParent()))
-                subWindows.at(workingWin).searchResults.push_back(current->getParent());
+                subWindows.at(selectedWin).searchResults.push_back(current->getParent());
             else
-                subWindows.at(workingWin).searchResults.push_back(current);
+                subWindows.at(selectedWin).searchResults.push_back(current);
         }
         if (objEntry)
             search(searchPattern, **objEntry);
     }
-    return subWindows.at(workingWin).searchResults.size();
+    return subWindows.at(selectedWin).searchResults.size();
 }
 
 bool CurseSplitOutput::jumpToNextSearch()
@@ -362,7 +350,7 @@ bool CurseSplitOutput::jumpToNextSearch()
 
     if (!res)
     {
-        subWindows.at(selectedWin).lastSelection = *(subWindows.at(selectedWin).searchResults.cbegin());
+        setSelection(*(subWindows.at(selectedWin).searchResults.cbegin()));
         unfold(subWindows.at(selectedWin).selection);
         CurseOutput::redraw("Search hit BOTTOM, continuing at TOP");
         return false;
@@ -418,8 +406,11 @@ const Optional<bool> CurseSplitOutput::redrawOneItemToWorkingWin(t_subWindow &w)
 void CurseSplitOutput::onResizeHandler()
 {
     size_t i =0;
+    t_Cursor ss = getScreenSizeUnsafe();
     clear();
 
+    wresize(bottomLine, 1, ss.first);
+    mvwin(bottomLine, ss.second -1, 0);
     for (t_subWindow &subwin: subWindows)
     {
         wresize(subwin.outerWin, screenSize.second +2, screenSize.first);
@@ -554,6 +545,34 @@ bool CurseSplitOutput::writeContainer(JSonContainer *item, bool opening)
         return true;
     }
     return !hasReachedBottom(w.cursor.second, w.scrollTop, screenSize.second);
+}
+
+void CurseSplitOutput::writeBottomLine(const std::string &buffer, short color) const
+{
+    const t_Cursor screenSize = getScreenSizeUnsafe();
+    const size_t bufsize = buffer.size();
+
+    if (params.colorEnabled())
+        wattron(bottomLine, COLOR_PAIR(color));
+    mvwprintw(bottomLine, 0, 0, "%s%*c", buffer.c_str(), screenSize.first - bufsize, ' ');
+    wmove(bottomLine, 0, bufsize);
+    if (params.colorEnabled())
+        wattroff(bottomLine, COLOR_PAIR(color));
+    wrefresh(bottomLine);
+}
+
+void CurseSplitOutput::writeBottomLine(const std::wstring &buffer, short color) const
+{
+    const t_Cursor ss = getScreenSizeUnsafe();
+    const size_t bufsize = buffer.size();
+
+    if (params.colorEnabled())
+        wattron(bottomLine, COLOR_PAIR(color));
+    mvwprintw(bottomLine, 0, 0, "%S%*c", buffer.c_str(), ss.first - bufsize, ' ');
+    wmove(bottomLine, 0, bufsize);
+    if (params.colorEnabled())
+        wattroff(bottomLine, COLOR_PAIR(color));
+    wrefresh(bottomLine);
 }
 
 bool CurseSplitOutput::writeKey(t_subWindow &w, const std::string &key, const size_t keylen, OutputFlag flags, unsigned int extraLen)
@@ -827,6 +846,7 @@ const t_Cursor CurseSplitOutput::getScreenSize() const
 void CurseSplitOutput::shutdown()
 {
     destroyAllSubWin();
+    delwin(bottomLine);
     endwin();
     delscreen(screen);
     if (screen_fd)
