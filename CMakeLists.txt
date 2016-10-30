@@ -15,9 +15,12 @@ include_directories(include ${CURSES_INCLUDE_DIRS})
 add_executable(jsonstroll
     src/warning.cpp
     src/params.cpp
+
     src/curseOutput.cpp
     src/curseSimpleOutput.cpp
     src/curseSplitOutput.cpp
+    src/simpleOutput.cpp
+
     src/linearHistory.cpp
     src/outputFlag.cpp
     src/streamConsumer.cpp

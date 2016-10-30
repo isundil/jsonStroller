@@ -6,6 +6,9 @@
 
 #include "jsonPrimitive.hh"
 
+AJSonPrimitive::AJSonPrimitive(JSonElement *p): JSonElement(p)
+{}
+
 AJSonPrimitive::~AJSonPrimitive()
 {}
 

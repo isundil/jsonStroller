@@ -137,6 +137,7 @@ void Params::usage() const noexcept
     << "or: " << progName << " --diff [OPTIONS] FILENAME FILENAME [FILENAME]" << std::endl
     << "Read json input and print it using ncurse" << std::endl << std::endl
     << "if not INPUT nor FILENAME, use standard input" << std::endl << std::endl
+    << "When output is redirected to a file or another command, output will be prettyfied unless --compress" << std::endl << std::endl
 
     << "  FILENAME\t\tread input from filename instead of stdin" << std::endl
     << "  INPUT\t\t\tuse this as input instead of stdin" << std::endl
@@ -144,6 +145,7 @@ void Params::usage() const noexcept
     << "  --ascii\t\tignore unicode values" << std::endl
     << "  --keep-order\t\tdo not sort objects by key" << std::endl
     << "  --color[=MODE]\tcolorize output, MODE can be never or always (default when ommited)" << std::endl
+    << "  --compress\tif output is redirected, strip unnecessaries characters" << std::endl
     << "  -v, -version\t\tdisplay version information" << std::endl
     << "  -h, --helph\t\tshow this message and exit" << std::endl << std::endl
 

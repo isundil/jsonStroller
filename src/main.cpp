@@ -5,12 +5,14 @@
 **/
 
 #include <iostream>
+#include <unistd.h>
 #include <locale.h>
-#include "streamConsumer.hh"
-#include "curseSplitOutput.hh"
 #include "curseSimpleOutput.hh"
-#include "params.hh"
+#include "curseSplitOutput.hh"
+#include "streamConsumer.hh"
 #include "jsonException.hh"
+#include "simpleOutput.hh"
+#include "params.hh"
 
 void displayException(const std::string &filename, const Params &params, const std::string &type, const JsonException &e)
 {
@@ -31,6 +33,33 @@ StreamConsumer *readFile(std::pair<std::string, std::basic_istream<char>*> input
     return stream;
 }
 
+StreamConsumer *readOneFile(std::pair<std::string, std::basic_istream<char>*> input, const Params &params, std::deque<Warning> &warns)
+{
+    StreamConsumer *stream;
+
+    try
+    {
+        stream = readFile(input, params);
+    }
+    catch (EofException &e)
+    {
+        std::cerr << params.getProgName() << ": " << input.first << " " << Warning::getType(e) << " ("  << e.what() << ") error while reading" << std::endl;
+        return nullptr;
+    }
+    catch (JsonException &e)
+    {
+        std::cerr << "Error: ";
+        displayException(input.first, params, Warning::getType(e), e);
+        return nullptr;
+    }
+    for (Warning w : stream->getMessages())
+    {
+        w.filename(input.first);
+        warns.push_back(Warning(w));
+    }
+    return stream;
+}
+
 void runDiff(const Params &params)
 {
     const IndexedDeque inputs = params.getInputs();
@@ -45,27 +74,12 @@ void runDiff(const Params &params)
         StreamConsumer *stream;
 
         inputNames.push_back(input.first);
-        try
+        stream = readOneFile(input, params, warns);
+        if (!stream)
         {
-            stream = readFile(input, params);
-        }
-        catch (EofException &e)
-        {
-            std::cerr << params.getProgName() << ": " << input.first << " " << Warning::getType(e) << " ("  << e.what() << ") error while reading" << std::endl;
-            delete stream;
-            stream = nullptr;
-        }
-        catch (JsonException &e)
-        {
-            std::cerr << "Error: ";
-            displayException(input.first, params, Warning::getType(e), e);
-            delete stream;
-            stream = nullptr;
-        }
-        for (Warning w : stream->getMessages())
-        {
-            w.filename(input.first);
-            warns.push_back(Warning(w));
+            for (StreamConsumer *s : streams)
+                delete s;
+            return;
         }
         roots.push_back(stream->getRoot());
         streams.insert(stream);
@@ -84,39 +98,37 @@ void runDiff(const Params &params)
     }
 }
 
+void runStdout(const Params &params)
+{
+    IndexedDeque inputs = params.getInputs();
+    std::deque<Warning> warns;
+
+    for (std::pair<std::string, std::basic_istream<char>*> input : inputs)
+    {
+        StreamConsumer *stream = readOneFile(input, params, warns);
+        if (!stream)
+            break;
+        SimpleOutput::display(std::cout, stream->getRoot(), params);
+        delete stream;
+    }
+    for (Warning w : warns)
+    {
+        std::cerr << "Warning: ";
+        displayException(w.filename(), params, w.getType(), w());
+    }
+}
+
 void run(const Params &params)
 {
     IndexedDeque inputs = params.getInputs();
     CurseSimpleOutput *out = new CurseSimpleOutput(params);
-    std::list<Warning> warns;
+    std::deque<Warning> warns;
 
     for (std::pair<std::string, std::basic_istream<char>*> input : inputs)
     {
-        StreamConsumer *stream;
-        try
-        {
-            stream = readFile(input, params);
-        }
-        catch (EofException &e)
-        {
-            delete out;
-            out = nullptr;
-            std::cerr << params.getProgName() << ": " << input.first << " " << Warning::getType(e) << " ("  << e.what() << ") error while reading" << std::endl;
+        StreamConsumer *stream = readOneFile(input, params, warns);
+        if (!stream)
             break;
-        }
-        catch (JsonException &e)
-        {
-            delete out;
-            out = nullptr;
-            std::cerr << "Error: ";
-            displayException(input.first, params, Warning::getType(e), e);
-            break;;
-        }
-        for (Warning w : stream->getMessages())
-        {
-            w.filename(input.first);
-            warns.push_back(Warning(w));
-        }
         out->run(stream->getRoot(), input.first);
         delete stream;
     }
@@ -153,7 +165,12 @@ int main(int ac, char **av)
         if (params->isDiff())
             runDiff(*params);
         else
-            run(*params);
+        {
+            if (isatty(fileno(stdout)))
+                run(*params);
+            else
+                runStdout(*params);
+        }
     }
     delete params;
     return 0;

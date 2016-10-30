@@ -10,16 +10,18 @@
 
 class Null {}; //Null primitive
 
-class AJSonPrimitive
+class AJSonPrimitive: public JSonElement
 {
     public:
+        AJSonPrimitive(JSonElement *parent);
         virtual ~AJSonPrimitive();
+
         virtual std::string getTypeStr() const =0;
         bool sameType(const AJSonPrimitive *other) const;
 };
 
 template <typename T>
-class JSonPrimitive: public JSonElement, public AJSonPrimitive
+class JSonPrimitive: public AJSonPrimitive
 {
     public:
         JSonPrimitive(JSonContainer *parent, T const &v);
@@ -56,7 +58,7 @@ class JSonPrimitive: public JSonElement, public AJSonPrimitive
 };
 
 template<typename T>
-JSonPrimitive<T>::JSonPrimitive(JSonContainer *parent, T const &v): JSonElement(parent), value(v), stringValue(toString())
+JSonPrimitive<T>::JSonPrimitive(JSonContainer *parent, T const &v): AJSonPrimitive(parent), value(v), stringValue(toString())
 { }
 
 template<typename T>

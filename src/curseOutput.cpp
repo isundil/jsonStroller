@@ -286,7 +286,7 @@ void CurseOutput::writeBottomLine(const std::wstring &buffer, short color) const
 
 void CurseOutput::init()
 {
-    if (!isatty(fileno(stdin)) || !isatty(fileno(stdout)))
+    if (!isatty(fileno(stdin)) || !isatty(fileno(stdout))) //TODO remove after v1.2 and #29
     {
         screen_fd = fopen("/dev/tty", "r+");
         setbuf(screen_fd, nullptr);
