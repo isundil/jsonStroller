@@ -10,61 +10,80 @@
 SimpleOutput::SimpleOutput(std::ostream &output, const Params &p): out(output), params(p), indent(0)
 { }
 
-void SimpleOutput::writeObjectEntry(const JSonObjectEntry *item)
+void SimpleOutput::writeObjectEntry(const JSonObjectEntry *item, bool prependComma)
 {
-    out << getIndent() << item->stringify() << ": ";
+    out << getIndent() << (prependComma ? ",\"" : "\"") << item->stringify() << "\":";
 
     if (dynamic_cast<const JSonContainer *> (**item))
     {
-        out << std::endl;
-        writeContainer((const JSonContainer*) **item);
+        if (!params.compressed())
+            out << std::endl;
+        writeContainer((const JSonContainer*) **item, false);
     }
     else
-        out << (**item)->stringify() << std::endl;
+    {
+        out << (**item)->stringify();
+        if (!params.compressed())
+            out << std::endl;
+    }
 }
 
-void SimpleOutput::writePrimitive(const AJSonPrimitive *item)
+void SimpleOutput::writePrimitive(const AJSonPrimitive *item, bool prependComma)
 {
-    if (indent)
-        out << getIndent() << item->stringify() << std::endl;
+    out << getIndent() << (prependComma ? "," : "");
+
+    if (dynamic_cast<const JSonPrimitive<std::string>*> (item))
+        out << "\"" << item->stringify() << "\"";
     else
-        out << item->stringify() << std::endl;
+        out << item->stringify();
+    if (!params.compressed())
+        out << std::endl;
 }
 
-void SimpleOutput::writeContainer(const JSonContainer *item)
+void SimpleOutput::writeContainer(const JSonContainer *item, bool prependComma)
 {
     std::string _indent = getIndent();
     const char *brackets = item->stringify().c_str();
+    bool first = true;
 
-    out << _indent << std::string(1, brackets[0]) << std::endl;
+    out << _indent << (prependComma ? "," : "") << std::string(1, brackets[0]);
+    if (!params.compressed())
+        out << std::endl;
 
-    indent_inc();
+    indent++;
     for (JSonElement *i : *item)
-        write(i);
-    indent_inc(-1);
+    {
+        write(i, !first);
+        if (first)
+            first = false;
+    }
+    indent--;
 
-    out << _indent << std::string(1, brackets[2]) << std::endl;
+    out << _indent << std::string(1, brackets[2]);
+    if (!params.compressed())
+        out << std::endl;
 }
 
-void SimpleOutput::write(const JSonElement *item)
+void SimpleOutput::write(const JSonElement *item, bool prependComma)
 {
     if (dynamic_cast<const JSonContainer *>(item))
-        writeContainer((const JSonContainer *) item);
+        writeContainer((const JSonContainer *) item, prependComma);
     else if (dynamic_cast<const JSonObjectEntry*> (item))
-        writeObjectEntry((const JSonObjectEntry *) item);
+        writeObjectEntry((const JSonObjectEntry *) item, prependComma);
     else
-        writePrimitive((const AJSonPrimitive *) item);
+        writePrimitive((const AJSonPrimitive *) item, prependComma);
 }
 
-void SimpleOutput::indent_inc(int i)
-{ indent += i; }
-
 std::string SimpleOutput::getIndent() const
-{ return std::string(indent * INDENT_LEVEL, ' '); }
+{
+    if (params.compressed())
+        return "";
+    return std::string(indent * INDENT_LEVEL, ' ');
+}
 
 void SimpleOutput::display(std::ostream &out, const JSonElement *root, const Params &p)
 {
     SimpleOutput writer(out, p);
-    writer.write(root);
+    writer.write(root, false);
 }
 

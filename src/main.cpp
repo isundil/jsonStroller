@@ -166,7 +166,7 @@ int main(int ac, char **av)
             runDiff(*params);
         else
         {
-            if (isatty(fileno(stdout)))
+            if (!params->compressed() && isatty(fileno(stdout)))
                 run(*params);
             else
                 runStdout(*params);

@@ -35,6 +35,7 @@ bool Params::read()
     std::stringstream *input = nullptr;
     ignoreUnicode = false;
     colorMode = sorted = true;
+    compressMode = false;
 
     for (std::list<std::string>::const_iterator i = params.cbegin(); i != params.cend(); i++)
     {
@@ -51,6 +52,8 @@ bool Params::read()
                 colorMode = true;
             else if (tmp == "--diff")
                 diffMode = true;
+            else if (tmp == "--compress")
+                compressMode = true;
             else if (tmp == "--help" || tmp == "-h")
             {
                 usage();
@@ -183,6 +186,9 @@ bool Params::isIgnoringUnicode() const
 
 const std::string &Params::getProgName() const
 { return progName; }
+
+bool Params::compressed() const
+{ return compressMode; }
 
 bool Params::isDiff() const
 { return diffMode; }

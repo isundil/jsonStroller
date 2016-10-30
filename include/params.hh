@@ -84,6 +84,7 @@ class Params: public AParams
         bool isIgnoringUnicode() const;
         bool isDiff() const;
         bool sortObjects() const;
+        bool compressed() const;
 
     private:
         /**
@@ -100,5 +101,6 @@ class Params: public AParams
         bool strict;
         bool diffMode;
         bool sorted;
+        bool compressMode;
 };
 

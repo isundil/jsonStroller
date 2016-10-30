@@ -15,12 +15,10 @@ class SimpleOutput
 
         std::string getIndent() const;
 
-        inline void writeObjectEntry(const JSonObjectEntry *);
-        inline void writePrimitive(const AJSonPrimitive *);
-        inline void writeContainer(const JSonContainer *);
-        inline void write(const JSonElement *);
-
-        void indent_inc(int i =1);
+        inline void writeObjectEntry(const JSonObjectEntry *, bool);
+        inline void writePrimitive(const AJSonPrimitive *, bool);
+        inline void writeContainer(const JSonContainer *, bool);
+        inline void write(const JSonElement *, bool prependComma);
 
     private:
         std::ostream &out;
