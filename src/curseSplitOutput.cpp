@@ -435,6 +435,8 @@ bool CurseSplitOutput::redraw()
         w.select_up = w.select_down = nullptr;
         w.selectFound = w.selectIsLast = false;
 
+        box(w.outerWin, 0, 0);
+        wrefresh(w.outerWin);
         wclear(w.innerWin);
         writeTopLine(w.fileName,
                 workingWin == selectedWin ? OutputFlag::SPECIAL_ACTIVEINPUTNAME : OutputFlag::SPECIAL_INPUTNAME);
