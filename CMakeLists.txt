@@ -14,6 +14,7 @@ include_directories(include ${CURSES_INCLUDE_DIRS})
 # jsonstroll
 add_executable(jsonstroll
     src/warning.cpp
+    src/diffCmd.cpp
     src/params.cpp
 
     src/curseOutput.cpp

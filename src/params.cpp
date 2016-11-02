@@ -9,11 +9,11 @@
 #include <sstream>
 #include <curses.h>
 #include <unistd.h>
+#include "diffCmd.hh"
 #include "params.hh"
-
 #include "config.h"
 
-Params::Params(char **av): progName(*av), strict(true), diffMode(false)
+Params::Params(char **av): progName(*av), strict(true), diffMode(false), diffCmd(nullptr)
 {
     av++;
     while (*av)
@@ -27,11 +27,14 @@ Params::~Params()
 {
     for (std::pair<std::string, std::basic_istream<char>*> in : inputs)
         delete in.second;
+    if (diffCmd)
+        delete diffCmd;
 }
 
 bool Params::read()
 {
-    bool written = false;
+    bool written = false,
+         inDiff = false;
     std::stringstream *input = nullptr;
     ignoreUnicode = false;
     colorMode = sorted = true;
@@ -40,7 +43,7 @@ bool Params::read()
     for (std::list<std::string>::const_iterator i = params.cbegin(); i != params.cend(); i++)
     {
         std::string tmp(*i);
-        if (!input)
+        if (!input && !inDiff)
         {
             if (tmp == "--")
                 inputs["ARGS"] = input = new std::stringstream();
@@ -66,6 +69,13 @@ bool Params::read()
             }
             else if (tmp == "--keep-order")
                 sorted = false;
+            else if (tmp == "--diff-cmd")
+            {
+                if (diffCmd)
+                    throw std::runtime_error("Invalid double usage of --diff-cmd");
+                inDiff = true;
+                diffCmd = new DiffCmd();
+            }
             else if (tmp.find("--color=") == 0)
             {
                 std::string mode = tmp.substr(8);
@@ -94,6 +104,13 @@ bool Params::read()
                 else
                     inputs[tmp] = in;
             }
+        }
+        else if (inDiff)
+        {
+            if (tmp == ";")
+                inDiff = false;
+            else
+                diffCmd->add(tmp);
         }
         else
         {
@@ -192,4 +209,7 @@ bool Params::compressed() const
 
 bool Params::isDiff() const
 { return diffMode; }
+
+DiffCmd *Params::getExternalDiff() const
+{ return diffCmd; }
 

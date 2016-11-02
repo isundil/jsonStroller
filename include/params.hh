@@ -12,8 +12,11 @@
 #include <utility>
 #include <istream>
 #include "fifoMap.hpp"
+#include "optional.hpp"
 
 typedef fifoMap<std::string, std::basic_istream<char> *> IndexedDeque;
+
+class DiffCmd;
 
 class AParams
 {
@@ -30,7 +33,6 @@ class AParams
          * true if --color match conditions
         **/
         virtual bool colorEnabled() const =0;
-
         /**
          * true if need sorted object
         **/
@@ -77,6 +79,11 @@ class Params: public AParams
         const std::string &getProgName() const;
 
         /**
+         * return diff command helper (or nullptr if none)
+        **/
+        DiffCmd *getExternalDiff() const;
+
+        /**
          * flags
         **/
         bool isStrict() const;
@@ -102,5 +109,7 @@ class Params: public AParams
         bool diffMode;
         bool sorted;
         bool compressMode;
+
+        DiffCmd *diffCmd;
 };
 

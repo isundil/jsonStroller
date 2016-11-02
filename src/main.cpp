@@ -5,6 +5,9 @@
 **/
 
 #include <iostream>
+#include <sstream>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #include <locale.h>
 #include "curseSimpleOutput.hh"
@@ -12,6 +15,7 @@
 #include "streamConsumer.hh"
 #include "jsonException.hh"
 #include "simpleOutput.hh"
+#include "diffCmd.hh"
 #include "params.hh"
 
 void displayException(const std::string &filename, const Params &params, const std::string &type, const JsonException &e)
@@ -58,6 +62,71 @@ StreamConsumer *readOneFile(std::pair<std::string, std::basic_istream<char>*> in
         warns.push_back(Warning(w));
     }
     return stream;
+}
+
+std::ofstream getOutputFile(const std::string iname, std::string &outfile)
+{
+    unsigned long long hash = DiffCmd::hashString(iname);
+    unsigned int i = 0;
+    std::ofstream fout;
+    std::stringstream ss;
+
+    do {
+        ss = std::stringstream("");
+        ss << "/tmp/jsondifftmp" << hash << '.' << i << ".tmp";
+        outfile = ss.str();
+        fout.open(outfile);
+    } while (!fout.is_open() && i  < 1000);
+    return fout;
+}
+
+/**
+ * run command, and return once finished to let parent clean files and GC
+**/
+std::deque<std::string> doRunExternalDiff(const Params &p)
+{
+    std::deque<std::string> inputsFilenames;
+    IndexedDeque inputs = p.getInputs();
+    std::deque<Warning> warns;
+
+    for (std::pair<std::string, std::basic_istream<char>*> input : inputs)
+    {
+        std::string fname;
+        StreamConsumer *stream = readOneFile(input, p, warns);
+
+        if (!stream)
+            return inputsFilenames;
+        std::ofstream fout = getOutputFile(input.first, fname);
+        inputsFilenames.push_back(fname);
+        SimpleOutput::display(fout, stream->getRoot(), p);
+        delete stream;
+    }
+    for (Warning w : warns)
+    {
+        std::cerr << "Warning: ";
+        displayException(w.filename(), p, w.getType(), w());
+    }
+
+    char **av = p.getExternalDiff()->computeArgv(inputsFilenames);
+    int fk = fork();
+    int status;
+
+    if (fk == -1)
+        return inputsFilenames;
+    else if (fk == 0)
+        execvp(*av, av);
+    // Wait for child to terminate
+    do {
+        waitpid(fk, &status, 0);
+    } while (!WIFEXITED(status));
+    return inputsFilenames;
+}
+
+void runExternalDiff(const Params &p)
+{
+    std::deque<std::string> files = doRunExternalDiff(p);
+    for (std::string &fname: files)
+        unlink(fname.c_str());
 }
 
 void runDiff(const Params &params)
@@ -162,7 +231,9 @@ int main(int ac, char **av)
     {
         if (!params->isIgnoringUnicode())
             setlocale(LC_ALL, "");
-        if (params->isDiff())
+        if (params->getExternalDiff())
+            runExternalDiff(*params);
+        else if (params->isDiff())
             runDiff(*params);
         else
         {
