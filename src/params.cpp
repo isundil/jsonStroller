@@ -166,12 +166,14 @@ void Params::usage() const noexcept
     << "  --keep-order\t\tdo not sort objects by key" << std::endl
     << "  --color[=MODE]\tcolorize output, MODE can be never or always (default when ommited)" << std::endl
     << "  --compress\tif output is redirected, strip unnecessaries characters" << std::endl
+    << "  --diff-cmd COMMAND ;\tExecute command as external diff. All following argument will be passed as parameter to COMMAND until ';' is encountered. The '{}' argument will be replaced by the file path of the prettified input" << std::endl
     << "  -v, -version\t\tdisplay version information" << std::endl
     << "  -h, --helph\t\tshow this message and exit" << std::endl << std::endl
 
     << "Examples:" << std::endl
     << STROLL_PROGNAME << " f.json\tOutput f.json's content" << std::endl << std::endl
     << STROLL_PROGNAME << " --diff fileA.json fileB.json\tcompare fileA.json and fileB.json" << std::endl << std::endl
+    << STROLL_PROGNAME << " --diff-cmd vimdiff {} ';' fileA.json fileB.json\tcompare fileA.json and fileB.json" << std::endl << std::endl
 
     << "Report bugs to <isundill@gmail.com>" << std::endl;
 }
